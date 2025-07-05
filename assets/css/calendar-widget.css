@@ -1,0 +1,158 @@
+/**
+ * استایل‌های ویجت تقویم برای افزونه مدیریت دانشگاه
+ */
+
+.timeline-cal {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    position: relative;
+    flex-wrap: wrap;
+    width: 100%;
+    align-items: center;
+}
+
+.event-cal {
+    position: relative;
+    padding: 20px;
+    border-radius: 15px;
+    height: 170px !important;
+    text-align: center;
+    z-index: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap:10px;
+    width:10%;
+}
+
+.wrapper-cal::after{
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    height: 2px;
+    background: #21217933;
+    z-index: 0;
+    width: 85%;
+}
+
+.wrapper-cal{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    position: relative;
+    flex-wrap: wrap;
+    width: 85%;
+    align-items: center;
+}
+
+.event-cal.blue {
+    background: #212179;
+    color: white !important;
+}
+
+.event-cal:hover  {
+    background: #212179;
+    color: white !important;  
+}
+
+.event-cal .icon-cal .svg2 {
+    display: none;  
+}
+
+.event-cal .icon-cal .svg1 {
+    display: block;  
+}
+
+.event-cal:hover .icon-cal .svg1 {
+    display: none !important; 
+}
+
+.event-cal:hover .icon-cal .svg2 {
+    display: block !important;  
+}
+
+.icon-cal{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap:0px;
+}
+
+.day-cal {
+    font-size: 26px;
+    font-weight: bold;
+    color: #BE0000;
+}
+
+.day-cal:nth-child(2){
+    color: #ffffff !important;
+}
+
+.month-year {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #817f7f !important; 
+    text-wrap: nowrap;
+}
+
+.label-cal {
+    margin-top: 10px;
+    font-weight: bold;
+    text-wrap: nowrap;
+}
+
+/* Mobile responsive */
+@media (max-width: 850px) {
+    .timeline-cal {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .wrapper-cal {
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .wrapper-cal::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 50%;
+        height: 90%;
+        width: 2px;
+        background: rgba(33, 33, 121, 0.2); /* رنگ خط */
+        transform: translateX(50%);
+        z-index: 0;
+    }
+    
+    .wrapper-cal::after{
+        display: none;
+    }
+    
+    .event-cal {
+        width: 60% !important;
+        height: 120px !important;
+        justify-content: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Add shadow */
+        background-color: #ffffff;
+        gap: 5px;
+    }
+
+    .event-cal.blue {
+        background-color: #212179;
+        color: white;
+    }
+
+    .icon-cal svg {
+        margin: auto;
+    }
+} 

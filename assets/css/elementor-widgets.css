@@ -1,0 +1,82 @@
+/**
+ * استایل‌های عمومی برای ویجت‌های افزونه مدیریت دانشگاه
+ */
+
+/* استایل‌های عمومی */
+.university-management-widget {
+    direction: rtl;
+    font-family: IRANSans, Tahoma, Arial, sans-serif;
+}
+
+.university-management-widget h1,
+.university-management-widget h2,
+.university-management-widget h3,
+.university-management-widget h4,
+.university-management-widget h5,
+.university-management-widget h6 {
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+}
+
+.university-management-widget button {
+    cursor: pointer;
+}
+
+.university-management-widget img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* بارگذاری */
+.university-management-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.university-management-loading:after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #212179;
+    border-radius: 50%;
+    animation: university-management-spin 1s linear infinite;
+}
+
+@keyframes university-management-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* پیام‌های خطا */
+.university-management-error {
+    background-color: #ffdddd;
+    color: #ff0000;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* پیام‌های موفقیت */
+.university-management-success {
+    background-color: #ddffdd;
+    color: #008800;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* پیام‌های هشدار */
+.university-management-warning {
+    background-color: #ffffdd;
+    color: #888800;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
+} 
