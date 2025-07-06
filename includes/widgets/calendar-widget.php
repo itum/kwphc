@@ -313,7 +313,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 $events[] = array(
                     'date' => $event['event_date'],
                     'title' => $event['event_title'],
-                    'important' => $event['is_important'],
+                    'important' => isset($event['is_important']) ? $event['is_important'] : 'no',
                 );
             }
         }
@@ -330,7 +330,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 'month' => $this->get_jalaali_month_name($jalaali_date['month']),
                 'year' => $jalaali_date['year'],
                 'title' => $event['title'],
-                'important' => $event['is_important'],
+                'important' => isset($event['important']) ? $event['important'] : 'no',
             );
         }
         
@@ -374,7 +374,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 <?php if (!empty($jalaali_events)) { ?>
                     <div class="wrapper-cal">
                         <?php foreach ($jalaali_events as $event) { ?>
-                            <div class="event-cal<?php echo ($event['important'] === 'yes') ? ' blue' : ''; ?>">
+                            <div class="event-cal<?php echo (isset($event['important']) && $event['important'] === 'yes') ? ' blue' : ''; ?>">
                                 <div class="day-cal"><?php echo esc_html($event['day']); ?></div>
                                 <div class="month-year"><?php echo esc_html($event['month'] . ' - ' . $event['year']); ?></div>
                                 <div class="icon-cal">
