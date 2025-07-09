@@ -1,151 +1,133 @@
 /* اسکریپت ویجت ویدیو */
 
-(function($) {
-    'use strict';
-    
-    $(document).ready(function() {
-        // تعریف متغیرها
-        var videoWrapper = $('.video-wrapper');
-        var mainVideo = $('#mainVideo')[0];
-        var mainVideoSource = $('#mainVideo source');
-        var playBtn = $('.play-btn');
-        var pauseBtn = $('.pause-btn');
-        var thumbnails = $('.thumbnails img');
-        var currentVideoIndex = 0;
-        
-        // کلیک روی دکمه پخش
-        playBtn.on('click', function() {
-            if (mainVideo) {
-                mainVideo.play();
-                videoWrapper.addClass('playing');
-                playBtn.hide();
-                pauseBtn.show();
+jQuery(document).ready(function($) {
+    // Find all video widget instances on the page
+    $('.videoApp-container').each(function() {
+        const container = $(this);
+        const videos_json = container.attr('data-videos');
+        const categories_json = container.attr('data-categories');
+
+        // If there's no data, do nothing for this instance
+        if (!videos_json) {
+            container.html('<p style="padding: 10px; text-align: center;">داده‌های ویدیو یافت نشد.</p>');
+            return;
+        }
+
+        let videos = [];
+        try {
+            videos = JSON.parse(videos_json);
+        } catch (e) {
+            container.html('<p style="padding: 10px; text-align: center;">خطا در پردازش داده‌های ویدیو.</p>');
+            return;
+        }
+
+        let all_categories = {};
+        if (categories_json) {
+            try {
+                all_categories = JSON.parse(categories_json);
+            } catch (e) {
+                // Categories could not be parsed, proceed without them
             }
-        });
-        
-        // کلیک روی دکمه توقف
-        pauseBtn.on('click', function() {
-            if (mainVideo) {
-                mainVideo.pause();
-                videoWrapper.removeClass('playing');
-                pauseBtn.hide();
-                playBtn.show();
+        }
+
+        // Get elements within the current widget instance
+        const categorySelect = container.find(".videoApp-category");
+        const thumbnailsContainer = container.find(".videoApp-thumbnails");
+        const player = container.find(".videoApp-current")[0];
+        const playPauseBtn = container.find(".videoApp-playPauseBtn");
+        const previewImg = container.find(".videoApp-preview");
+        const videoHeader = container.find('.videoApp-header');
+                
+        // If no videos are available, display a message and hide the player
+        if (!videos || videos.length === 0) {
+            container.find('.videoApp-wrapper').html('<p style="padding: 10px; text-align: center;">ویدیویی برای نمایش وجود ندارد.</p>');
+            return;
+        }
+
+        const category_names = Object.values(all_categories);
+
+        if (category_names.length <= 1) {
+            videoHeader.hide();
+        } else {
+             category_names.forEach(cat_name => {
+                const opt = document.createElement("option");
+                opt.value = cat_name;
+                opt.textContent = cat_name;
+                categorySelect.append(opt);
+            });
+            videoHeader.show();
+        }
+
+        // Function to render thumbnails for a selected category
+        function renderThumbnails(category) {
+            thumbnailsContainer.html("");
+            
+            // If a category is selected, filter by it. Otherwise, use all videos.
+            const filteredVideos = category ? videos.filter(v => v.category === category) : videos;
+
+            if (filteredVideos.length > 0) {
+                const first = filteredVideos[0];
+                player.src = first.src;
+                previewImg.attr('src', first.thumbnail);
+                player.style.display = "none";
+                previewImg.show();
+                playPauseBtn.removeClass("hidden");
+                            
+                // Activate the first thumbnail in the list
+                setTimeout(() => {
+                    thumbnailsContainer.find('.videoApp-thumbItem').first().addClass('active');
+                }, 0);
+
+            } else {
+                 previewImg.hide();
+                 playPauseBtn.addClass("hidden");
+                 thumbnailsContainer.html('<p style="padding: 10px; text-align: center;">ویدیویی در این دسته‌بندی وجود ندارد.</p>');
+                 return;
             }
-        });
-        
-        // پایان ویدیو
-        if (mainVideo) {
-            mainVideo.addEventListener('ended', function() {
-                videoWrapper.removeClass('playing');
-                pauseBtn.hide();
-                playBtn.show();
+
+            filteredVideos.forEach((video) => {
+                const wrapper = $('<div class="videoApp-thumbItem"></div>');
+                const thumb = $('<img>').attr('src', video.thumbnail).attr('alt', video.title);
+                const title = $('<div class="videoApp-thumbTitle"></div>').text(video.title);
+                
+                wrapper.append(thumb).append(title);
+
+                wrapper.on('click', function() {
+                    player.src = video.src;
+                    previewImg.attr('src', video.thumbnail);
+                    player.pause();
+                    player.style.display = "none";
+                    previewImg.show();
+                    playPauseBtn.removeClass("hidden");
+                    
+                    container.find(".videoApp-thumbItem").removeClass("active");
+                    $(this).addClass("active");
+                });
+
+                thumbnailsContainer.append(wrapper);
             });
         }
-        
-        // کلیک روی تصاویر بندانگشتی
-        thumbnails.on('click', function() {
-            var videoSrc = $(this).data('video');
-            var thumbnail = $(this).attr('src');
-            
-            if (mainVideo) {
-                // توقف ویدیو فعلی
-                mainVideo.pause();
-                
-                // تغییر ویدیو
-                mainVideoSource.attr('src', videoSrc);
-                mainVideo.setAttribute('poster', thumbnail);
-                
-                // بارگذاری مجدد ویدیو
-                mainVideo.load();
-                
-                // نمایش دکمه پخش
-                videoWrapper.removeClass('playing');
-                pauseBtn.hide();
-                playBtn.show();
-            }
-            
-            // فعال کردن تصویر بندانگشتی
-            thumbnails.removeClass('active');
-            $(this).addClass('active');
+
+        // Event listener for category change
+        categorySelect.on("change", function() {
+            renderThumbnails(this.value);
+            // After rendering, mark the first item as active
+            thumbnailsContainer.find('.videoApp-thumbItem').first().addClass('active');
+        });
+                                    
+        // Event listener for the play button
+        playPauseBtn.on("click", () => {
+            previewImg.hide();
+            player.style.display = "block";
+            player.play();
+            playPauseBtn.addClass("hidden");
         });
         
-        // تغییر دسته‌بندی
-        $('#categorySelect').on('change', function() {
-            var categoryId = $(this).val();
-            
-            // ارسال درخواست AJAX
-            $.ajax({
-                url: um_video_vars.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'um_get_videos_by_category',
-                    category_id: categoryId,
-                    nonce: um_video_vars.nonce
-                },
-                beforeSend: function() {
-                    // نمایش لودینگ
-                    videoWrapper.addClass('loading');
-                },
-                success: function(response) {
-                    // حذف لودینگ
-                    videoWrapper.removeClass('loading');
-                    
-                    if (response.success && response.data) {
-                        // بروزرسانی ویدیو اصلی
-                        if (response.data.length > 0) {
-                            var firstVideo = response.data[0];
-                            
-                            mainVideoSource.attr('src', firstVideo.src);
-                            mainVideo.setAttribute('poster', firstVideo.thumb);
-                            mainVideo.load();
-                            
-                            // بروزرسانی تصاویر بندانگشتی
-                            var thumbnailsContainer = $('.thumbnails');
-                            thumbnailsContainer.empty();
-                            
-                            $.each(response.data, function(index, video) {
-                                var imgClass = (index === 0) ? 'active' : '';
-                                var img = $('<img>', {
-                                    src: video.thumb,
-                                    alt: video.title,
-                                    'data-video': video.src,
-                                    'class': imgClass
-                                });
-                                
-                                thumbnailsContainer.append(img);
-                            });
-                            
-                            // اتصال مجدد رویدادها
-                            thumbnails = $('.thumbnails img');
-                            thumbnails.on('click', function() {
-                                var videoSrc = $(this).data('video');
-                                var thumbnail = $(this).attr('src');
-                                
-                                if (mainVideo) {
-                                    // توقف ویدیو فعلی
-                                    mainVideo.pause();
-                                    
-                                    // تغییر ویدیو
-                                    mainVideoSource.attr('src', videoSrc);
-                                    mainVideo.setAttribute('poster', thumbnail);
-                                    
-                                    // بارگذاری مجدد ویدیو
-                                    mainVideo.load();
-                                    
-                                    // نمایش دکمه پخش
-                                    videoWrapper.removeClass('playing');
-                                    pauseBtn.hide();
-                                    playBtn.show();
-                                }
-                                
-                                // فعال کردن تصویر بندانگشتی
-                                thumbnails.removeClass('active');
-                                $(this).addClass('active');
-                            });
-                        }
-                    }
-                }
-            });
-        });
+        // Initial render on page load
+        const initialCategory = videos.length > 0 ? videos[0].category : null;
+        renderThumbnails(initialCategory);
+        if (initialCategory) {
+            categorySelect.val(initialCategory);
+        }
     });
-})(jQuery);
+});

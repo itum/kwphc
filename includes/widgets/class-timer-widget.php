@@ -97,9 +97,9 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                 'label' => __('تعداد کلاس‌ها', 'university-management'),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'min' => 1,
-                'max' => 10,
+                'max' => 50,
                 'step' => 1,
-                'default' => 5,
+                'default' => 10,
                 'condition' => [
                     'class_source' => 'auto',
                 ],
@@ -302,25 +302,23 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         // تعیین منبع کلاس‌ها
         $classes = array();
         
+        // لاگ تنظیمات برای دیباگ
+        error_log('Widget Settings: ' . print_r($settings, true));
+        
         if ($settings['class_source'] === 'auto') {
             // دریافت کلاس‌ها از پست‌تایپ
             $args = array(
                 'post_type' => 'um_classes',
-                'posts_per_page' => $settings['classes_count'],
+                'posts_per_page' => $settings['classes_count'], // استفاده از تعداد تنظیم شده
                 'orderby' => 'meta_value',
                 'meta_key' => '_class_date',
                 'order' => 'ASC',
-                'meta_query' => array(
-                    array(
-                        'key' => '_class_date',
-                        'value' => date('Y-m-d H:i:s'),
-                        'compare' => '>=',
-                        'type' => 'DATETIME'
-                    )
-                )
             );
             
             $query = new \WP_Query($args);
+            
+            // لاگ تعداد کل کلاس‌ها
+            error_log('Total Classes Found (Auto): ' . $query->found_posts);
             
             if ($query->have_posts()) {
                 while ($query->have_posts()) {
@@ -330,35 +328,78 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                     $class_duration = get_post_meta(get_the_ID(), '_class_duration', true);
                     $class_teacher = get_post_meta(get_the_ID(), '_class_teacher', true);
                     
+                    // اضافه کردن چاپ اطلاعات برای دیباگ
+                    error_log('Auto Class Details: ' . 
+                        'ID: ' . get_the_ID() . 
+                        ', Title: ' . get_the_title() . 
+                        ', Date: ' . $class_date . 
+                        ', Duration: ' . $class_duration . 
+                        ', Teacher: ' . $class_teacher
+                    );
+                    
+                    // تبدیل تاریخ به فرمت استاندارد اگر نیاز باشد
+                    $formatted_date = date('Y-m-d H:i:s', strtotime($class_date));
+                    
                     $classes[] = array(
                         'name' => get_the_title(),
-                        'date' => $class_date,
-                        'duration' => $class_duration,
+                        'date' => $formatted_date, // استفاده از تاریخ فرمت‌بندی شده
+                        'duration' => intval($class_duration), // تبدیل به عدد صحیح
                         'teacher' => $class_teacher,
                         'image' => get_the_post_thumbnail_url(get_the_ID(), 'medium') ?: \Elementor\Utils::get_placeholder_image_src(),
                     );
                 }
                 
                 wp_reset_postdata();
+            } else {
+                // اضافه کردن چاپ پیغام برای دیباگ
+                error_log('No classes found in the auto query');
             }
         } else {
             // استفاده از کلاس‌های دستی
-            foreach ($settings['manual_classes'] as $class) {
+            error_log('Manual Classes Count: ' . count($settings['manual_classes']));
+            
+            foreach ($settings['manual_classes'] as $index => $class) {
+                error_log('Manual Class ' . $index . ' Details: ' . print_r($class, true));
+                
                 $classes[] = array(
                     'name' => $class['class_name'],
                     'date' => $class['class_date'],
-                    'duration' => $class['class_duration'],
+                    'duration' => intval($class['class_duration']),
                     'teacher' => $class['class_teacher'],
-                    'image' => $class['class_image']['url'],
+                    'image' => $class['class_image']['url'] ?: \Elementor\Utils::get_placeholder_image_src(),
                 );
             }
         }
+        
+        // لاگ نهایی کلاس‌ها
+        error_log('Final Classes Array: ' . print_r($classes, true));
+        error_log('Classes Count: ' . count($classes));
+        
+        // بررسی اینکه آیا کلاس‌ها وجود دارند
+        if (empty($classes)) {
+            error_log('WARNING: No classes found to render');
+        }
+        
+        // اضافه کردن لاگ برای تشخیص مشکل
+        error_log('Current Date (Server): ' . date('Y-m-d H:i:s'));
+        error_log('Current Date (Moment.js): ' . date('Y-m-d'));
         
         // ایجاد کلاس‌های استایل
         $this->add_render_attribute('wrapper', 'class', 'calendar-container');
         
         // رندر HTML
         ?>
+        <script>
+            // لاگ کنسول برای بررسی دقیق کلاس‌ها
+            console.log('PHP Classes Count:', <?php echo count($classes); ?>);
+            console.log('PHP Classes:', <?php echo json_encode($classes); ?>);
+            
+            // تعریف داده‌های کلاس‌ها به صورت جهانی
+            window.classesData = <?php echo json_encode($classes); ?>;
+            
+            // لاگ کنسول برای تأیید انتقال داده‌ها
+            console.log('Window Classes Data:', window.classesData);
+        </script>
         <div <?php echo $this->get_render_attribute_string('wrapper'); ?>>
             <div class="today-text">
                 <span id="currentDate"></span>
@@ -392,133 +433,6 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
             </div>
         </div>
         
-        <script>
-        jQuery(document).ready(function($) {
-            // تنظیم moment.js برای استفاده از تقویم جلالی
-            moment.locale('fa');
-            
-            // تعریف کلاس‌ها
-            var classes = <?php echo json_encode($classes); ?>;
-            
-            // نمایش تاریخ امروز
-            var today = moment();
-            $('#currentDate').text(today.format('jYYYY/jMM/jDD'));
-            
-            // آپدیت تایمر هر ثانیه
-            updateTimer();
-            setInterval(updateTimer, 1000);
-            
-            // نمایش هفته جاری
-            var currentWeekStart = moment().startOf('week');
-            showWeek(currentWeekStart);
-            
-            // کلیک روی دکمه هفته قبل
-            $('#prevWeek').click(function() {
-                currentWeekStart.subtract(7, 'days');
-                showWeek(currentWeekStart);
-            });
-            
-            // کلیک روی دکمه هفته بعد
-            $('#nextWeek').click(function() {
-                currentWeekStart.add(7, 'days');
-                showWeek(currentWeekStart);
-            });
-            
-            // نمایش روزهای هفته
-            function showWeek(startDate) {
-                var weekDays = $('#weekDays');
-                weekDays.empty();
-                
-                for (var i = 0; i < 7; i++) {
-                    var day = moment(startDate).add(i, 'days');
-                    var dayElement = $('<div class="day" data-date="' + day.format('YYYY-MM-DD') + '">' + 
-                                      '<span>' + day.format('jD') + '</span>' +
-                                      '<span>' + day.format('ddd') + '</span>' +
-                                      '</div>');
-                    
-                    // روز امروز را هایلایت کنیم
-                    if (day.isSame(moment(), 'day')) {
-                        dayElement.addClass('today');
-                        dayElement.addClass('active');
-                        showClassesForDate(day.format('YYYY-MM-DD'));
-                    }
-                    
-                    weekDays.append(dayElement);
-                }
-                
-                // اضافه کردن رویداد کلیک به روزها
-                $('.day').click(function() {
-                    $('.day').removeClass('active');
-                    $(this).addClass('active');
-                    
-                    var date = $(this).data('date');
-                    showClassesForDate(date);
-                });
-                
-                // اگر هیچ روزی انتخاب نشده، روز اول هفته را انتخاب کنیم
-                if ($('.day.active').length === 0) {
-                    $('.day:first').addClass('active');
-                    showClassesForDate($('.day:first').data('date'));
-                }
-            }
-            
-            // نمایش کلاس‌های مربوط به یک تاریخ
-            function showClassesForDate(date) {
-                var classList = $('#classList');
-                classList.empty();
-                
-                var filteredClasses = classes.filter(function(cls) {
-                    return moment(cls.date).format('YYYY-MM-DD') === date;
-                });
-                
-                if (filteredClasses.length > 0) {
-                    filteredClasses.forEach(function(cls) {
-                        var classTime = moment(cls.date).format('HH:mm');
-                        var classEndTime = moment(cls.date).add(cls.duration, 'minutes').format('HH:mm');
-                        
-                        var classCard = $('<div class="class-card">' +
-                            '<img src="' + cls.image + '" alt="' + cls.name + '">' +
-                            '<div class="class-info">' +
-                                '<div class="name-info-wrapper">' +
-                                    '<h4>' + cls.name + '</h4>' +
-                                    '<div class="info-wrapper">' +
-                                        '<p><strong>استاد:</strong> ' + cls.teacher + '</p>' +
-                                        '<p><strong>ساعت:</strong> ' + classTime + ' - ' + classEndTime + '</p>' +
-                                    '</div>' +
-                                '</div>' +
-                                '<div class="start-btn">' +
-                                    '<button>' +
-                                        '<span>شروع کلاس</span>' +
-                                        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-                                            '<path d="M14.6666 8.00004C14.6666 11.6819 11.6818 14.6667 7.99998 14.6667C4.31808 14.6667 1.33331 11.6819 1.33331 8.00004C1.33331 4.31814 4.31808 1.33337 7.99998 1.33337C11.6818 1.33337 14.6666 4.31814 14.6666 8.00004Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-                                            '<path d="M10.3333 8.00004L7.33331 6.00004V10.0001L10.3333 8.00004Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-                                        '</svg>' +
-                                    '</button>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>');
-                        
-                        classList.append(classCard);
-                    });
-                } else {
-                    // نمایش پیام عدم وجود کلاس
-                    classList.html('<div class="no-result"><p>کلاسی در این روز وجود ندارد.</p></div>');
-                }
-            }
-            
-            // آپدیت تایمر
-            function updateTimer() {
-                var now = new Date();
-                var hours = now.getHours().toString().padStart(2, '0');
-                var minutes = now.getMinutes().toString().padStart(2, '0');
-                var seconds = now.getSeconds().toString().padStart(2, '0');
-                
-                $('#hours').text(hours);
-                $('#minutes').text(minutes);
-                $('#seconds').text(seconds);
-            }
-        });
-        </script>
         <?php
     }
 }
