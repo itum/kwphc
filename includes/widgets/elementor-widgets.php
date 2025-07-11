@@ -69,11 +69,13 @@ class UM_Elementor_Widgets {
         require_once UM_PLUGIN_DIR . 'includes/widgets/calendar-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/class-timer-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/video-widget.php';
+        require_once UM_PLUGIN_DIR . 'includes/widgets/seminar-slider-widget.php';
         
         // ثبت ویجت‌ها
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Calendar_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Class_Timer_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Video_Widget());
+        \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Seminar_Slider_Widget());
     }
 
     /**
@@ -87,6 +89,10 @@ class UM_Elementor_Widgets {
         wp_enqueue_style('um-calendar-widget', UM_PLUGIN_URL . 'assets/css/calendar-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-class-timer-widget', UM_PLUGIN_URL . 'assets/css/class-timer-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-video-widget', UM_PLUGIN_URL . 'assets/css/video-widget.css', array(), UM_VERSION);
+        wp_enqueue_style('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/css/seminar-slider-widget.css', array(), UM_VERSION);
+
+        // کتابخانه‌های خارجی
+        wp_enqueue_style('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', array(), '11');
     }
 
     /**
@@ -97,11 +103,16 @@ class UM_Elementor_Widgets {
         wp_register_script('moment', 'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js', array(), '2.29.1', true);
         wp_register_script('moment-jalaali', 'https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', array('moment'), '0.9.2', true);
         
+        // کتابخانه‌های خارجی برای اسلایدر
+        wp_register_script('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', array(), '11', true);
+        wp_register_script('lucide', 'https://unpkg.com/lucide@latest', array(), null, true);
+
         // اسکریپت‌های اختصاصی هر ویجت
         wp_register_script('um-calendar-widget', UM_PLUGIN_URL . 'assets/js/calendar-widget.js', array('jquery', 'moment', 'moment-jalaali'), UM_VERSION, true);
         wp_register_script('um-class-timer-widget', UM_PLUGIN_URL . 'assets/js/class-timer-widget.js', array('jquery', 'moment', 'moment-jalaali'), UM_VERSION, true);
         wp_register_script('um-video-widget', UM_PLUGIN_URL . 'assets/js/video-widget.js', array('jquery'), UM_VERSION, true);
-        
+        wp_register_script('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/js/seminar-slider-widget.js', array('jquery', 'swiper', 'lucide'), UM_VERSION, true);
+
         // لوکالایز اسکریپت‌ها
         wp_localize_script('um-calendar-widget', 'um_calendar_vars', array(
             'ajax_url' => admin_url('admin-ajax.php'),
