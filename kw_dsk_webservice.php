@@ -225,6 +225,22 @@ class KwDskDatabase {
         ]);
         exit;
     }
+
+    public function getLatestRecords($limit = 10) {
+        $limit = max(1, min(intval($limit), 100));
+
+        // In SQL Server, we cannot use a parameter for TOP, so we cast to int.
+        $query = "SELECT TOP " . (int)$limit . " * FROM Kw_DSK ORDER BY co_c DESC";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'status' => 'success',
+            'count' => count($records),
+            'records' => $records
+        ];
+    }
 }
 
 // مدیریت درخواست‌ها
@@ -290,7 +306,7 @@ class KwDskWebService {
             // اگر درخواست آخرین رکوردها باشد
             if (isset($_GET['action']) && $_GET['action'] === 'latest_records') {
                 $limit = $_GET['limit'] ?? 10;
-                $result = $this->getLatestRecords($limit);
+                $result = $this->database->getLatestRecords($limit);
             } else {
                 // دریافت داده‌های صفحه‌بندی شده
                 $page = $_GET['page'] ?? 1;
@@ -365,31 +381,6 @@ class KwDskWebService {
         }
     }
 
-    private function getLatestRecords($limit = 10) {
-        try {
-            // اطمینان از صحت پارامتر محدودیت
-            $limit = max(1, min(intval($limit), 100));
-
-            // کوئری دریافت آخرین رکوردها
-            $query = "SELECT TOP :limit * FROM Kw_DSK ORDER BY DSK_ID DESC";
-
-            $stmt = $this->database->prepare($query);
-            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-            $stmt->execute();
-
-            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            return [
-                'status' => 'success',
-                'count' => count($records),
-                'records' => $records
-            ];
-        } catch (Exception $e) {
-            $this->logError('Get Latest Records Error', $e);
-            $this->sendErrorResponse('خطا در دریافت آخرین رکوردها', 500);
-        }
-    }
-
     private function sendResponse($data, $statusCode = 200) {
         // تنظیمات امنیتی هدر
         header('Content-Type: application/json; charset=utf-8');
@@ -439,9 +430,14 @@ $service = new KwDskWebService();
 
 // مسیریابی
 $requestUri = $_SERVER['REQUEST_URI'];
-if (strpos($requestUri, '/login') !== false) {
+$basePath = str_replace('/' . basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
+$route = str_replace($basePath, '', $requestUri);
+$route = trim($route, '/');
+$route = strtok($route, '?'); // Remove query string
+
+if ($route === 'login') {
     $service->login();
-} elseif (strpos($requestUri, '/refresh-token') !== false) {
+} elseif ($route === 'refresh-token') {
     $service->refreshToken();
 } else {
     $service->handleRequest();
