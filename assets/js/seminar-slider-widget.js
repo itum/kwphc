@@ -4,7 +4,7 @@
     var seminarSliderHandler = function($scope, $) {
         var $slider = $scope.find('.mySwiper');
 
-        if ($slider.length) {
+        if ($slider.length && !$scope.hasClass('single-seminar')) {
             var swiper = new Swiper($slider[0], {
                 slidesPerView: 1,
                 spaceBetween: 16,

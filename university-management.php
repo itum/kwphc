@@ -67,6 +67,7 @@ class University_Management {
         
         // ذخیره متاباکس‌ها
         add_action('save_post_um_videos', array($this, 'save_video_meta'));
+        add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
@@ -211,6 +212,14 @@ class University_Management {
             'university-database-import',
             array($this, 'database_import_admin_page')
         );
+        
+        add_submenu_page(
+            'university-management',
+            __('کارگاه و سمینارها', 'university-management'),
+            __('کارگاه و سمینارها', 'university-management'),
+            'manage_options',
+            'edit.php?post_type=um_seminars'
+        );
     }
 
     /**
@@ -265,9 +274,9 @@ class University_Management {
      * صفحه ورود اطلاعات پایگاه داده
      */
     public function database_import_admin_page() {
-        $database_file = UM_PLUGIN_DIR . 'admin/database-import-page.php';
-        if (file_exists($database_file)) {
-            require_once $database_file;
+        $import_file = UM_PLUGIN_DIR . 'admin/database-import-page.php';
+        if (file_exists($import_file)) {
+            require_once $import_file;
         } else {
             echo '<div class="wrap"><h1>خطا</h1><p>فایل database-import-page.php یافت نشد.</p></div>';
         }
@@ -277,12 +286,19 @@ class University_Management {
      * افزودن متاباکس‌ها
      */
     public function add_meta_boxes() {
-        // متاباکس لینک ویدیو
         add_meta_box(
             'um_video_link',
-            __('لینک ویدیو', 'university-management'),
+            __('اطلاعات اضافی ویدیو', 'university-management'),
             array($this, 'video_link_meta_box'),
             'um_videos',
+            'normal',
+            'high'
+        );
+        add_meta_box(
+            'um_seminar_details',
+            __('جزئیات سمینار', 'university-management'),
+            array($this, 'seminar_details_meta_box'),
+            'um_seminars',
             'normal',
             'high'
         );
@@ -606,53 +622,180 @@ class University_Management {
         ));
 
         // ثبت پست تایپ ویدیوها
-        register_post_type('um_videos', array(
-            'labels' => array(
-                'name'               => __('ویدیوها', 'university-management'),
-                'singular_name'      => __('ویدیو', 'university-management'),
-                'add_new'            => __('افزودن ویدیو جدید', 'university-management'),
-                'add_new_item'       => __('افزودن ویدیو جدید', 'university-management'),
-                'edit_item'          => __('ویرایش ویدیو', 'university-management'),
-                'new_item'           => __('ویدیو جدید', 'university-management'),
-                'view_item'          => __('مشاهده ویدیو', 'university-management'),
-                'search_items'       => __('جستجوی ویدیوها', 'university-management'),
-                'not_found'          => __('ویدیویی یافت نشد', 'university-management'),
-                'not_found_in_trash' => __('ویدیویی در سطل زباله یافت نشد', 'university-management'),
-            ),
-            'public'              => true,
-            'has_archive'         => true,
-            'publicly_queryable'  => true,
-            'show_ui'             => true,
-            'show_in_menu'        => 'university-management',
-            'capability_type'     => 'post',
-            'hierarchical'        => false,
-            'supports'            => array('title', 'editor', 'thumbnail', 'custom-fields'),
-            'menu_icon'           => 'dashicons-video-alt3',
-            'show_in_rest'        => true,
-        ));
+        $video_labels = array(
+            'name'                  => _x( 'ویدیوها', 'Post Type General Name', 'university-management' ),
+            'singular_name'         => _x( 'ویدیو', 'Post Type Singular Name', 'university-management' ),
+            'menu_name'             => __( 'ویدیوها', 'university-management' ),
+            'name_admin_bar'        => __( 'ویدیو', 'university-management' ),
+            'archives'              => __( 'آرشیو ویدیوها', 'university-management' ),
+            'attributes'            => __( 'ویژگی‌های ویدیو', 'university-management' ),
+            'parent_item_colon'     => __( 'والد ویدیو:', 'university-management' ),
+            'all_items'             => __( 'همه ویدیوها', 'university-management' ),
+            'add_new_item'          => __( 'افزودن ویدیوی جدید', 'university-management' ),
+            'add_new'               => __( 'افزودن جدید', 'university-management' ),
+            'new_item'              => __( 'ویدیوی جدید', 'university-management' ),
+            'edit_item'             => __( 'ویرایش ویدیو', 'university-management' ),
+            'update_item'           => __( 'به‌روزرسانی ویدیو', 'university-management' ),
+            'view_item'             => __( 'مشاهده ویدیو', 'university-management' ),
+            'view_items'            => __( 'مشاهده ویدیوها', 'university-management' ),
+            'search_items'          => __( 'جستجوی ویدیو', 'university-management' ),
+            'not_found'             => __( 'یافت نشد', 'university-management' ),
+            'not_found_in_trash'    => __( 'در زباله‌دان یافت نشد', 'university-management' ),
+            'featured_image'        => __( 'تصویر شاخص', 'university-management' ),
+            'set_featured_image'    => __( 'تنظیم تصویر شاخص', 'university-management' ),
+            'remove_featured_image' => __( 'حذف تصویر شاخص', 'university-management' ),
+            'use_featured_image'    => __( 'استفاده به عنوان تصویر شاخص', 'university-management' ),
+            'insert_into_item'      => __( 'درج در ویدیو', 'university-management' ),
+            'uploaded_to_this_item' => __( 'در این ویدیو بارگذاری شد', 'university-management' ),
+            'items_list'            => __( 'لیست ویدیوها', 'university-management' ),
+            'items_list_navigation' => __( 'ناوبری لیست ویدیوها', 'university-management' ),
+            'filter_items_list'     => __( 'فیلتر لیست ویدیوها', 'university-management' ),
+        );
+        $video_args = array(
+            'label'                 => __( 'ویدیو', 'university-management' ),
+            'description'           => __( 'برای مدیریت ویدیوهای آموزشی', 'university-management' ),
+            'labels'                => $video_labels,
+            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt' ),
+            'taxonomies'            => array( 'um_video_category' ),
+            'hierarchical'          => false,
+            'public'                => true,
+            'show_ui'               => true,
+            'show_in_menu'          => 'university-management',
+            'menu_position'         => 5,
+            'show_in_admin_bar'     => true,
+            'show_in_nav_menus'     => true,
+            'can_export'            => true,
+            'has_archive'           => true,
+            'exclude_from_search'   => false,
+            'publicly_queryable'    => true,
+            'capability_type'       => 'post',
+            'menu_icon'             => 'dashicons-video-alt3',
+        );
+        register_post_type( 'um_videos', $video_args );
         
         // ثبت تاکسونومی دسته‌بندی ویدیوها
         register_taxonomy('um_video_category', 'um_videos', array(
             'labels' => array(
-                'name'              => __('دسته‌بندی ویدیوها', 'university-management'),
-                'singular_name'     => __('دسته‌بندی ویدیو', 'university-management'),
-                'search_items'      => __('جستجوی دسته‌بندی‌ها', 'university-management'),
-                'all_items'         => __('همه دسته‌بندی‌ها', 'university-management'),
-                'parent_item'       => __('دسته‌بندی والد', 'university-management'),
-                'parent_item_colon' => __('دسته‌بندی والد:', 'university-management'),
-                'edit_item'         => __('ویرایش دسته‌بندی', 'university-management'),
-                'update_item'       => __('بروزرسانی دسته‌بندی', 'university-management'),
-                'add_new_item'      => __('افزودن دسته‌بندی جدید', 'university-management'),
-                'new_item_name'     => __('نام دسته‌بندی جدید', 'university-management'),
-                'menu_name'         => __('دسته‌بندی', 'university-management'),
+                'name'              => _x( 'دسته‌بندی‌های ویدیو', 'taxonomy general name', 'university-management' ),
+                'singular_name'     => _x( 'دسته‌بندی ویدیو', 'taxonomy singular name', 'university-management' ),
+                'search_items'      => __( 'جستجوی دسته‌بندی‌ها', 'university-management' ),
+                'all_items'         => __( 'همه دسته‌بندی‌ها', 'university-management' ),
+                'parent_item'       => __( 'والد دسته‌بندی', 'university-management' ),
+                'parent_item_colon' => __( 'والد دسته‌بندی:', 'university-management' ),
+                'edit_item'         => __( 'ویرایش دسته‌بندی', 'university-management' ),
+                'update_item'       => __( 'به‌روزرسانی دسته‌بندی', 'university-management' ),
+                'add_new_item'      => __( 'افزودن دسته‌بندی جدید', 'university-management' ),
+                'new_item_name'     => __( 'نام دسته‌بندی جدید', 'university-management' ),
+                'menu_name'         => __( 'دسته‌بندی‌ها', 'university-management' ),
             ),
             'hierarchical'      => true,
             'show_ui'           => true,
             'show_admin_column' => true,
             'query_var'         => true,
-            'rewrite'           => array('slug' => 'video-category'),
+            'rewrite'           => array( 'slug' => 'video-category' ),
             'show_in_rest'      => true,
         ));
+
+        // ثبت فیلد لینک در REST API
+        register_post_meta('um_videos', '_video_link', array(
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+        ));
+        
+        // ثبت فیلد بازدید در REST API
+        register_post_meta('um_videos', '_video_views', array(
+            'show_in_rest'      => true,
+            'single'            => true,
+            'type'              => 'integer',
+            'default'           => 0,
+            'sanitize_callback' => 'absint',
+        ));
+
+        // ثبت فیلد تاریخ فارسی در REST API
+        register_post_meta('um_videos', '_persian_date', array(
+            'show_in_rest'      => true,
+            'single'            => true,
+            'type'              => 'string',
+        ));
+
+        // پست‌تایپ کارگاه و سمینار
+        $seminar_labels = array(
+            'name'                  => _x( 'کارگاه و سمینارها', 'Post Type General Name', 'university-management' ),
+            'singular_name'         => _x( 'کارگاه و سمینار', 'Post Type Singular Name', 'university-management' ),
+            'menu_name'             => __( 'کارگاه و سمینارها', 'university-management' ),
+            'name_admin_bar'        => __( 'کارگاه و سمینار', 'university-management' ),
+            'archives'              => __( 'آرشیو کارگاه و سمینارها', 'university-management' ),
+            'attributes'            => __( 'ویژگی‌های کارگاه و سمینار', 'university-management' ),
+            'parent_item_colon'     => __( 'والد:', 'university-management' ),
+            'all_items'             => __( 'همه کارگاه و سمینارها', 'university-management' ),
+            'add_new_item'          => __( 'افزودن کارگاه/سمینار جدید', 'university-management' ),
+            'add_new'               => __( 'افزودن جدید', 'university-management' ),
+            'new_item'              => __( 'کارگاه/سمینار جدید', 'university-management' ),
+            'edit_item'             => __( 'ویرایش کارگاه/سمینار', 'university-management' ),
+            'update_item'           => __( 'به‌روزرسانی کارگاه/سمینار', 'university-management' ),
+            'view_item'             => __( 'مشاهده کارگاه/سمینار', 'university-management' ),
+            'view_items'            => __( 'مشاهده کارگاه و سمینارها', 'university-management' ),
+            'search_items'          => __( 'جستجوی کارگاه/سمینار', 'university-management' ),
+            'not_found'             => __( 'یافت نشد', 'university-management' ),
+            'not_found_in_trash'    => __( 'در زباله‌دان یافت نشد', 'university-management' ),
+            'featured_image'        => __( 'تصویر شاخص', 'university-management' ),
+            'set_featured_image'    => __( 'تنظیم تصویر شاخص', 'university-management' ),
+            'remove_featured_image' => __( 'حذف تصویر شاخص', 'university-management' ),
+            'use_featured_image'    => __( 'استفاده به عنوان تصویر شاخص', 'university-management' ),
+            'insert_into_item'      => __( 'درج در کارگاه/سمینار', 'university-management' ),
+            'uploaded_to_this_item' => __( 'در این کارگاه/سمینار بارگذاری شد', 'university-management' ),
+            'items_list'            => __( 'لیست کارگاه و سمینارها', 'university-management' ),
+            'items_list_navigation' => __( 'ناوبری لیست کارگاه و سمینارها', 'university-management' ),
+            'filter_items_list'     => __( 'فیلتر لیست کارگاه و سمینارها', 'university-management' ),
+        );
+        $seminar_args = array(
+            'label'                 => __( 'کارگاه و سمینار', 'university-management' ),
+            'description'           => __( 'برای مدیریت کارگاه و سمینارها', 'university-management' ),
+            'labels'                => $seminar_labels,
+            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt' ),
+            'taxonomies'            => array( 'um_seminar_category' ),
+            'hierarchical'          => false,
+            'public'                => true,
+            'show_ui'               => true,
+            'show_in_menu'          => 'university-management',
+            'menu_position'         => 5,
+            'show_in_admin_bar'     => true,
+            'show_in_nav_menus'     => true,
+            'can_export'            => true,
+            'has_archive'           => true,
+            'exclude_from_search'   => false,
+            'publicly_queryable'    => true,
+            'capability_type'       => 'post',
+            'menu_icon'             => 'dashicons-groups',
+            'show_in_rest'          => true,
+        );
+        register_post_type( 'um_seminars', $seminar_args );
+
+        // دسته‌بندی برای کارگاه و سمینارها
+        $seminar_cat_labels = array(
+            'name'              => _x( 'دسته‌بندی‌های سمینار', 'taxonomy general name', 'university-management' ),
+            'singular_name'     => _x( 'دسته‌بندی سمینار', 'taxonomy singular name', 'university-management' ),
+            'search_items'      => __( 'جستجوی دسته‌بندی‌ها', 'university-management' ),
+            'all_items'         => __( 'همه دسته‌بندی‌ها', 'university-management' ),
+            'parent_item'       => __( 'والد دسته‌بندی', 'university-management' ),
+            'parent_item_colon' => __( 'والد دسته‌بندی:', 'university-management' ),
+            'edit_item'         => __( 'ویرایش دسته‌بندی', 'university-management' ),
+            'update_item'       => __( 'به‌روزرسانی دسته‌بندی', 'university-management' ),
+            'add_new_item'      => __( 'افزودن دسته‌بندی جدید', 'university-management' ),
+            'new_item_name'     => __( 'نام دسته‌بندی جدید', 'university-management' ),
+            'menu_name'         => __( 'دسته‌بندی‌ها', 'university-management' ),
+        );
+        $seminar_cat_args = array(
+            'hierarchical'      => true,
+            'labels'            => $seminar_cat_labels,
+            'show_ui'           => true,
+            'show_admin_column' => true,
+            'query_var'         => true,
+            'rewrite'           => array( 'slug' => 'seminar-category' ),
+            'show_in_rest'      => true,
+        );
+        register_taxonomy( 'um_seminar_category', array( 'um_seminars' ), $seminar_cat_args );
     }
 
     /**
@@ -1753,6 +1896,63 @@ class University_Management {
         // تنظیم گزینه‌های پیش‌فرض
         if (!get_option('um_plugin_version')) {
             add_option('um_plugin_version', UM_VERSION);
+        }
+    }
+
+    /**
+     * متاباکس جزئیات سمینار
+     */
+    public function seminar_details_meta_box($post) {
+        wp_nonce_field('um_save_seminar_meta', 'um_seminar_meta_nonce');
+
+        $teacher = get_post_meta($post->ID, '_seminar_teacher', true);
+        $time = get_post_meta($post->ID, '_seminar_time', true);
+        $button_text = get_post_meta($post->ID, '_seminar_button_text', true);
+        $button_link = get_post_meta($post->ID, '_seminar_button_link', true);
+
+        echo '<p><label for="seminar_teacher">' . __('مدرس', 'university-management') . '</label>';
+        echo '<input type="text" id="seminar_teacher" name="seminar_teacher" value="' . esc_attr($teacher) . '" class="widefat"></p>';
+
+        echo '<p><label for="seminar_time">' . __('زمان برگزاری', 'university-management') . '</label>';
+        echo '<input type="text" id="seminar_time" name="seminar_time" value="' . esc_attr($time) . '" class="widefat" placeholder="مثال: ۱۴۰۳/۰۵/۲۰"></p>';
+
+        echo '<p><label for="seminar_button_text">' . __('عنوان دکمه', 'university-management') . '</label>';
+        echo '<input type="text" id="seminar_button_text" name="seminar_button_text" value="' . esc_attr($button_text) . '" class="widefat" placeholder="مثال: شروع یادگیری"></p>';
+
+        echo '<p><label for="seminar_button_link">' . __('لینک دکمه', 'university-management') . '</label>';
+        echo '<input type="url" id="seminar_button_link" name="seminar_button_link" value="' . esc_url($button_link) . '" class="widefat" placeholder="https://example.com"></p>';
+    }
+
+    /**
+     * ذخیره متاباکس جزئیات سمینار
+     */
+    public function save_seminar_meta($post_id) {
+        if (!isset($_POST['um_seminar_meta_nonce']) || !wp_verify_nonce($_POST['um_seminar_meta_nonce'], 'um_save_seminar_meta')) {
+            return;
+        }
+
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        if (isset($_POST['seminar_teacher'])) {
+            update_post_meta($post_id, '_seminar_teacher', sanitize_text_field($_POST['seminar_teacher']));
+        }
+
+        if (isset($_POST['seminar_time'])) {
+            update_post_meta($post_id, '_seminar_time', sanitize_text_field($_POST['seminar_time']));
+        }
+        
+        if (isset($_POST['seminar_button_text'])) {
+            update_post_meta($post_id, '_seminar_button_text', sanitize_text_field($_POST['seminar_button_text']));
+        }
+
+        if (isset($_POST['seminar_button_link'])) {
+            update_post_meta($post_id, '_seminar_button_link', esc_url_raw($_POST['seminar_button_link']));
         }
     }
 }

@@ -57,6 +57,46 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
             ]
         );
 
+        $this->add_control(
+            'seminar_source',
+            [
+                'label' => __('منبع کارگاه‌ها', 'university-management'),
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'manual',
+                'options' => [
+                    'manual' => __('دستی', 'university-management'),
+                    'auto' => __('خودکار (از پست‌تایپ)', 'university-management'),
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'seminar_category',
+            [
+                'label' => __('دسته‌بندی کارگاه‌ها', 'university-management'),
+                'type' => \Elementor\Controls_Manager::SELECT2,
+                'options' => $this->get_seminar_categories(),
+                'multiple' => false,
+                'condition' => [
+                    'seminar_source' => 'auto',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'posts_per_page',
+            [
+                'label' => __('تعداد برای نمایش', 'university-management'),
+                'type' => \Elementor\Controls_Manager::NUMBER,
+                'default' => 6,
+                'min' => 1,
+                'max' => 20,
+                'condition' => [
+                    'seminar_source' => 'auto',
+                ],
+            ]
+        );
+
         $repeater = new \Elementor\Repeater();
 
         $repeater->add_control(
@@ -105,10 +145,19 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                 'placeholder' => __('https://your-link.com', 'university-management'),
                 'show_external' => true,
                 'default' => [
-                    'url' => '',
+                    'url' => '#',
                     'is_external' => true,
                     'nofollow' => true,
                 ],
+            ]
+        );
+
+        $repeater->add_control(
+            'seminar_button_text',
+            [
+                'label' => __('عنوان دکمه', 'university-management'),
+                'type' => \Elementor\Controls_Manager::TEXT,
+                'default' => __('شروع یادگیری', 'university-management'),
             ]
         );
 
@@ -163,15 +212,78 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                     ]
                 ],
                 'title_field' => '{{{ seminar_title }}}',
+                'condition' => [
+                    'seminar_source' => 'manual',
+                ],
             ]
         );
 
         $this->end_controls_section();
     }
 
+    private function get_seminar_categories() {
+        $categories = get_terms([
+            'taxonomy' => 'um_seminar_category',
+            'hide_empty' => false,
+        ]);
+
+        if (is_wp_error($categories)) {
+            return [];
+        }
+
+        $options = ['all' => __('همه دسته‌بندی‌ها', 'university-management')];
+        foreach ($categories as $category) {
+            $options[$category->slug] = $category->name;
+        }
+        return $options;
+    }
+
     protected function render() {
         $settings = $this->get_settings_for_display();
         $this->add_render_attribute('wrapper', 'class', 'um-seminar-slider-widget');
+        
+        $seminars = [];
+        if ($settings['seminar_source'] === 'auto') {
+            $args = [
+                'post_type' => 'um_seminars',
+                'posts_per_page' => $settings['posts_per_page'],
+                'post_status' => 'publish',
+            ];
+
+            if (!empty($settings['seminar_category']) && $settings['seminar_category'] !== 'all') {
+                $args['tax_query'] = [
+                    [
+                        'taxonomy' => 'um_seminar_category',
+                        'field' => 'slug',
+                        'terms' => $settings['seminar_category'],
+                    ],
+                ];
+            }
+
+            $query = new \WP_Query($args);
+
+            if ($query->have_posts()) {
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    $seminars[] = [
+                        'seminar_image' => ['url' => get_the_post_thumbnail_url(get_the_ID(), 'full')],
+                        'seminar_title' => get_the_title(),
+                        'seminar_time' => get_post_meta(get_the_ID(), '_seminar_time', true),
+                        'seminar_teacher' => get_post_meta(get_the_ID(), '_seminar_teacher', true),
+                        'seminar_link' => ['url' => get_post_meta(get_the_ID(), '_seminar_button_link', true) ?: '#'],
+                        'seminar_button_text' => get_post_meta(get_the_ID(), '_seminar_button_text', true) ?: __('شروع یادگیری', 'university-management'),
+                    ];
+                }
+                wp_reset_postdata();
+            }
+        } else {
+            $seminars = $settings['seminars'];
+        }
+
+        if (count($seminars) === 1) {
+            $this->add_render_attribute('wrapper', 'class', 'single-seminar');
+        }
+
         ?>
         <div <?php echo $this->get_render_attribute_string('wrapper'); ?>>
             <div class="container">
@@ -192,7 +304,9 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
 
                 <div class="swiper mySwiper">
                     <div class="swiper-wrapper">
-                        <?php foreach ($settings['seminars'] as $item) : ?>
+                        <?php
+                        foreach ($seminars as $item) :
+                        ?>
                             <div class="swiper-slide">
                                 <img src="<?php echo esc_url($item['seminar_image']['url']); ?>" alt="<?php echo esc_attr($item['seminar_title']); ?>" />
                                 <div class="content-wrapper">
@@ -212,11 +326,13 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                         <span style="color:#1e2a78;"><?php echo esc_html($item['seminar_teacher']); ?></span>
                                     </div>
                                     <?php
-                                    $target = $item['seminar_link']['is_external'] ? ' target="_blank"' : '';
-                                    $nofollow = $item['seminar_link']['nofollow'] ? ' rel="nofollow"' : '';
+                                    $button_text = !empty($item['seminar_button_text']) ? $item['seminar_button_text'] : __('شروع یادگیری', 'university-management');
+                                    $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
+                                    $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
+                                    $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';
                                     ?>
-                                    <a href="<?php echo esc_url($item['seminar_link']['url']); ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
-                                        <span>شروع یادگیری</span>
+                                    <a href="<?php echo $link_url; ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
+                                        <span><?php echo esc_html($button_text); ?></span>
                                         <i data-lucide="arrow-left"></i>
                                     </a>
                                 </div>

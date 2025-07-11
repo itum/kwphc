@@ -226,4 +226,29 @@
     .um-seminar-slider-widget .btn-start {
         font-size: 15px;
     }
+}
+
+.um-seminar-slider-widget.single-seminar .container {
+    flex-direction: column;
+    align-items: center;
+}
+
+.um-seminar-slider-widget.single-seminar .header {
+    width: 100%;
+    margin-bottom: 24px;
+    align-items: center;
+}
+
+.um-seminar-slider-widget.single-seminar .swiper {
+    width: 100%;
+    max-width: 380px; /* A good max width for a single card */
+}
+
+.um-seminar-slider-widget.single-seminar .swiper-slide {
+    margin: 0 auto;
+}
+
+.um-seminar-slider-widget.single-seminar .nav-buttons,
+.um-seminar-slider-widget.single-seminar .swiper-pagination {
+    display: none;
 } 
