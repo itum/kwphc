@@ -2,6 +2,7 @@
  * استایل‌های ویجت زمان‌بندی کلاس‌ها برای افزونه مدیریت دانشگاه
  */
 
+/* استایل‌های اختصاصی برای ویجت تقویم کلاسی */
 .calendar-container {
     background: white;
     border-radius: 10px;
@@ -11,26 +12,12 @@
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
-.today-text {
-    text-align: center;
-    font-size: 16px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    color: #1f1f1f;
-    font-weight: 500;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
 .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-    background-color: #212179;
+    background-image: url('../images/Frame 1442.png');
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
@@ -46,8 +33,10 @@
     cursor: pointer;
 }
 
+/* سایر استایل‌های موجود در کد اصلی */
 .week-days {
     display: flex;
+    grid-template-columns: repeat(7, 1fr);
     gap: 10px;
     width: 100%;
 }
@@ -201,6 +190,7 @@
     background-color: #f4f4f4;
 }
 
+/* تنظیمات ریسپانسیو */
 @media (max-width: 600px) {
     .week-days {
         display: flex;

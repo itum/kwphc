@@ -1786,4 +1786,22 @@ function university_management_activate() {
 function university_management_deactivate() {
     // پاکسازی دیتابیس یا سایر عملیات مورد نیاز هنگام غیرفعال‌سازی
     flush_rewrite_rules();
-} 
+}
+
+function kwprc_enqueue_class_timer_scripts() {
+    // اضافه کردن moment.js و moment-jalaali
+    wp_enqueue_script('moment-js', 'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js', [], '2.29.1', true);
+    wp_enqueue_script('moment-jalaali', 'https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', ['moment-js'], '0.9.2', true);
+
+    // اضافه کردن استایل و اسکریپت اختصاصی
+    wp_enqueue_style('kwprc-class-timer-style', plugin_dir_url(__FILE__) . 'assets/css/class-timer-widget.css', [], '1.0.0');
+    wp_enqueue_script('kwprc-class-timer-script', plugin_dir_url(__FILE__) . 'assets/js/class-timer-widget.js', ['moment-js', 'moment-jalaali'], '1.0.0', true);
+}
+add_action('wp_enqueue_scripts', 'kwprc_enqueue_class_timer_scripts'); 
+
+function kwprc_localize_class_timer_script() {
+    wp_localize_script('kwprc-class-timer-script', 'kwprcClassTimerData', [
+        'pluginUrl' => plugin_dir_url(__FILE__),
+    ]);
+}
+add_action('wp_enqueue_scripts', 'kwprc_localize_class_timer_script', 20);

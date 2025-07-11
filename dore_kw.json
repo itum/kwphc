@@ -1,0 +1,300 @@
+{
+	"info": {
+		"_postman_id": "kwphc-dsk-webservice-v3",
+		"name": "KWPHC DSK Web Service - Updated",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"description": "وب سرویس مدیریت دوره‌های آموزشی KWPHC با قابلیت‌های امنیتی پیشرفته"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "kwphc_2024!",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php/login",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php",
+								"login"
+							]
+						},
+						"description": "احراز هویت و دریافت توکن دسترسی"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_ACCESS_TOKEN_HERE"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh_token\": \"YOUR_REFRESH_TOKEN_HERE\"\n}"
+						},
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php/refresh-token",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php",
+								"refresh-token"
+							]
+						},
+						"description": "دریافت توکن جدید با استفاده از توکن رفرش"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Kw_DSK Operations",
+			"item": [
+				{
+					"name": "Get Kw_DSK Data (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_ACCESS_TOKEN_HERE"
+							}
+						],
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php?page=1&page_size=10&filters[Title]=دوره",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								},
+								{
+									"key": "filters[Title]",
+									"value": "دوره"
+								}
+							]
+						},
+						"description": "دریافت اطلاعات جدول Kw_DSK با صفحه‌بندی و فیلترسازی"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Latest Records",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_ACCESS_TOKEN_HERE"
+							}
+						],
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php?action=latest_records&limit=10",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "latest_records"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "دریافت آخرین رکوردها (پیش‌فرض 10 رکورد)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Kw_DSK Record",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_ACCESS_TOKEN_HERE"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"co_c\": \"KW-1402\",\n    \"Title\": \"دوره پیشرفته\",\n    \"Date_Start\": \"1402/01/01\",\n    \"Date_Final\": \"1402/02/01\",\n    \"Name_Ostad\": \"محمدی\"\n}"
+						},
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php"
+							]
+						},
+						"description": "ایجاد رکورد جدید در جدول Kw_DSK"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Kw_DSK Record",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_ACCESS_TOKEN_HERE"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"co_c\": \"KW-1402\",\n    \"Title\": \"دوره پیشرفته (بروزرسانی شده)\",\n    \"Mokhatabin\": \"دانشجویان ارشد\"\n}"
+						},
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php"
+							]
+						},
+						"description": "به‌روزرسانی رکورد موجود در جدول Kw_DSK"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Kw_DSK Record",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer YOUR_ACCESS_TOKEN_HERE"
+							}
+						],
+						"url": {
+							"raw": "https://kwphc.ir/webservice_new/ws_dore.php?co_c=KW-1402",
+							"protocol": "https",
+							"host": [
+								"kwphc",
+								"ir"
+							],
+							"path": [
+								"webservice_new",
+								"ws_dore.php"
+							],
+							"query": [
+								{
+									"key": "co_c",
+									"value": "KW-1402"
+								}
+							]
+						},
+						"description": "حذف رکورد از جدول Kw_DSK با استفاده از کد دوره"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://kwphc.ir/webservice_new/ws_dore.php",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	}
+}
