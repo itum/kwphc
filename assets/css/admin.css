@@ -1,0 +1,85 @@
+/**
+ * استایل‌های مدیریت عمومی افزونه مدیریت دانشگاه
+ */
+
+.university-management-admin {
+    direction: rtl;
+    font-family: IRANSans, Tahoma, Arial, sans-serif;
+}
+
+.university-management-admin .card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.university-management-admin .card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    color: #23282d;
+}
+
+.university-management-admin .notice {
+    margin: 15px 0;
+    padding: 12px;
+    border-left: 4px solid #00a0d2;
+    background-color: #e5f5fa;
+}
+
+.university-management-admin .notice.notice-success {
+    border-left-color: #46b450;
+    background-color: #ecf7ed;
+}
+
+.university-management-admin .notice.notice-warning {
+    border-left-color: #ffb900;
+    background-color: #fff8e5;
+}
+
+.university-management-admin .notice.notice-error {
+    border-left-color: #dc3232;
+    background-color: #fbeaea;
+}
+
+.university-management-admin .button {
+    font-size: 13px;
+    line-height: 2.15384615;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 10px;
+    cursor: pointer;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 3px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    text-decoration: none;
+    vertical-align: top;
+}
+
+.university-management-admin .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.university-management-admin .spinner.is-active {
+    display: inline-block;
+    visibility: visible;
+    float: none;
+    margin-right: 10px;
+}
+
+/* پاسخگویی موبایل */
+@media screen and (max-width: 782px) {
+    .university-management-admin .card {
+        padding: 15px;
+    }
+    
+    .university-management-admin .card h2 {
+        font-size: 1.1em;
+    }
+} 

@@ -1,0 +1,329 @@
+/**
+ * استایل‌های صفحه تنظیمات عمومی
+ */
+
+.um-general-settings {
+    margin-top: 20px;
+}
+
+.um-general-settings .card {
+    margin-bottom: 20px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    padding: 20px;
+}
+
+.um-general-settings .card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    color: #23282d;
+}
+
+/* بخش احراز هویت */
+.um-auth-form .form-table th {
+    width: 150px;
+    font-weight: 600;
+}
+
+.um-auth-form .form-table td {
+    padding-left: 20px;
+}
+
+.um-auth-form input[readonly] {
+    background-color: #f7f7f7;
+    color: #666;
+}
+
+.um-status-display {
+    margin-bottom: 20px;
+}
+
+.um-status-display .notice {
+    margin: 0;
+    padding: 12px;
+}
+
+.um-status-display .notice-success {
+    border-left: 4px solid #46b450;
+    background-color: #ecf7ed;
+}
+
+.um-status-display .notice-warning {
+    border-left: 4px solid #ffb900;
+    background-color: #fff8e5;
+}
+
+.um-status-display .notice-info {
+    border-left: 4px solid #00a0d2;
+    background-color: #e5f5fa;
+}
+
+/* بخش تنظیمات API */
+.um-api-settings-section .form-table th {
+    width: 150px;
+    font-weight: 600;
+}
+
+.um-api-settings-section .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+/* بخش مدیریت سمینارها */
+.um-seminars-controls {
+    margin-bottom: 15px;
+}
+
+.um-seminars-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    background: #f9f9f9;
+    direction: rtl;
+}
+
+.um-seminars-list:empty {
+    display: none;
+}
+
+.um-seminar-item {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.um-seminar-item:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.um-seminar-item:last-child {
+    margin-bottom: 0;
+}
+
+.um-seminar-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+    color: #23282d;
+    line-height: 1.4;
+}
+
+.um-seminar-meta {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.um-seminar-description {
+    color: #444;
+    font-size: 0.95em;
+    line-height: 1.5;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* اسپینر و لودینگ */
+.spinner.is-active {
+    display: inline-block;
+    visibility: visible;
+    float: none;
+    margin-right: 10px;
+}
+
+/* دکمه‌ها */
+.um-general-settings .button {
+    font-size: 13px;
+    line-height: 2.15384615;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 10px;
+    cursor: pointer;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 3px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    text-decoration: none;
+    vertical-align: top;
+}
+
+.um-general-settings .button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.um-general-settings .button-primary {
+    background: #0085ba;
+    border-color: #0073aa #006799 #006799;
+    color: #fff;
+}
+
+.um-general-settings .button-primary:hover:not(:disabled) {
+    background: #008ec2;
+    border-color: #006799;
+    color: #fff;
+}
+
+.um-general-settings .button-secondary {
+    background: #f3f5f6;
+    border-color: #016087;
+    color: #016087;
+}
+
+.um-general-settings .button-secondary:hover:not(:disabled) {
+    background: #f1f1f1;
+    border-color: #016087;
+    color: #016087;
+}
+
+/* پاسخگویی موبایل */
+@media screen and (max-width: 782px) {
+    .um-general-settings .card {
+        padding: 15px;
+    }
+    
+    .um-auth-form .form-table th,
+    .um-api-settings-section .form-table th {
+        width: auto;
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    .um-auth-form .form-table td,
+    .um-api-settings-section .form-table td {
+        display: block;
+        padding-left: 0;
+    }
+    
+    .um-seminars-list {
+        max-height: 300px;
+        padding: 10px;
+    }
+    
+    .um-seminar-item {
+        padding: 12px;
+    }
+    
+    .um-seminar-title {
+        font-size: 1em;
+    }
+    
+    .um-seminar-meta,
+    .um-seminar-description {
+        font-size: 0.9em;
+    }
+}
+
+/* انیمیشن‌ها */
+.um-seminar-item {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* اسکرول بار سفارشی */
+.um-seminars-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.um-seminars-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.um-seminars-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.um-seminars-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* وضعیت خالی */
+.um-seminars-list .no-seminars {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+/* بهبود فرم‌ها */
+.um-general-settings input[type="text"],
+.um-general-settings input[type="password"],
+.um-general-settings input[type="number"] {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #32373c;
+    font-size: 14px;
+    padding: 8px 12px;
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+}
+
+.um-general-settings input[type="text"]:focus,
+.um-general-settings input[type="password"]:focus,
+.um-general-settings input[type="number"]:focus {
+    border-color: #0085ba;
+    box-shadow: 0 0 0 1px #0085ba;
+    outline: none;
+}
+
+.um-general-settings .small-text {
+    max-width: 80px;
+}
+
+/* پیام‌های خطا و موفقیت */
+.um-message {
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.um-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.um-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.um-message.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.um-message.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+} 

@@ -414,6 +414,69 @@ class KwDskWebService {
         exit;
     }
 
+    public function login() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->sendErrorResponse('متد درخواست باید POST باشد', 405);
+        }
+
+        // The Postman request is x-www-form-urlencoded
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+
+        if (empty($username) || empty($password)) {
+            $this->sendErrorResponse('نام کاربری و رمز عبور الزامی است', 400);
+        }
+
+        // TODO: Replace hardcoded credentials with a database lookup
+        $validUser = 'admin';
+        $validPass = 'kwphc_2024!'; // From Postman screenshot
+        
+        if (hash_equals($validUser, $username) && hash_equals($validPass, $password)) {
+            $userId = 1; // Example user ID
+
+            $accessToken = $this->tokenManager->generateAccessToken($userId);
+            $refreshToken = $this->tokenManager->generateRefreshToken($userId);
+
+            $this->sendResponse([
+                'status' => 'success',
+                'message' => 'ورود موفقیت‌آمیز بود',
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600 // 1 hour
+            ]);
+        } else {
+            $this->sendErrorResponse('احراز هویت ناموفق', 401);
+        }
+    }
+
+    public function refreshToken() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->sendErrorResponse('متد درخواست باید POST باشد', 405);
+        }
+
+        // Assuming JSON input for refresh token
+        $input = json_decode(file_get_contents('php://input'), true);
+        $refreshToken = $input['refresh_token'] ?? '';
+
+        if (empty($refreshToken)) {
+            $this->sendErrorResponse('توکن تازه‌سازی الزامی است', 400);
+        }
+
+        $userId = $this->tokenManager->validateRefreshToken($refreshToken);
+        if ($userId) {
+            $newAccessToken = $this->tokenManager->generateAccessToken($userId);
+            $this->sendResponse([
+                'status' => 'success',
+                'access_token' => $newAccessToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600
+            ]);
+        } else {
+            $this->sendErrorResponse('توکن تازه‌سازی نامعتبر یا منقضی شده', 401);
+        }
+    }
+
     private function logError($context, $exception) {
         // ثبت خطا در فایل لاگ
         $errorMessage = date('[Y-m-d H:i:s] ') . 
@@ -430,10 +493,16 @@ $service = new KwDskWebService();
 
 // مسیریابی
 $requestUri = $_SERVER['REQUEST_URI'];
-$basePath = str_replace('/' . basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
-$route = str_replace($basePath, '', $requestUri);
-$route = trim($route, '/');
-$route = strtok($route, '?'); // Remove query string
+$requestPath = parse_url($requestUri, PHP_URL_PATH);
+$scriptName = $_SERVER['SCRIPT_NAME'];
+$pathInfo = '';
+
+// Find what comes after the script name in the path
+if ($requestPath !== null && strpos($requestPath, $scriptName) === 0) {
+    $pathInfo = substr($requestPath, strlen($scriptName));
+}
+
+$route = trim($pathInfo, '/');
 
 if ($route === 'login') {
     $service->login();

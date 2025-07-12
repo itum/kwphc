@@ -80,6 +80,15 @@ class University_Management {
         add_action('wp_ajax_um_get_import_logs', array($this, 'ajax_get_import_logs'));
         add_action('wp_ajax_um_clear_import_logs', array($this, 'ajax_clear_import_logs'));
         
+        // اکشن‌های AJAX برای تنظیمات عمومی
+        add_action('wp_ajax_um_authenticate_user', array($this, 'ajax_authenticate_user'));
+        add_action('wp_ajax_um_logout_user', array($this, 'ajax_logout_user'));
+        add_action('wp_ajax_um_get_seminars', array($this, 'ajax_get_seminars'));
+        add_action('wp_ajax_um_save_api_settings', array($this, 'ajax_save_api_settings'));
+        add_action('wp_ajax_um_test_api', array($this, 'ajax_test_api'));
+        add_action('wp_ajax_um_direct_api_test', array($this, 'ajax_direct_api_test'));
+        add_action('wp_ajax_um_import_seminars', array($this, 'ajax_import_seminars'));
+        
 
     }
 
@@ -215,10 +224,11 @@ class University_Management {
         
         add_submenu_page(
             'university-management',
-            __('کارگاه و سمینارها', 'university-management'),
-            __('کارگاه و سمینارها', 'university-management'),
+            __('تنظیمات عمومی', 'university-management'),
+            __('تنظیمات عمومی', 'university-management'),
             'manage_options',
-            'edit.php?post_type=um_seminars'
+            'university-general-settings',
+            array($this, 'general_settings_admin_page')
         );
     }
 
@@ -279,6 +289,18 @@ class University_Management {
             require_once $import_file;
         } else {
             echo '<div class="wrap"><h1>خطا</h1><p>فایل database-import-page.php یافت نشد.</p></div>';
+        }
+    }
+    
+    /**
+     * صفحه تنظیمات عمومی
+     */
+    public function general_settings_admin_page() {
+        $settings_file = UM_PLUGIN_DIR . 'admin/general-settings-page.php';
+        if (file_exists($settings_file)) {
+            require_once $settings_file;
+        } else {
+            echo '<div class="wrap"><h1>خطا</h1><p>فایل general-settings-page.php یافت نشد.</p></div>';
         }
     }
     
@@ -547,22 +569,77 @@ class University_Management {
             return;
         }
         
-        // استایل‌های مدیریت
-        wp_enqueue_style(
-            'university-management-admin-style',
-            UM_PLUGIN_URL . 'assets/css/admin.css',
-            array(),
-            UM_VERSION
-        );
+        // استایل‌های مدیریت (فقط اگر فایل وجود داشته باشد)
+        $admin_css = UM_PLUGIN_DIR . 'assets/css/admin.css';
+        if (file_exists($admin_css)) {
+            wp_enqueue_style(
+                'university-management-admin-style',
+                UM_PLUGIN_URL . 'assets/css/admin.css',
+                array(),
+                UM_VERSION
+            );
+        }
         
-        // جاوااسکریپت‌های مدیریت
-        wp_enqueue_script(
-            'university-management-admin-script',
-            UM_PLUGIN_URL . 'assets/js/admin.js',
-            array('jquery'),
-            UM_VERSION,
-            true
-        );
+        // جاوااسکریپت‌های مدیریت (فقط اگر فایل وجود داشته باشد)
+        $admin_js = UM_PLUGIN_DIR . 'assets/js/admin.js';
+        if (file_exists($admin_js)) {
+            wp_enqueue_script(
+                'university-management-admin-script',
+                UM_PLUGIN_URL . 'assets/js/admin.js',
+                array('jquery'),
+                UM_VERSION,
+                true
+            );
+        }
+        
+        // منابع خاص صفحه تنظیمات عمومی
+        if (strpos($hook, 'university-general-settings') !== false) {
+            $settings_css = UM_PLUGIN_DIR . 'assets/css/general-settings.css';
+            if (file_exists($settings_css)) {
+                wp_enqueue_style(
+                    'university-management-general-settings-style',
+                    UM_PLUGIN_URL . 'assets/css/general-settings.css',
+                    array(),
+                    UM_VERSION
+                );
+            }
+            
+            $settings_js = UM_PLUGIN_DIR . 'assets/js/general-settings.js';
+            if (file_exists($settings_js)) {
+                wp_enqueue_script(
+                    'university-management-general-settings-script',
+                    UM_PLUGIN_URL . 'assets/js/general-settings.js',
+                    array('jquery'),
+                    UM_VERSION,
+                    true
+                );
+            }
+            
+            // انتقال متغیرها به جاوااسکریپت (فقط اگر اسکریپت بارگذاری شده باشد)
+            if (file_exists($settings_js)) {
+                wp_localize_script(
+                    'university-management-general-settings-script',
+                    'umGeneralSettings',
+                    array(
+                        'ajaxUrl' => admin_url('admin-ajax.php'),
+                        'authNonce' => wp_create_nonce('um_auth_nonce'),
+                        'logoutNonce' => wp_create_nonce('um_logout_nonce'),
+                        'seminarsNonce' => wp_create_nonce('um_seminars_nonce'),
+                        'apiSettingsNonce' => wp_create_nonce('um_api_settings_nonce'),
+                        'tokenExpires' => get_option('_um_token_expires', 0),
+                        'isAuthenticated' => (get_option('_um_auth_status') === 'authenticated'),
+                        'messages' => array(
+                            'loginSuccess' => __('ورود موفقیت‌آمیز بود', 'university-management'),
+                            'logoutSuccess' => __('با موفقیت خارج شدید', 'university-management'),
+                            'settingsSaved' => __('تنظیمات با موفقیت ذخیره شد', 'university-management'),
+                            'seminarsLoaded' => __('سمینارها با موفقیت بارگذاری شدند', 'university-management'),
+                            'connectionError' => __('خطا در اتصال به سرور', 'university-management'),
+                            'sessionExpired' => __('جلسه شما منقضی شده است', 'university-management'),
+                        )
+                    )
+                );
+            }
+        }
     }
 
     /**
@@ -1954,6 +2031,466 @@ class University_Management {
         if (isset($_POST['seminar_button_link'])) {
             update_post_meta($post_id, '_seminar_button_link', esc_url_raw($_POST['seminar_button_link']));
         }
+    }
+    
+    /**
+     * AJAX: احراز هویت کاربر
+     */
+    public function ajax_authenticate_user() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('شما دسترسی لازم ندارید');
+            return;
+        }
+        
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'um_auth_nonce')) {
+            wp_send_json_error('خطای امنیتی - nonce نامعتبر');
+            return;
+        }
+        
+        $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
+        $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
+        
+        if (empty($username) || empty($password)) {
+            wp_send_json_error('نام کاربری و رمز عبور الزامی هستند');
+            return;
+        }
+        
+        // لاگ درخواست برای دیباگ
+        error_log('UM Auth Request: Username=' . $username);
+        
+        // ارسال درخواست لاگین
+        $response = wp_remote_post('https://kwphc.ir/webservice_new/ws_dore.php/login', array(
+            'method' => 'POST',
+            'headers' => array(
+                'Content-Type' => 'application/x-www-form-urlencoded',
+                'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+            ),
+            'body' => array(
+                'username' => $username,
+                'password' => $password
+            ),
+            'timeout' => 30,
+            'sslverify' => false
+        ));
+        
+        if (is_wp_error($response)) {
+            $error_message = $response->get_error_message();
+            error_log('UM Auth Error: ' . $error_message);
+            wp_send_json_error('خطا در اتصال به سرور: ' . $error_message);
+            return;
+        }
+        
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        // لاگ پاسخ برای دیباگ
+        error_log('UM Auth Response Code: ' . $http_code);
+        error_log('UM Auth Response Body: ' . $body);
+        
+        if ($http_code !== 200) {
+            wp_send_json_error('خطای سرور: کد ' . $http_code);
+            return;
+        }
+        
+        $data = json_decode($body, true);
+        
+        if (!$data) {
+            wp_send_json_error('پاسخ نامعتبر از سرور - JSON نامعتبر');
+            return;
+        }
+        
+        if (isset($data['status']) && $data['status'] === 'success') {
+            // بررسی وجود فیلدهای مورد نیاز
+            if (!isset($data['access_token']) || !isset($data['expires_in'])) {
+                wp_send_json_error('پاسخ سرور کامل نیست - توکن یا expires_in موجود نیست');
+                return;
+            }
+            
+            // ذخیره اطلاعات احراز هویت
+            update_option('_um_auth_token', $data['access_token']);
+            $refresh_token = isset($data['refresh_token']) ? $data['refresh_token'] : '';
+            update_option('_um_refresh_token', $refresh_token);
+            update_option('_um_token_expires', time() + intval($data['expires_in']));
+            update_option('_um_auth_username', $username);
+            update_option('_um_auth_status', 'authenticated');
+            
+            // لاگ موفقیت
+            error_log('UM Auth Success: Token saved for user ' . $username);
+            
+            $message = isset($data['message']) ? $data['message'] : 'ورود موفقیت‌آمیز بود';
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'username' => $username,
+                'expires_in' => $data['expires_in'],
+                'token_preview' => substr($data['access_token'], 0, 20) . '...'
+            ));
+        } else {
+            $error_message = isset($data['message']) ? $data['message'] : 'خطا در احراز هویت';
+            error_log('UM Auth Failed: ' . $error_message);
+            wp_send_json_error($error_message);
+        }
+    }
+    
+    /**
+     * AJAX: خروج از حساب کاربری
+     */
+    public function ajax_logout_user() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_logout_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+        
+        // پاک کردن اطلاعات احراز هویت
+        delete_option('_um_auth_token');
+        delete_option('_um_refresh_token');
+        delete_option('_um_token_expires');
+        delete_option('_um_auth_username');
+        delete_option('_um_auth_status');
+        
+        wp_send_json_success('با موفقیت خارج شدید');
+    }
+    
+    /**
+     * AJAX: دریافت سمینارها
+     */
+    public function ajax_get_seminars() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_seminars_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+        
+        // بررسی وضعیت احراز هویت
+        $auth_status = get_option('_um_auth_status');
+        $token = get_option('_um_auth_token');
+        $token_expires = get_option('_um_token_expires');
+        
+        if ($auth_status !== 'authenticated' || empty($token) || time() > $token_expires) {
+            wp_send_json_error('لطفاً ابتدا وارد شوید');
+        }
+        
+        // دریافت limit از تنظیمات
+        $limit = get_option('_um_seminars_limit', 10);
+        
+        // لاگ درخواست
+        error_log('UM Seminars Request: Limit=' . $limit . ', Token=' . substr($token, 0, 20) . '...');
+        
+        // ارسال درخواست برای دریافت سمینارها
+        $response = wp_remote_get('https://kwphc.ir/webservice_new/ws_dore.php?action=latest_records&limit=' . $limit, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url'),
+                'Accept' => 'application/json'
+            ),
+            'timeout' => 30,
+            'sslverify' => false
+        ));
+        
+        if (is_wp_error($response)) {
+            $error_message = $response->get_error_message();
+            error_log('UM Seminars Error: ' . $error_message);
+            wp_send_json_error('خطا در اتصال به سرور: ' . $error_message);
+        }
+        
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        // لاگ پاسخ
+        error_log('UM Seminars Response Code: ' . $http_code);
+        error_log('UM Seminars Response Body: ' . substr($body, 0, 500) . '...');
+        
+        if ($http_code === 401) {
+            // توکن منقضی شده
+            delete_option('_um_auth_status');
+            wp_send_json_error('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+        
+        if ($http_code !== 200) {
+            wp_send_json_error('خطای سرور: کد ' . $http_code);
+        }
+        
+        $data = json_decode($body, true);
+        
+        if (!$data) {
+            wp_send_json_error('پاسخ نامعتبر از سرور - JSON نامعتبر');
+        }
+        
+        // لاگ موفقیت
+        error_log('UM Seminars Success: ' . count($data) . ' seminars received');
+        
+        wp_send_json_success($data);
+    }
+    
+    /**
+     * AJAX: ذخیره تنظیمات API
+     */
+    public function ajax_save_api_settings() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_api_settings_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+        
+        $limit = intval($_POST['limit']);
+        if ($limit < 1 || $limit > 100) {
+            wp_send_json_error('حد سمینارها باید بین 1 تا 100 باشد');
+        }
+        
+        update_option('_um_seminars_limit', $limit);
+        
+        wp_send_json_success('تنظیمات با موفقیت ذخیره شد');
+    }
+    
+    /**
+     * AJAX: تست API
+     */
+    public function ajax_test_api() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_test_api_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+        
+        // تست لاگین با اطلاعات نمونه
+        $test_username = 'admin';
+        $test_password = 'kwphc_2024!';
+        
+        $response = wp_remote_post('https://kwphc.ir/webservice_new/ws_dore.php/login', array(
+            'method' => 'POST',
+            'headers' => array(
+                'Content-Type' => 'application/x-www-form-urlencoded',
+                'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+            ),
+            'body' => array(
+                'username' => $test_username,
+                'password' => $test_password
+            ),
+            'timeout' => 30,
+            'sslverify' => false
+        ));
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error('خطا در اتصال: ' . $response->get_error_message());
+        }
+        
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        wp_send_json_success(array(
+            'http_code' => $http_code,
+            'response' => $body,
+            'parsed' => json_decode($body, true)
+        ));
+    }
+
+    /**
+     * AJAX: تست مستقیم API
+     */
+    public function ajax_direct_api_test() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_direct_test_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+        
+        // اطلاعات تست
+        $test_username = 'admin';
+        $test_password = 'kwphc_2024!';
+        
+        // تست اتصال به API
+        $response = wp_remote_post('https://kwphc.ir/webservice_new/ws_dore.php/login', array(
+            'method' => 'POST',
+            'headers' => array(
+                'Content-Type' => 'application/x-www-form-urlencoded',
+                'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+            ),
+            'body' => array(
+                'username' => $test_username,
+                'password' => $test_password
+            ),
+            'timeout' => 30,
+            'sslverify' => false
+        ));
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error('خطا در اتصال: ' . $response->get_error_message());
+        }
+        
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        if ($http_code !== 200) {
+            wp_send_json_error('خطای سرور: کد ' . $http_code);
+        }
+        
+        $data = json_decode($body, true);
+        
+        if (!$data) {
+            wp_send_json_error('پاسخ نامعتبر از سرور');
+        }
+        
+        if (isset($data['status']) && $data['status'] === 'success') {
+            wp_send_json_success(array(
+                'http_code' => $http_code,
+                'status' => $data['status'],
+                'message' => $data['message'],
+                'token_preview' => substr($data['access_token'], 0, 30) . '...',
+                'expires_in' => $data['expires_in']
+            ));
+        } else {
+            wp_send_json_error('احراز هویت ناموفق: ' . (isset($data['message']) ? $data['message'] : 'نامشخص'));
+        }
+    }
+
+    /**
+     * AJAX: ورود اطلاعات سمینارها
+     */
+    public function ajax_import_seminars() {
+        // افزایش زمان اجرا و حافظه برای جلوگیری از خطا
+        @set_time_limit(300);
+        @ini_set('memory_limit', '256M');
+
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_import_seminars_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        // بررسی وضعیت احراز هویت
+        $token = get_option('_um_auth_token');
+        if (empty($token) || time() > get_option('_um_token_expires', 0)) {
+            wp_send_json_error('توکن احراز هویت معتبر نیست. لطفاً دوباره وارد شوید.');
+        }
+
+        // دریافت سمینارها از وب سرویس
+        $limit = get_option('_um_seminars_limit', 100); // دریافت تعداد بالا برای وارد کردن همه
+        $api_url = 'https://kwphc.ir/webservice_new/ws_dore.php?action=latest_records&limit=' . intval($limit);
+        
+        $response = wp_remote_get($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type' => 'application/json',
+            ),
+            'timeout' => 60,
+            'sslverify' => false
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error('خطا در اتصال به وب‌سرویس: ' . $response->get_error_message());
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        // بررسی پاسخ و استخراج رکوردها
+        if (!$data || !isset($data['status']) || $data['status'] !== 'success' || !isset($data['records'])) {
+            wp_send_json_error('پاسخ وب‌سرویس معتبر نیست یا هیچ سمیناری یافت نشد. پاسخ دریافتی: ' . esc_html($body));
+        }
+        
+        $seminars = $data['records'];
+
+        // شروع فرآیند وارد کردن
+        $summary = array(
+            'imported' => 0,
+            'updated' => 0,
+            'skipped' => 0,
+            'failed' => 0,
+        );
+
+        foreach ($seminars as $seminar) {
+            try {
+                // کد منحصر به فرد دوره
+                $course_code = sanitize_text_field($seminar['co_doreh']);
+                if (empty($course_code)) {
+                    $summary['failed']++;
+                    continue;
+                }
+
+                // بررسی وجود پست با این کد دوره
+                $existing_post_query = new WP_Query(array(
+                    'post_type' => 'um_seminars',
+                    'meta_key' => '_um_course_code',
+                    'meta_value' => $course_code,
+                    'posts_per_page' => 1,
+                    'post_status' => 'any',
+                    'fields' => 'ids'
+                ));
+                $existing_post_id = !empty($existing_post_query->posts) ? $existing_post_query->posts[0] : null;
+
+                // آماده‌سازی اطلاعات پست
+                $post_title = sanitize_text_field($seminar['Title']);
+                $post_content = wp_kses_post(str_replace(array("\r\n", "\r", "\n"), "<br/>", $seminar['Mohtava']));
+                $post_excerpt = sanitize_text_field($seminar['Mokhatabin']);
+
+                $post_data = array(
+                    'post_title' => $post_title,
+                    'post_content' => $post_content,
+                    'post_status' => 'publish',
+                    'post_type' => 'um_seminars',
+                    'post_excerpt' => $post_excerpt,
+                );
+
+                if ($existing_post_id) {
+                    // به‌روزرسانی پست موجود
+                    $post_data['ID'] = $existing_post_id;
+                    wp_update_post($post_data);
+                    $summary['updated']++;
+                    $post_id = $existing_post_id;
+                } else {
+                    // ایجاد پست جدید
+                    $post_id = wp_insert_post($post_data, true);
+                    if (is_wp_error($post_id)) {
+                        $summary['failed']++;
+                        continue;
+                    }
+                    $summary['imported']++;
+                }
+                
+                // ذخیره فیلدهای سفارشی
+                update_post_meta($post_id, '_um_course_code', $course_code);
+                update_post_meta($post_id, 'seminar_teacher', sanitize_text_field($seminar['Name_Ostad']));
+                update_post_meta($post_id, 'seminar_time', sanitize_text_field($seminar['Date_Start']));
+                update_post_meta($post_id, 'seminar_button_text', 'شروع یادگیری');
+                // لینک دکمه را می‌توانید در اینجا تنظیم کنید، فعلا خالی می‌گذاریم
+                // update_post_meta($post_id, 'seminar_button_link', 'https://example.com');
+                
+                // سایر فیلدها که ممکن است لازم باشند
+                update_post_meta($post_id, '_um_seminar_duration', sanitize_text_field($seminar['Moddat']));
+                update_post_meta($post_id, '_um_seminar_audience', $post_excerpt);
+                update_post_meta($post_id, '_um_seminar_fee', sanitize_text_field($seminar['H_Amoozeshi']));
+                update_post_meta($post_id, '_um_seminar_support_tel', sanitize_text_field($seminar['PostibaniTel']));
+
+                // دانلود و تنظیم تصویر شاخص
+                $image_name = $seminar['SeminarPic'] ?: $seminar['Boroshor'];
+                if (!empty($image_name) && $image_name !== '-' && !has_post_thumbnail($post_id)) {
+                    $image_url = 'https://kwphc.ir/webservice_new/images/' . $image_name;
+                    $this->sideload_image_and_set_thumbnail($image_url, $post_id, $post_title);
+                }
+
+            } catch (Exception $e) {
+                $summary['failed']++;
+            }
+        }
+
+        wp_send_json_success($summary);
+    }
+    
+    /**
+     * دانلود تصویر از URL و تنظیم به عنوان تصویر شاخص
+     */
+    private function sideload_image_and_set_thumbnail($image_url, $post_id, $description) {
+        // نیاز به این فایل‌ها برای دانلود تصویر
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+        // دانلود تصویر از URL
+        $attachment_id = media_sideload_image($image_url, $post_id, $description, 'id');
+
+        // اگر دانلود موفق بود، آن را به عنوان تصویر شاخص تنظیم کن
+        if (!is_wp_error($attachment_id)) {
+            set_post_thumbnail($post_id, $attachment_id);
+            return true;
+        }
+        
+        return false;
     }
 }
 
