@@ -1126,6 +1126,18 @@ class University_Management {
             
             // ورود اخبار
             foreach ($news_data as $news) {
+                // تبدیل تاریخ شمسی به میلادی برای تنظیم تاریخ انتشار
+                $post_date = $this->convert_shamsi_to_gregorian($news['news_date'], $news['news_time']);
+                
+                // لاگ تبدیل تاریخ برای دیباگ
+                $this->log_import_process('تبدیل تاریخ', array(
+                    'news_id' => $news['id'],
+                    'original_date' => $news['news_date'],
+                    'original_time' => $news['news_time'],
+                    'converted_date' => $post_date,
+                    'subject' => $news['subject']
+                ));
+                
                 // ایجاد پست جدید
                 $post_data = array(
                     'post_title'    => sanitize_text_field($news['subject']),
@@ -1134,6 +1146,8 @@ class University_Management {
                     'post_status'   => 'publish',
                     'post_type'     => 'post',
                     'post_category' => array($news_category),
+                    'post_date'     => $post_date,
+                    'post_date_gmt' => get_gmt_from_date($post_date),
                     'meta_input'    => array(
                         '_um_imported_news' => true,
                         '_um_original_id'   => $news['id'],
@@ -1168,19 +1182,26 @@ class University_Management {
                 // یافتن پست مربوطه
                 $post_id = get_option('_um_news_id_map_' . $comment['news_id']);
                 if ($post_id) {
+                    // تبدیل تاریخ شمسی به میلادی برای کامنت
+                    $comment_date = isset($comment['comment_date']) ? $comment['comment_date'] : $this->convert_shamsi_to_gregorian($comment['shamsi_date'], $comment['shamsi_time']);
+                    
                     $comment_data = array(
                         'comment_post_ID'      => $post_id,
                         'comment_author'       => sanitize_text_field($comment['name']),
                         'comment_author_email' => sanitize_email($comment['email']),
                         'comment_content'      => sanitize_textarea_field($comment['message']),
                         'comment_approved'     => $comment['approved'] ? 1 : 0,
-                        'comment_date'         => $this->convert_persian_date($comment['comment_date'], $comment['comment_time']),
+                        'comment_date'         => $comment_date,
+                        'comment_date_gmt'     => get_gmt_from_date($comment_date),
                         'comment_meta'         => array(
                             '_um_imported_comment' => true,
-                            '_um_original_id'      => $comment['id']
+                            '_um_original_id'      => $comment['id'],
+                            '_um_shamsi_date'      => $comment['shamsi_date'],
+                            '_um_shamsi_time'      => $comment['shamsi_time']
                         )
                     );
                     
+                    $this->log_import_process('اطلاعات کامنت برای ورود', $comment_data);
                     $comment_id = wp_insert_comment($comment_data);
                     if ($comment_id) {
                         $imported_comments++;
@@ -1485,11 +1506,12 @@ class University_Management {
             'id' => 'id',
             'news_id' => 'news_id',
             'name' => 'name',
+            'email' => 'email',
             'message' => 'message',
             'approved' => 'approved',
             'comment_date' => 'comment_date',
-            'comment_time' => 'comment_time',
-            'email' => 'email'
+            'shamsi_date' => 'shamsi_date',
+            'shamsi_time' => 'shamsi_time'
         );
         
         for ($i = 0; $i < count($columns); $i++) {
@@ -1781,33 +1803,83 @@ class University_Management {
      */
     private function find_attachment_by_filename($filename, $post_id = null) {
         global $wpdb;
-        
         $query = "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'attachment' AND post_title = %s";
-        $params = array(pathinfo($filename, PATHINFO_FILENAME));
-        
+        $args = array(pathinfo($filename, PATHINFO_FILENAME));
+
         if ($post_id) {
             $query .= " AND post_parent = %d";
-            $params[] = $post_id;
+            $args[] = $post_id;
         }
-        
-        $attachment_id = $wpdb->get_var($wpdb->prepare($query, $params));
-        
-        return $attachment_id ? intval($attachment_id) : false;
+
+        return $wpdb->get_var($wpdb->prepare($query, $args));
     }
     
     /**
-     * تبدیل تاریخ فارسی به میلادی
+     * Converts Persian date to Gregorian date.
+     * This function is self-contained and does not rely on external libraries.
      */
-    private function convert_persian_date($persian_date, $time) {
-        // فعلاً همان تاریخ شمسی را برمی‌گردانیم
-        return current_time('mysql');
+    private function jalali_to_gregorian_manual($jy, $jm, $jd) {
+        $g_days_in_month = array(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+        $j_days_in_month = array(31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29);
+
+        $jy += 1595;
+        $days = -355668 + (365 * $jy) + (((int)($jy / 33)) * 8) + ((int)((($jy % 33) + 3) / 4)) + $jd;
+        for ($i = 0; $i < $jm - 1; $i++) {
+            $days += $j_days_in_month[$i];
+        }
+
+        $gy = 400 * ((int)($days / 146097));
+        $days %= 146097;
+        if ($days > 36524) {
+            $gy += 100 * ((int)(--$days / 36524));
+            $days %= 36524;
+            if ($days >= 365) $days++;
+        }
+        $gy += 4 * ((int)($days / 1461));
+        $days %= 1461;
+        if ($days > 365) {
+            $gy += (int)(($days - 1) / 365);
+            $days = ($days - 1) % 365;
+        }
+        $gd = $days + 1;
+        foreach ($g_days_in_month as $gm => $days_in_month) {
+            if (($gy % 4 == 0 && $gy % 100 != 0) || ($gy % 400 == 0)) {
+                if ($gm == 1) $days_in_month++;
+            }
+            if ($gd <= $days_in_month) break;
+            $gd -= $days_in_month;
+        }
+        return array($gy, $gm + 1, $gd);
     }
-    
+
+    private function convert_persian_date($gregorian_date, $time) {
+        // The date is already Gregorian from the Python script.
+        // We just need to format the time part correctly.
+        $time_str = '00:00:00';
+        if (!empty($time)) {
+             $time_parts = explode(':', str_replace(array(' AM', ' PM'), '', $time));
+             if(count($time_parts) >= 3) {
+                list($hour, $minute, $second) = array_map('intval', $time_parts);
+
+                if (strpos($time, 'PM') !== false && $hour < 12) {
+                    $hour += 12;
+                }
+                if (strpos($time, 'AM') !== false && $hour == 12) {
+                    $hour = 0;
+                }
+                $time_str = sprintf('%02d:%02d:%02d', $hour, $minute, $second);
+             }
+        }
+        
+        return $gregorian_date . ' ' . $time_str;
+    }
+
     /**
      * حذف اطلاعات وارد شده
      */
     private function delete_imported_news_data() {
         global $wpdb;
+        $this->log_import_process('شروع فرآیند حذف اطلاعات وارد شده');
         
         try {
             // یافتن پست‌های وارد شده
@@ -2491,6 +2563,96 @@ class University_Management {
         }
         
         return false;
+    }
+
+    /**
+     * تبدیل تاریخ شمسی به میلادی
+     */
+    private function convert_shamsi_to_gregorian($shamsi_date, $time = '') {
+        // اگر تاریخ خالی باشد، تاریخ جاری را برگردان
+        if (empty($shamsi_date)) {
+            return current_time('mysql');
+        }
+
+        // پردازش زمان
+        $time_str = '00:00:00';
+        if (!empty($time)) {
+            $time_parts = explode(':', str_replace(array(' AM', ' PM'), '', $time));
+            if (count($time_parts) >= 3) {
+                list($hour, $minute, $second) = array_map('intval', $time_parts);
+
+                if (strpos($time, 'PM') !== false && $hour < 12) {
+                    $hour += 12;
+                }
+                if (strpos($time, 'AM') !== false && $hour == 12) {
+                    $hour = 0;
+                }
+                $time_str = sprintf('%02d:%02d:%02d', $hour, $minute, $second);
+            }
+        }
+
+        // پردازش تاریخ شمسی
+        if (preg_match('/(\d{4})\/(\d{1,2})\/(\d{1,2})/', $shamsi_date, $matches)) {
+            $shamsi_year = intval($matches[1]);
+            $shamsi_month = intval($matches[2]);
+            $shamsi_day = intval($matches[3]);
+
+            // تبدیل شمسی به میلادی با استفاده از الگوریتم تبدیل
+            $gregorian_date = $this->shamsi_to_gregorian($shamsi_year, $shamsi_month, $shamsi_day);
+            
+            return $gregorian_date . ' ' . $time_str;
+        }
+
+        // اگر فرمت تاریخ شناخته نشد، تاریخ جاری را برگردان
+        return current_time('mysql');
+    }
+
+    /**
+     * الگوریتم تبدیل تاریخ شمسی به میلادی
+     */
+    private function shamsi_to_gregorian($shamsi_year, $shamsi_month, $shamsi_day) {
+        // میلادی معادل سال 1 شمسی
+        $gregorian_year = $shamsi_year + 621;
+        
+        // تنظیم ماه‌های شمسی (فروردین = 1)
+        $shamsi_months = array(
+            1 => 31, 2 => 31, 3 => 31, 4 => 31, 5 => 31, 6 => 31,
+            7 => 30, 8 => 30, 9 => 30, 10 => 30, 11 => 30, 12 => 29
+        );
+        
+        // در سال کبیسه، اسفند 30 روز دارد
+        if ($this->is_shamsi_leap_year($shamsi_year)) {
+            $shamsi_months[12] = 30;
+        }
+
+        // محاسبه تعداد روزهای گذشته از ابتدای سال شمسی
+        $days_passed = 0;
+        for ($i = 1; $i < $shamsi_month; $i++) {
+            $days_passed += $shamsi_months[$i];
+        }
+        $days_passed += $shamsi_day - 1;
+
+        // تاریخ شروع سال شمسی در میلادی (حدودی 21 مارس)
+        // سال 1400 شمسی = 2021 میلادی، شروع در 20 مارس
+        $start_of_shamsi_year = mktime(0, 0, 0, 3, 20, $gregorian_year);
+        
+        // اضافه کردن روزهای گذشته
+        $target_timestamp = $start_of_shamsi_year + ($days_passed * 24 * 60 * 60);
+        
+        return date('Y-m-d', $target_timestamp);
+    }
+
+    /**
+     * بررسی کبیسه بودن سال شمسی
+     */
+    private function is_shamsi_leap_year($year) {
+        // الگوریتم ساده برای تشخیص سال کبیسه شمسی
+        $cycle = 128;
+        $year_in_cycle = $year % $cycle;
+        
+        $leap_years = array(1, 5, 9, 13, 17, 22, 26, 30, 34, 38, 42, 46, 50, 55, 59, 63, 67, 71, 75, 79, 83, 88, 92, 96, 100, 104, 108, 112, 116, 121, 125);
+        
+        return in_array($year_in_cycle, $leap_years);
     }
 }
 
