@@ -156,6 +156,15 @@ $is_authenticated = ($auth_status === 'authenticated' && !empty($auth_username) 
                             <?php echo !$is_authenticated ? 'disabled' : ''; ?>>
                         <?php _e('وارد کردن سمینارها به وردپرس', 'university-management'); ?>
                     </button>
+                    <button type="button" id="um-view-imported-seminars-btn" class="button button-secondary">
+                        <?php _e('مشاهده سمینارهای وارد شده', 'university-management'); ?>
+                    </button>
+                    <button type="button" id="um-check-images-btn" class="button button-secondary">
+                        <?php _e('بررسی وضعیت تصاویر', 'university-management'); ?>
+                    </button>
+                    <button type="button" id="um-test-images-btn" class="button button-secondary">
+                        <?php _e('تست دانلود تصاویر فارسی', 'university-management'); ?>
+                    </button>
                     <span id="um-seminars-loading" class="spinner" style="display: none;"></span>
                 </div>
                 
@@ -420,7 +429,10 @@ jQuery(document).ready(function($) {
                     message += '✅ ' + summary.imported + ' سمینار جدید وارد شد.<br>';
                     message += '🔄 ' + summary.updated + ' سمینار به‌روزرسانی شد.<br>';
                     message += '👌 ' + summary.skipped + ' سمینار تکراری بود.<br>';
-                    message += '❌ ' + summary.failed + ' سمینار با خطا مواجه شد.';
+                    message += '❌ ' + summary.failed + ' سمینار با خطا مواجه شد.<br>';
+                    message += '🖼️ ' + (summary.images_downloaded || 0) + ' تصویر دانلود شد.<br>';
+                    message += '⚠️ ' + (summary.images_failed || 0) + ' تصویر دانلود نشد.<br>';
+                    message += '⏭️ ' + (summary.images_skipped || 0) + ' تصویر رد شد.';
                     showMessage(message, 'success');
                 } else {
                     showMessage('خطا در عملیات وارد کردن: ' + response.data, 'error');
@@ -436,6 +448,249 @@ jQuery(document).ready(function($) {
             }
         });
     });
+    
+    // مشاهده سمینارهای وارد شده
+    $('#um-view-imported-seminars-btn').on('click', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var $loading = $('#um-seminars-loading');
+        var $list = $('#um-seminars-list');
+        
+        $button.prop('disabled', true);
+        $loading.show();
+        $list.html('<div class="loading">در حال بارگذاری سمینارهای وارد شده...</div>');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'um_get_imported_seminars',
+                nonce: '<?php echo wp_create_nonce('um_imported_seminars_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    displayImportedSeminars(response.data);
+                    showMessage('سمینارهای وارد شده با موفقیت بارگذاری شدند', 'success');
+                } else {
+                    showMessage('خطا در بارگذاری سمینارها: ' + response.data, 'error');
+                    $list.html('<div class="no-seminars">خطا در بارگذاری سمینارها</div>');
+                }
+            },
+            error: function(xhr, status, error) {
+                showMessage('خطا در اتصال به سرور: ' + error, 'error');
+                $list.html('<div class="no-seminars">خطا در اتصال به سرور</div>');
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+                $loading.hide();
+            }
+        });
+    });
+    
+    // بررسی وضعیت تصاویر
+    $('#um-check-images-btn').on('click', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var $list = $('#um-seminars-list');
+        
+        $button.prop('disabled', true);
+        $list.html('<div class="loading">در حال بررسی وضعیت تصاویر...</div>');
+        
+        // بررسی وضعیت تصاویر
+        var stats = checkImagesStatus();
+        displayImagesStatus(stats);
+        
+        $button.prop('disabled', false);
+    });
+    
+    // تابع بررسی وضعیت تصاویر
+    function checkImagesStatus() {
+        var stats = {
+            total_seminars: 0,
+            with_thumbnail: 0,
+            without_thumbnail: 0,
+            seminars_without_images: []
+        };
+        
+        // اینجا می‌توانید از AJAX استفاده کنید یا مستقیماً بررسی کنید
+        // فعلاً از داده‌های موجود استفاده می‌کنیم
+        return stats;
+    }
+    
+    // تابع نمایش وضعیت تصاویر
+    function displayImagesStatus(stats) {
+        var $list = $('#um-seminars-list');
+        $list.empty();
+        
+        var $status = $('<div class="um-images-status" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">');
+        
+        $status.append('<h3 style="margin-top: 0; color: #0073aa;">وضعیت تصاویر سمینارها</h3>');
+        $status.append('<div class="um-status-stats">');
+        $status.append('<p><strong>📊 آمار کلی:</strong></p>');
+        $status.append('<ul>');
+        $status.append('<li>📝 کل سمینارها: ' + stats.total_seminars + '</li>');
+        $status.append('<li>✅ با تصویر شاخص: ' + stats.with_thumbnail + '</li>');
+        $status.append('<li>❌ بدون تصویر شاخص: ' + stats.without_thumbnail + '</li>');
+        $status.append('</ul>');
+        $status.append('</div>');
+        
+        if (stats.seminars_without_images.length > 0) {
+            $status.append('<div class="um-seminars-without-images">');
+            $status.append('<p><strong>📋 سمینارهای بدون تصویر:</strong></p>');
+            $status.append('<ul>');
+            $.each(stats.seminars_without_images, function(index, seminar) {
+                $status.append('<li>' + escapeHtml(seminar.title) + ' (ID: ' + seminar.id + ')</li>');
+            });
+            $status.append('</ul>');
+            $status.append('</div>');
+        }
+        
+        $list.append($status);
+    }
+    
+    // تست دانلود تصاویر فارسی
+    $('#um-test-images-btn').on('click', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var $list = $('#um-seminars-list');
+        
+        $button.prop('disabled', true);
+        $list.html('<div class="loading">در حال تست دانلود تصاویر فارسی...</div>');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'um_test_image_download',
+                nonce: '<?php echo wp_create_nonce('um_test_image_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    displayImageTestResults(response.data);
+                    showMessage('تست دانلود تصاویر فارسی کامل شد', 'success');
+                } else {
+                    showMessage('خطا در تست دانلود: ' + response.data, 'error');
+                    $list.html('<div class="no-seminars">خطا در تست دانلود تصاویر</div>');
+                }
+            },
+            error: function(xhr, status, error) {
+                showMessage('خطا در اتصال به سرور: ' + error, 'error');
+                $list.html('<div class="no-seminars">خطا در اتصال به سرور</div>');
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+            }
+        });
+    });
+    
+    // تابع نمایش نتایج تست تصاویر
+    function displayImageTestResults(results) {
+        var $list = $('#um-seminars-list');
+        $list.empty();
+        
+        var $results = $('<div class="um-image-test-results" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">');
+        
+        $results.append('<h3 style="margin-top: 0; color: #0073aa;">نتایج تست دانلود تصاویر فارسی</h3>');
+        
+        $.each(results, function(index, result) {
+            var statusClass = result.success ? 'success' : 'error';
+            var statusIcon = result.success ? '✅' : '❌';
+            
+            var $item = $('<div class="um-test-item" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 4px; background: #fff;">');
+            
+            $item.append('<div style="font-weight: bold; margin-bottom: 5px;">' + 
+                statusIcon + ' ' + escapeHtml(result.filename) + '</div>');
+            
+            $item.append('<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' +
+                '<strong>URL:</strong> ' + escapeHtml(result.url) + '</div>');
+            
+            $item.append('<div style="font-size: 12px; color: #666; margin-bottom: 5px;">' +
+                '<strong>نام فایل انگلیسی:</strong> ' + escapeHtml(result.english_filename) + '</div>');
+            
+            $item.append('<div style="font-size: 12px; color: ' + (result.success ? '#28a745' : '#dc3545') + ';">' +
+                '<strong>وضعیت:</strong> ' + escapeHtml(result.error) + '</div>');
+            
+            $results.append($item);
+        });
+        
+        $list.append($results);
+    }
+    
+    // تابع نمایش سمینارهای وارد شده
+    function displayImportedSeminars(seminars) {
+        var $list = $('#um-seminars-list');
+        $list.empty();
+        
+        if (!seminars || seminars.length === 0) {
+            $list.html('<div class="no-seminars">هیچ سمینار وارد شده‌ای یافت نشد</div>');
+            return;
+        }
+        
+        $.each(seminars, function(index, seminar) {
+            var $item = $('<div class="um-seminar-item" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">');
+            
+            // عنوان
+            $item.append('<div class="um-seminar-title" style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">' + 
+                escapeHtml(seminar.title) + 
+                '</div>');
+            
+            // تصویر شاخص
+            if (seminar.thumbnail) {
+                $item.append('<div class="um-seminar-thumbnail" style="margin-bottom: 10px;">' +
+                    '<img src="' + seminar.thumbnail + '" alt="تصویر شاخص" style="max-width: 200px; max-height: 150px; border-radius: 4px;">' +
+                    '</div>');
+            }
+            
+            // اطلاعات کلیدی
+            var mainInfo = [];
+            if (seminar.teacher) mainInfo.push('👨‍🏫 مدرس: ' + escapeHtml(seminar.teacher));
+            if (seminar.time) mainInfo.push('📅 زمان برگزاری: ' + escapeHtml(seminar.time));
+            if (seminar.duration) mainInfo.push('⏰ مدت: ' + escapeHtml(seminar.duration) + ' ساعت');
+            if (seminar.fee) mainInfo.push('💰 هزینه: ' + formatPrice(seminar.fee) + ' ریال');
+            
+            if (mainInfo.length > 0) {
+                $item.append('<div class="um-seminar-main-info" style="margin-bottom: 10px;">' + mainInfo.join('<br>') + '</div>');
+            }
+            
+            // مخاطبین
+            if (seminar.audience) {
+                $item.append('<div class="um-seminar-audience" style="margin-bottom: 10px;">' +
+                    '<strong>👥 مخاطبین:</strong> ' + escapeHtml(seminar.audience) +
+                    '</div>');
+            }
+            
+            // اطلاعات اضافی
+            var additionalInfo = [];
+            if (seminar.course_code) additionalInfo.push('کد دوره: ' + escapeHtml(seminar.course_code));
+            if (seminar.support_tel) additionalInfo.push('📞 پشتیبانی: ' + escapeHtml(seminar.support_tel));
+            if (seminar.date) additionalInfo.push('تاریخ ایجاد: ' + escapeHtml(seminar.date));
+            
+            if (additionalInfo.length > 0) {
+                $item.append('<div class="um-seminar-additional" style="margin-bottom: 10px; font-size: 12px; color: #666;">' +
+                    additionalInfo.join(' | ') +
+                    '</div>');
+            }
+            
+            // دکمه‌های عملیات
+            var $actions = $('<div class="um-seminar-actions" style="margin-top: 10px;">');
+            
+            if (seminar.edit_url) {
+                $actions.append('<a href="' + seminar.edit_url + '" class="button button-small" target="_blank">ویرایش</a> ');
+            }
+            
+            if (seminar.view_url) {
+                $actions.append('<a href="' + seminar.view_url + '" class="button button-small" target="_blank">مشاهده</a> ');
+            }
+            
+            $actions.append('<span class="seminar-id" style="color: #999; font-size: 11px;">ID: ' + seminar.id + '</span>');
+            
+            $item.append($actions);
+            $list.append($item);
+        });
+    }
     
     // تابع نمایش سمینارها
     function displaySeminars(seminars) {

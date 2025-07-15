@@ -327,3 +327,396 @@
     color: #0c5460;
     border: 1px solid #bee5eb;
 } 
+
+/* استایل‌های عمومی */
+.um-settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.um-section {
+    margin-bottom: 30px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* استایل‌های فرم */
+.form-table th {
+    width: 200px;
+    padding: 15px 10px 15px 0;
+    vertical-align: top;
+}
+
+.form-table td {
+    padding: 15px 10px;
+}
+
+.form-table input[type="text"],
+.form-table input[type="password"],
+.form-table input[type="url"],
+.form-table select {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-table input[type="file"] {
+    padding: 8px 0;
+}
+
+/* استایل‌های دکمه‌ها */
+.button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.button-primary {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
+}
+
+.button-secondary {
+    background: #f7f7f7;
+    border-color: #ccc;
+    color: #555;
+}
+
+/* استایل‌های پیام‌ها */
+.notice {
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 4px;
+    border-right: 4px solid;
+}
+
+.notice-success {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.notice-error {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.notice-info {
+    background: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.notice-warning {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+/* استایل‌های سمینارها */
+.um-seminars-controls {
+    margin-bottom: 20px;
+}
+
+.um-seminars-list {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    background: #f9f9f9;
+}
+
+.um-seminar-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s ease;
+}
+
+.um-seminar-item:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.um-seminar-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 5px;
+}
+
+.um-seminar-main-info {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.um-seminar-description,
+.um-seminar-content {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #0073aa;
+}
+
+.um-seminar-fee {
+    color: #28a745;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.um-seminar-audience {
+    color: #6c757d;
+    margin: 5px 0;
+}
+
+.um-seminar-contact {
+    color: #17a2b8;
+    margin: 5px 0;
+}
+
+.um-seminar-additional {
+    font-size: 12px;
+    color: #999;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.um-seminar-actions {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.um-seminar-actions .button {
+    margin-right: 8px;
+    margin-bottom: 5px;
+}
+
+.seminar-id {
+    color: #999;
+    font-size: 11px;
+    font-style: italic;
+}
+
+/* استایل‌های تصاویر */
+.um-seminar-thumbnail img {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.um-seminar-image img {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* استایل‌های بارگذاری */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* استایل‌های پیام‌های خالی */
+.no-seminars {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-style: italic;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+/* استایل‌های آمار */
+.um-seminars-stats {
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.um-seminars-stats h3 {
+    margin-top: 0;
+    color: #0073aa;
+}
+
+/* استایل‌های ریسپانسیو */
+@media (max-width: 768px) {
+    .um-settings-container {
+        padding: 10px;
+    }
+    
+    .card {
+        padding: 15px;
+    }
+    
+    .um-seminar-item {
+        padding: 10px;
+    }
+    
+    .um-seminar-title {
+        font-size: 16px;
+    }
+    
+    .um-seminar-thumbnail img,
+    .um-seminar-image img {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+/* استایل‌های بهبود یافته برای نمایش سمینارهای وارد شده */
+.um-imported-seminar-item {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.um-imported-seminar-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.um-imported-seminar-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.um-imported-seminar-thumbnail {
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.um-imported-seminar-thumbnail img {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.um-imported-seminar-info {
+    flex-grow: 1;
+}
+
+.um-imported-seminar-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.um-imported-seminar-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.um-imported-seminar-meta-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.um-imported-seminar-meta-item i {
+    margin-left: 5px;
+    width: 16px;
+    text-align: center;
+}
+
+.um-imported-seminar-details {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.um-imported-seminar-detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.um-imported-seminar-detail-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.um-imported-seminar-detail-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.um-imported-seminar-detail-value {
+    color: #6c757d;
+}
+
+.um-imported-seminar-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.um-imported-seminar-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.um-imported-seminar-status {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+} 

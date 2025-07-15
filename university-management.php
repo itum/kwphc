@@ -88,6 +88,8 @@ class University_Management {
         add_action('wp_ajax_um_test_api', array($this, 'ajax_test_api'));
         add_action('wp_ajax_um_direct_api_test', array($this, 'ajax_direct_api_test'));
         add_action('wp_ajax_um_import_seminars', array($this, 'ajax_import_seminars'));
+        add_action('wp_ajax_um_get_imported_seminars', array($this, 'ajax_get_imported_seminars'));
+        add_action('wp_ajax_um_test_image_download', array($this, 'ajax_test_image_download'));
         
 
     }
@@ -2464,6 +2466,9 @@ class University_Management {
             'updated' => 0,
             'skipped' => 0,
             'failed' => 0,
+            'images_downloaded' => 0,
+            'images_failed' => 0,
+            'images_skipped' => 0,
         );
 
         foreach ($seminars as $seminar) {
@@ -2490,6 +2495,9 @@ class University_Management {
                 $post_title = sanitize_text_field($seminar['Title']);
                 $post_content = wp_kses_post(str_replace(array("\r\n", "\r", "\n"), "<br/>", $seminar['Mohtava']));
                 $post_excerpt = sanitize_text_field($seminar['Mokhatabin']);
+                
+                // لاگ اطلاعات سمینار برای دیباگ
+                error_log("UM Import: Processing seminar - Title: {$post_title}, Teacher: " . ($seminar['Name_Ostad'] ?? 'null') . ", Date: " . ($seminar['Date_Start'] ?? 'null') . ", Image: " . ($seminar['SeminarPic'] ?? 'null'));
 
                 $post_data = array(
                     'post_title' => $post_title,
@@ -2517,11 +2525,11 @@ class University_Management {
                 
                 // ذخیره فیلدهای سفارشی
                 update_post_meta($post_id, '_um_course_code', $course_code);
-                update_post_meta($post_id, 'seminar_teacher', sanitize_text_field($seminar['Name_Ostad']));
-                update_post_meta($post_id, 'seminar_time', sanitize_text_field($seminar['Date_Start']));
-                update_post_meta($post_id, 'seminar_button_text', 'شروع یادگیری');
+                update_post_meta($post_id, '_seminar_teacher', sanitize_text_field($seminar['Name_Ostad']));
+                update_post_meta($post_id, '_seminar_time', sanitize_text_field($seminar['Date_Start']));
+                update_post_meta($post_id, '_seminar_button_text', 'شروع یادگیری');
                 // لینک دکمه را می‌توانید در اینجا تنظیم کنید، فعلا خالی می‌گذاریم
-                // update_post_meta($post_id, 'seminar_button_link', 'https://example.com');
+                // update_post_meta($post_id, '_seminar_button_link', 'https://example.com');
                 
                 // سایر فیلدها که ممکن است لازم باشند
                 update_post_meta($post_id, '_um_seminar_duration', sanitize_text_field($seminar['Moddat']));
@@ -2531,9 +2539,21 @@ class University_Management {
 
                 // دانلود و تنظیم تصویر شاخص
                 $image_name = $seminar['SeminarPic'] ?: $seminar['Boroshor'];
-                if (!empty($image_name) && $image_name !== '-' && !has_post_thumbnail($post_id)) {
+                if (!empty($image_name) && $image_name !== '-' && $image_name !== 'null' && $image_name !== '') {
                     $image_url = 'https://kwphc.ir/webservice_new/images/' . $image_name;
-                    $this->sideload_image_and_set_thumbnail($image_url, $post_id, $post_title);
+                    $image_success = $this->sideload_image_and_set_thumbnail($image_url, $post_id, $post_title);
+                    
+                    // لاگ نتیجه دانلود تصویر
+                    if ($image_success) {
+                        error_log("UM Import: ✅ Image downloaded and set as thumbnail for post {$post_id}: {$image_name}");
+                        $summary['images_downloaded'] = ($summary['images_downloaded'] ?? 0) + 1;
+                    } else {
+                        error_log("UM Import: ❌ Failed to download image for post {$post_id}: {$image_name}");
+                        $summary['images_failed'] = ($summary['images_failed'] ?? 0) + 1;
+                    }
+                } else {
+                    error_log("UM Import: ⚠️ No valid image found for post {$post_id}. SeminarPic: " . ($seminar['SeminarPic'] ?? 'null') . ", Boroshor: " . ($seminar['Boroshor'] ?? 'null'));
+                    $summary['images_skipped'] = ($summary['images_skipped'] ?? 0) + 1;
                 }
 
             } catch (Exception $e) {
@@ -2541,6 +2561,9 @@ class University_Management {
             }
         }
 
+        // لاگ نتیجه نهایی
+        error_log("UM Import Seminars Summary: " . json_encode($summary));
+        
         wp_send_json_success($summary);
     }
     
@@ -2553,16 +2576,359 @@ class University_Management {
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/image.php');
 
-        // دانلود تصویر از URL
-        $attachment_id = media_sideload_image($image_url, $post_id, $description, 'id');
+        // بررسی وجود تصویر شاخص فعلی
+        if (has_post_thumbnail($post_id)) {
+            error_log("UM Import: Post {$post_id} already has thumbnail, skipping image download");
+            return true;
+        }
+
+        // بررسی اعتبار URL
+        if (empty($image_url) || !filter_var($image_url, FILTER_VALIDATE_URL)) {
+            error_log("UM Import: Invalid image URL: {$image_url}");
+            return false;
+        }
+
+        // بررسی وجود فایل در سرور
+        $response = wp_remote_head($image_url, array(
+            'timeout' => 15,
+            'sslverify' => false,
+            'user-agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+        ));
+
+        if (is_wp_error($response)) {
+            error_log("UM Import: Network error checking image: " . $response->get_error_message());
+            return false;
+        }
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        if ($http_code !== 200) {
+            error_log("UM Import: Image not accessible (HTTP {$http_code}): {$image_url}");
+            return false;
+        }
+
+        // بررسی نوع فایل
+        $content_type = wp_remote_retrieve_header($response, 'content-type');
+        if ($content_type && !preg_match('/^image\//', $content_type)) {
+            error_log("UM Import: URL is not an image (Content-Type: {$content_type}): {$image_url}");
+            return false;
+        }
+
+        // دانلود تصویر با نام فایل انگلیسی
+        $attachment_id = $this->download_image_with_english_filename($image_url, $post_id, $description);
 
         // اگر دانلود موفق بود، آن را به عنوان تصویر شاخص تنظیم کن
-        if (!is_wp_error($attachment_id)) {
-            set_post_thumbnail($post_id, $attachment_id);
-            return true;
+        if (!is_wp_error($attachment_id) && $attachment_id) {
+            // تنظیم تصویر شاخص
+            $thumbnail_result = set_post_thumbnail($post_id, $attachment_id);
+            
+            if ($thumbnail_result) {
+                error_log("UM Import: ✅ Successfully set thumbnail for post {$post_id} with attachment {$attachment_id}");
+                
+                // به‌روزرسانی اطلاعات attachment
+                wp_update_post(array(
+                    'ID' => $attachment_id,
+                    'post_title' => $description,
+                    'post_excerpt' => 'تصویر شاخص سمینار: ' . $description
+                ));
+                
+                return true;
+            } else {
+                error_log("UM Import: ❌ Failed to set thumbnail for post {$post_id} with attachment {$attachment_id}");
+                return false;
+            }
+        } else {
+            $error_message = is_wp_error($attachment_id) ? $attachment_id->get_error_message() : 'Unknown error';
+            error_log("UM Import: ❌ Failed to sideload image for post {$post_id}: " . $error_message);
         }
         
         return false;
+    }
+    
+    /**
+     * دانلود تصویر با نام فایل انگلیسی
+     */
+    private function download_image_with_english_filename($image_url, $post_id, $description) {
+        // دریافت محتوای تصویر
+        $response = wp_remote_get($image_url, array(
+            'timeout' => 30,
+            'sslverify' => false,
+            'user-agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+        ));
+
+        if (is_wp_error($response)) {
+            error_log("UM Import: Failed to download image content: " . $response->get_error_message());
+            return false;
+        }
+
+        $image_content = wp_remote_retrieve_body($response);
+        if (empty($image_content)) {
+            error_log("UM Import: Empty image content received");
+            return false;
+        }
+
+        // تشخیص نوع فایل از محتوا
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_buffer($finfo, $image_content);
+        finfo_close($finfo);
+
+        // تعیین پسوند فایل
+        $extension = '';
+        switch ($mime_type) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                $extension = 'jpg';
+                break;
+            case 'image/png':
+                $extension = 'png';
+                break;
+            case 'image/gif':
+                $extension = 'gif';
+                break;
+            case 'image/webp':
+                $extension = 'webp';
+                break;
+            default:
+                error_log("UM Import: Unsupported image type: {$mime_type}");
+                return false;
+        }
+
+        // ایجاد نام فایل انگلیسی
+        $english_filename = $this->generate_english_filename($post_id, $description, $extension);
+        
+        // ایجاد مسیر موقت
+        $upload_dir = wp_upload_dir();
+        $temp_file = $upload_dir['path'] . '/' . $english_filename;
+
+        // ذخیره فایل موقت
+        if (file_put_contents($temp_file, $image_content) === false) {
+            error_log("UM Import: Failed to save temporary file: {$temp_file}");
+            return false;
+        }
+
+        // آماده‌سازی فایل برای media_sideload_image
+        $_FILES['upload'] = array(
+            'name' => $english_filename,
+            'type' => $mime_type,
+            'tmp_name' => $temp_file,
+            'error' => 0,
+            'size' => filesize($temp_file)
+        );
+
+        // استفاده از media_handle_sideload
+        $attachment_id = media_handle_sideload($_FILES['upload'], $post_id, $description);
+
+        // پاک کردن فایل موقت
+        if (file_exists($temp_file)) {
+            unlink($temp_file);
+        }
+
+        if (is_wp_error($attachment_id)) {
+            error_log("UM Import: Failed to handle sideload: " . $attachment_id->get_error_message());
+            return false;
+        }
+
+        error_log("UM Import: Successfully downloaded image with English filename: {$english_filename}");
+        return $attachment_id;
+    }
+    
+    /**
+     * تولید نام فایل انگلیسی
+     */
+    private function generate_english_filename($post_id, $description, $extension) {
+        // تبدیل عنوان فارسی به انگلیسی
+        $english_title = $this->convert_persian_to_english($description);
+        
+        // حذف کاراکترهای غیرمجاز
+        $filename = preg_replace('/[^a-zA-Z0-9\-_]/', '_', $english_title);
+        $filename = preg_replace('/_+/', '_', $filename); // حذف _ های تکراری
+        $filename = trim($filename, '_'); // حذف _ از ابتدا و انتها
+        
+        // محدود کردن طول نام فایل
+        if (strlen($filename) > 50) {
+            $filename = substr($filename, 0, 50);
+        }
+        
+        // اضافه کردن ID پست برای منحصر به فرد بودن
+        $filename = 'seminar_' . $post_id . '_' . $filename . '.' . $extension;
+        
+        return $filename;
+    }
+    
+    /**
+     * تبدیل متن فارسی به انگلیسی (ساده)
+     */
+    private function convert_persian_to_english($text) {
+        // تبدیل کلمات فارسی رایج به انگلیسی
+        $persian_to_english = array(
+            'پایتون' => 'python',
+            'جاوا' => 'java',
+            'جاوااسکریپت' => 'javascript',
+            'پیاچپی' => 'php',
+            'سی‌شارپ' => 'csharp',
+            'سی‌پلاس‌پلاس' => 'cpp',
+            'سی' => 'c',
+            'روبی' => 'ruby',
+            'گو' => 'go',
+            'راست' => 'rust',
+            'سوئیفت' => 'swift',
+            'کاتلین' => 'kotlin',
+            'اسکالا' => 'scala',
+            'پرل' => 'perl',
+            'لوا' => 'lua',
+            'راکت' => 'react',
+            'انگولار' => 'angular',
+            'ویو' => 'vue',
+            'نود' => 'node',
+            'اکسپرس' => 'express',
+            'لاراول' => 'laravel',
+            'دجانگو' => 'django',
+            'فلسک' => 'flask',
+            'اسپرینگ' => 'spring',
+            'دات‌نت' => 'dotnet',
+            'لینوکس' => 'linux',
+            'ویندوز' => 'windows',
+            'مک' => 'mac',
+            'اندروید' => 'android',
+            'آی‌او‌اس' => 'ios',
+            'وب' => 'web',
+            'موبایل' => 'mobile',
+            'دسکتاپ' => 'desktop',
+            'سرور' => 'server',
+            'کلاینت' => 'client',
+            'دیتابیس' => 'database',
+            'مای‌اس‌کیو‌ال' => 'mysql',
+            'پست‌گرس‌کیو‌ال' => 'postgresql',
+            'مانگو' => 'mongo',
+            'ردیس' => 'redis',
+            'الاستیک' => 'elastic',
+            'سوکت' => 'socket',
+            'آر‌پی‌سی' => 'rpc',
+            'آر‌است' => 'rest',
+            'گراف‌کیو‌ال' => 'graphql',
+            'جیسون' => 'json',
+            'ایکس‌ام‌ال' => 'xml',
+            'یام‌ال' => 'yaml',
+            'سی‌اس‌اس' => 'css',
+            'اچ‌تی‌ام‌ال' => 'html',
+            'اس‌کیو‌ال' => 'sql',
+            'نو‌اس‌کیو‌ال' => 'nosql',
+            'میکروسرویس' => 'microservice',
+            'کانتینر' => 'container',
+            'داکر' => 'docker',
+            'کوبرنتیز' => 'kubernetes',
+            'سی‌آی' => 'ci',
+            'سی‌دی' => 'cd',
+            'دی‌او‌اس' => 'devops',
+            'گیت' => 'git',
+            'جیت‌هاب' => 'github',
+            'جیت‌لب' => 'gitlab',
+            'بیت‌باکت' => 'bitbucket',
+            'آمازون' => 'amazon',
+            'گوگل' => 'google',
+            'مایکروسافت' => 'microsoft',
+            'اپل' => 'apple',
+            'فیسبوک' => 'facebook',
+            'توییتر' => 'twitter',
+            'لینکدین' => 'linkedin',
+            'یوتیوب' => 'youtube',
+            'اینستاگرام' => 'instagram',
+            'تلگرام' => 'telegram',
+            'واتس‌اپ' => 'whatsapp',
+            'اسکایپ' => 'skype',
+            'زوم' => 'zoom',
+            'اسلک' => 'slack',
+            'دیسکورد' => 'discord',
+            'تیمز' => 'teams',
+            'میت' => 'meet',
+            'کلاس' => 'class',
+            'درس' => 'lesson',
+            'دوره' => 'course',
+            'کارگاه' => 'workshop',
+            'سمینار' => 'seminar',
+            'کنفرانس' => 'conference',
+            'وبینار' => 'webinar',
+            'آموزش' => 'training',
+            'یادگیری' => 'learning',
+            'برنامه‌نویسی' => 'programming',
+            'توسعه' => 'development',
+            'طراحی' => 'design',
+            'معماری' => 'architecture',
+            'الگوریتم' => 'algorithm',
+            'ساختار' => 'structure',
+            'الگو' => 'pattern',
+            'فریم‌ورک' => 'framework',
+            'کتابخانه' => 'library',
+            'پلاگین' => 'plugin',
+            'ماژول' => 'module',
+            'کامپوننت' => 'component',
+            'سرویس' => 'service',
+            'کنترلر' => 'controller',
+            'مدل' => 'model',
+            'ویو' => 'view',
+            'راوتر' => 'router',
+            'میدل‌ور' => 'middleware',
+            'هوک' => 'hook',
+            'کالبک' => 'callback',
+            'پرامیس' => 'promise',
+            'آسینک' => 'async',
+            'آویت' => 'await',
+            'فانکشن' => 'function',
+            'کلاس' => 'class',
+            'آبجکت' => 'object',
+            'آرایه' => 'array',
+            'متغیر' => 'variable',
+            'ثابت' => 'constant',
+            'عملگر' => 'operator',
+            'شرط' => 'condition',
+            'حلقه' => 'loop',
+            'بازگشت' => 'return',
+            'ورودی' => 'input',
+            'خروجی' => 'output',
+            'پارامتر' => 'parameter',
+            'آرگومان' => 'argument',
+            'مقدار' => 'value',
+            'نوع' => 'type',
+            'رشته' => 'string',
+            'عدد' => 'number',
+            'بولین' => 'boolean',
+            'نال' => 'null',
+            'آندفاین' => 'undefined',
+            'نان' => 'nan',
+            'اینفینیتی' => 'infinity',
+            'گراند' => 'ground',
+            'زیرو' => 'zero',
+            'وان' => 'one',
+            'تو' => 'two',
+            'تری' => 'three',
+            'فور' => 'four',
+            'فایو' => 'five',
+            'سیکس' => 'six',
+            'سون' => 'seven',
+            'ایت' => 'eight',
+            'ناین' => 'nine',
+            'تن' => 'ten',
+            'هاندر' => 'hundred',
+            'تازند' => 'thousand',
+            'میلین' => 'million',
+            'بیلیون' => 'billion',
+            'تریلیون' => 'trillion'
+        );
+        
+        // تبدیل کلمات فارسی به انگلیسی
+        $text = str_replace(array_keys($persian_to_english), array_values($persian_to_english), $text);
+        
+        // تبدیل اعداد فارسی به انگلیسی
+        $persian_numbers = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+        $english_numbers = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+        $text = str_replace($persian_numbers, $english_numbers, $text);
+        
+        // حذف کاراکترهای خاص و تبدیل به حروف کوچک
+        $text = preg_replace('/[^\w\s\-]/', '', $text);
+        $text = str_replace(' ', '_', $text);
+        $text = preg_replace('/_+/', '_', $text); // حذف _ های تکراری
+        $text = trim($text, '_'); // حذف _ از ابتدا و انتها
+        
+        return strtolower($text);
     }
 
     /**
@@ -2653,6 +3019,155 @@ class University_Management {
         $leap_years = array(1, 5, 9, 13, 17, 22, 26, 30, 34, 38, 42, 46, 50, 55, 59, 63, 67, 71, 75, 79, 83, 88, 92, 96, 100, 104, 108, 112, 116, 121, 125);
         
         return in_array($year_in_cycle, $leap_years);
+    }
+    
+    /**
+     * AJAX: دریافت لیست سمینارهای وارد شده
+     */
+    public function ajax_get_imported_seminars() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_imported_seminars_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $args = array(
+            'post_type' => 'um_seminars',
+            'posts_per_page' => 20,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC'
+        );
+
+        $query = new WP_Query($args);
+        $seminars = array();
+
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                
+                $seminars[] = array(
+                    'id' => $post_id,
+                    'title' => get_the_title(),
+                    'teacher' => get_post_meta($post_id, '_seminar_teacher', true),
+                    'time' => get_post_meta($post_id, '_seminar_time', true),
+                    'button_text' => get_post_meta($post_id, '_seminar_button_text', true),
+                    'button_link' => get_post_meta($post_id, '_seminar_button_link', true),
+                    'thumbnail' => get_the_post_thumbnail_url($post_id, 'thumbnail'),
+                    'edit_url' => get_edit_post_link($post_id),
+                    'view_url' => get_permalink($post_id),
+                    'date' => get_the_date('Y/m/d', $post_id),
+                    'course_code' => get_post_meta($post_id, '_um_course_code', true),
+                    'duration' => get_post_meta($post_id, '_um_seminar_duration', true),
+                    'audience' => get_post_meta($post_id, '_um_seminar_audience', true),
+                    'fee' => get_post_meta($post_id, '_um_seminar_fee', true),
+                    'support_tel' => get_post_meta($post_id, '_um_seminar_support_tel', true)
+                );
+            }
+            wp_reset_postdata();
+        }
+
+        wp_send_json_success($seminars);
+    }
+    
+    /**
+     * بررسی وضعیت تصاویر سمینارها
+     */
+    public function check_seminar_images_status() {
+        $args = array(
+            'post_type' => 'um_seminars',
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        );
+
+        $query = new WP_Query($args);
+        $stats = array(
+            'total_seminars' => 0,
+            'with_thumbnail' => 0,
+            'without_thumbnail' => 0,
+            'seminars_without_images' => array()
+        );
+
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                $stats['total_seminars']++;
+
+                if (has_post_thumbnail($post_id)) {
+                    $stats['with_thumbnail']++;
+                } else {
+                    $stats['without_thumbnail']++;
+                    $stats['seminars_without_images'][] = array(
+                        'id' => $post_id,
+                        'title' => get_the_title(),
+                        'course_code' => get_post_meta($post_id, '_um_course_code', true)
+                    );
+                }
+            }
+            wp_reset_postdata();
+        }
+
+        return $stats;
+    }
+    
+    /**
+     * AJAX: تست دانلود تصاویر با نام فارسی
+     */
+    public function ajax_test_image_download() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_test_image_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $test_images = array(
+            'پایتون.jpg' => 'https://kwphc.ir/webservice_new/images/پایتون.jpg',
+            'جاوا.png' => 'https://kwphc.ir/webservice_new/images/جاوا.png',
+            'react.jpg' => 'https://kwphc.ir/webservice_new/images/react.jpg',
+            'python.jpg' => 'https://kwphc.ir/webservice_new/images/python.jpg'
+        );
+
+        $results = array();
+
+        foreach ($test_images as $filename => $url) {
+            $result = array(
+                'filename' => $filename,
+                'url' => $url,
+                'success' => false,
+                'error' => '',
+                'english_filename' => ''
+            );
+
+            try {
+                // تست دانلود تصویر
+                $test_post_id = 1; // پست تست
+                $english_filename = $this->generate_english_filename($test_post_id, $filename, 'jpg');
+                
+                $result['english_filename'] = $english_filename;
+                
+                // بررسی وجود فایل در سرور
+                $response = wp_remote_head($url, array(
+                    'timeout' => 10,
+                    'sslverify' => false
+                ));
+
+                if (is_wp_error($response)) {
+                    $result['error'] = 'خطای شبکه: ' . $response->get_error_message();
+                } elseif (wp_remote_retrieve_response_code($response) !== 200) {
+                    $result['error'] = 'فایل در سرور موجود نیست (کد: ' . wp_remote_retrieve_response_code($response) . ')';
+                } else {
+                    $result['success'] = true;
+                    $result['error'] = 'موفق';
+                }
+
+            } catch (Exception $e) {
+                $result['error'] = 'خطا: ' . $e->getMessage();
+            }
+
+            $results[] = $result;
+        }
+
+        wp_send_json_success($results);
     }
 }
 

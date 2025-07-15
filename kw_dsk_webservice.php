@@ -18,12 +18,16 @@ if (!defined('KWPHC_WEBSERVICE_AUTHORIZED')) {
 class TokenManager {
     private $secretKey;
     private $refreshSecretKey;
-    private $tokenExpiration = 3600; // 1 ساعت
-    private $refreshTokenExpiration = 86400 * 7; // 7 روز
+    private $tokenExpiration = 86400 * 365; // 1 سال
+    private $refreshTokenExpiration = 86400 * 365; // 1 سال
 
     public function __construct() {
         $this->secretKey = hash('sha256', 'KW_DSK_ACCESS_TOKEN_SECRET_' . date('Y-m-d'));
         $this->refreshSecretKey = hash('sha256', 'KW_DSK_REFRESH_TOKEN_SECRET_' . date('Y-m-d'));
+    }
+
+    public function getTokenExpiration() {
+        return $this->tokenExpiration;
     }
 
     public function generateAccessToken($userId) {
@@ -443,7 +447,7 @@ class KwDskWebService {
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken,
                 'token_type' => 'Bearer',
-                'expires_in' => 3600 // 1 hour
+                'expires_in' => $this->tokenManager->getTokenExpiration()
             ]);
         } else {
             $this->sendErrorResponse('احراز هویت ناموفق', 401);
@@ -470,7 +474,7 @@ class KwDskWebService {
                 'status' => 'success',
                 'access_token' => $newAccessToken,
                 'token_type' => 'Bearer',
-                'expires_in' => 3600
+                'expires_in' => $this->tokenManager->getTokenExpiration()
             ]);
         } else {
             $this->sendErrorResponse('توکن تازه‌سازی نامعتبر یا منقضی شده', 401);
