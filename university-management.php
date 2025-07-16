@@ -91,6 +91,18 @@ class University_Management {
         add_action('wp_ajax_um_get_imported_seminars', array($this, 'ajax_get_imported_seminars'));
         add_action('wp_ajax_um_test_image_download', array($this, 'ajax_test_image_download'));
         
+        // اکشن‌های AJAX برای آزمون‌ها
+        add_action('wp_ajax_um_save_azmoon_api_settings', array($this, 'ajax_save_azmoon_api_settings'));
+        add_action('wp_ajax_um_get_azmoons', array($this, 'ajax_get_azmoons'));
+        add_action('wp_ajax_um_get_azmoon', array($this, 'ajax_get_azmoon'));
+        add_action('wp_ajax_um_create_azmoon', array($this, 'ajax_create_azmoon'));
+        add_action('wp_ajax_um_update_azmoon', array($this, 'ajax_update_azmoon'));
+        add_action('wp_ajax_um_delete_azmoon', array($this, 'ajax_delete_azmoon'));
+        add_action('wp_ajax_um_get_azmoons_widget', array($this, 'ajax_get_azmoons_widget'));
+        
+        // ثبت شورت‌کدهای داینامیک
+        add_action('init', array($this, 'register_shortcodes'));
+        
 
     }
 
@@ -232,6 +244,15 @@ class University_Management {
             'university-general-settings',
             array($this, 'general_settings_admin_page')
         );
+        
+        add_submenu_page(
+            'university-management',
+            __('آزمون‌های استخدامی', 'university-management'),
+            __('آزمون‌های استخدامی', 'university-management'),
+            'manage_options',
+            'university-azmoon',
+            array($this, 'azmoon_admin_page')
+        );
     }
 
     /**
@@ -303,6 +324,18 @@ class University_Management {
             require_once $settings_file;
         } else {
             echo '<div class="wrap"><h1>خطا</h1><p>فایل general-settings-page.php یافت نشد.</p></div>';
+        }
+    }
+    
+    /**
+     * صفحه مدیریت آزمون‌های استخدامی
+     */
+    public function azmoon_admin_page() {
+        $azmoon_file = UM_PLUGIN_DIR . 'admin/azmoon-page.php';
+        if (file_exists($azmoon_file)) {
+            require_once $azmoon_file;
+        } else {
+            echo '<div class="wrap"><h1>خطا</h1><p>فایل azmoon-page.php یافت نشد.</p></div>';
         }
     }
     
@@ -2133,7 +2166,7 @@ class University_Management {
         // لاگ درخواست برای دیباگ
         error_log('UM Auth Request: Username=' . $username);
         
-        // ارسال درخواست لاگین
+        // ارسال درخواست لاگین به ws_dore.php
         $response = wp_remote_post('https://kwphc.ir/webservice_new/ws_dore.php/login', array(
             'method' => 'POST',
             'headers' => array(
@@ -2181,7 +2214,7 @@ class University_Management {
                 return;
             }
             
-            // ذخیره اطلاعات احراز هویت
+            // ذخیره اطلاعات احراز هویت دوره
             update_option('_um_auth_token', $data['access_token']);
             $refresh_token = isset($data['refresh_token']) ? $data['refresh_token'] : '';
             update_option('_um_refresh_token', $refresh_token);
@@ -2189,11 +2222,34 @@ class University_Management {
             update_option('_um_auth_username', $username);
             update_option('_um_auth_status', 'authenticated');
             
+            // --- لاگین به وب‌سرویس آزمون ---
+            $azmoon_response = wp_remote_post('https://kwphc.ir/webservice_new/webervice_Azmoon.php/login', array(
+                'method' => 'POST',
+                'headers' => array(
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . get_bloginfo('url')
+                ),
+                'body' => array(
+                    'username' => $username,
+                    'password' => $password
+                ),
+                'timeout' => 30,
+                'sslverify' => false
+            ));
+            $azmoon_body = wp_remote_retrieve_body($azmoon_response);
+            $azmoon_data = json_decode($azmoon_body, true);
+            if (isset($azmoon_data['status']) && $azmoon_data['status'] === 'success' && isset($azmoon_data['access_token'])) {
+                update_option('_um_azmoon_token', $azmoon_data['access_token']);
+                update_option('_um_azmoon_token_expires', time() + intval($azmoon_data['expires_in']));
+            } else {
+                update_option('_um_azmoon_token', '');
+                update_option('_um_azmoon_token_expires', 0);
+            }
+            // --- پایان لاگین آزمون ---
+
             // لاگ موفقیت
             error_log('UM Auth Success: Token saved for user ' . $username);
-            
             $message = isset($data['message']) ? $data['message'] : 'ورود موفقیت‌آمیز بود';
-            
             wp_send_json_success(array(
                 'message' => $message,
                 'username' => $username,
@@ -3168,6 +3224,742 @@ class University_Management {
         }
 
         wp_send_json_success($results);
+    }
+    
+    /**
+     * AJAX: ذخیره تنظیمات API آزمون‌ها
+     */
+    public function ajax_save_azmoon_api_settings() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_azmoon_api_settings_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $limit = intval($_POST['limit']);
+        
+        if ($limit < 1 || $limit > 100) {
+            wp_send_json_error('حد آزمون‌ها باید بین 1 تا 100 باشد');
+        }
+
+        update_option('_um_azmoon_limit', $limit);
+        wp_send_json_success('تنظیمات با موفقیت ذخیره شد');
+    }
+    
+    /**
+     * AJAX: دریافت لیست آزمون‌ها
+     */
+    public function ajax_get_azmoons() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_azmoons_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        // بررسی احراز هویت آزمون
+        $auth_status = get_option('_um_auth_status');
+        $token_expires = get_option('_um_azmoon_token_expires');
+        if ($auth_status !== 'authenticated' || time() > $token_expires) {
+            wp_send_json_error('لطفاً ابتدا وارد شوید');
+        }
+
+        $limit = get_option('_um_azmoon_limit', 10);
+        $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php';
+        
+        // دریافت توکن آزمون
+        $access_token = get_option('_um_azmoon_token');
+        if (!$access_token) {
+            wp_send_json_error('توکن دسترسی موجود نیست');
+        }
+
+        $response = wp_remote_get($api_url . '?page=1&page_size=' . $limit, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $access_token,
+                'Content-Type' => 'application/json'
+            ),
+            'timeout' => 30
+        ));
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        // لاگ پاسخ برای دیباگ
+        error_log('UM Azmoons Response Code: ' . $http_code);
+        error_log('UM Azmoons Response Body: ' . $body);
+        error_log('UM Azmoons Decoded Data: ' . print_r($data, true));
+
+        if ($http_code === 401) {
+            delete_option('_um_auth_status');
+            wp_send_json_error('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+
+        if (!$data) {
+            wp_send_json_error('خطا در پردازش پاسخ سرور');
+        }
+
+        // بررسی ساختار پاسخ
+        if (isset($data['status']) && $data['status'] === 'success') {
+            if (isset($data['data'])) {
+                wp_send_json_success($data['data']);
+            } else {
+                wp_send_json_success($data);
+            }
+        } else if (isset($data['data'])) {
+            // اگر status نباشد ولی data باشد
+            wp_send_json_success($data['data']);
+        } else {
+            // اگر هیچ‌کدام نباشد، کل پاسخ را برگردان
+            wp_send_json_success($data);
+        }
+    }
+    
+    /**
+     * AJAX: دریافت آزمون بر اساس شناسه
+     */
+    public function ajax_get_azmoon() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_azmoon_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $id = intval($_POST['id']);
+        if (!$id) {
+            wp_send_json_error('شناسه آزمون نامعتبر است');
+        }
+
+        // بررسی احراز هویت آزمون
+        $auth_status = get_option('_um_auth_status');
+        $token_expires = get_option('_um_azmoon_token_expires');
+        if ($auth_status !== 'authenticated' || time() > $token_expires) {
+            wp_send_json_error('لطفاً ابتدا وارد شوید');
+        }
+
+        $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php';
+        
+        // دریافت توکن آزمون
+        $access_token = get_option('_um_azmoon_token');
+        if (!$access_token) {
+            wp_send_json_error('توکن دسترسی موجود نیست');
+        }
+
+        $response = wp_remote_get($api_url . '?id=' . $id, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $access_token,
+                'Content-Type' => 'application/json'
+            ),
+            'timeout' => 30
+        ));
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($http_code === 401) {
+            delete_option('_um_auth_status');
+            wp_send_json_error('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+
+        if (!$data) {
+            wp_send_json_error('خطا در پردازش پاسخ سرور');
+        }
+
+        if (isset($data['status']) && $data['status'] === 'success') {
+            wp_send_json_success($data['data']);
+        } else {
+            $error_message = isset($data['message']) ? $data['message'] : 'خطای نامشخص';
+            wp_send_json_error($error_message);
+        }
+    }
+    
+    /**
+     * AJAX: ایجاد آزمون جدید
+     */
+    public function ajax_create_azmoon() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_azmoon_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $azmoon_data = $_POST['azmoon_data'];
+        if (empty($azmoon_data['Title'])) {
+            wp_send_json_error('عنوان آزمون الزامی است');
+        }
+
+        // بررسی احراز هویت آزمون
+        $auth_status = get_option('_um_auth_status');
+        $token_expires = get_option('_um_azmoon_token_expires');
+        if ($auth_status !== 'authenticated' || time() > $token_expires) {
+            wp_send_json_error('لطفاً ابتدا وارد شوید');
+        }
+
+        $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php';
+        
+        // دریافت توکن آزمون
+        $access_token = get_option('_um_azmoon_token');
+        if (!$access_token) {
+            wp_send_json_error('توکن دسترسی موجود نیست');
+        }
+
+        $response = wp_remote_post($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $access_token,
+                'Content-Type' => 'application/json'
+            ),
+            'body' => json_encode($azmoon_data),
+            'timeout' => 30
+        ));
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($http_code === 401) {
+            delete_option('_um_auth_status');
+            wp_send_json_error('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+
+        if (!$data) {
+            wp_send_json_error('خطا در پردازش پاسخ سرور');
+        }
+
+        if (isset($data['status']) && $data['status'] === 'success') {
+            wp_send_json_success($data['data']);
+        } else {
+            $error_message = isset($data['message']) ? $data['message'] : 'خطای نامشخص';
+            wp_send_json_error($error_message);
+        }
+    }
+    
+    /**
+     * AJAX: به‌روزرسانی آزمون
+     */
+    public function ajax_update_azmoon() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_azmoon_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $azmoon_data = $_POST['azmoon_data'];
+        if (empty($azmoon_data['Id']) || empty($azmoon_data['Title'])) {
+            wp_send_json_error('شناسه و عنوان آزمون الزامی است');
+        }
+
+        // بررسی احراز هویت آزمون
+        $auth_status = get_option('_um_auth_status');
+        $token_expires = get_option('_um_azmoon_token_expires');
+        if ($auth_status !== 'authenticated' || time() > $token_expires) {
+            wp_send_json_error('لطفاً ابتدا وارد شوید');
+        }
+
+        $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php';
+        
+        // دریافت توکن آزمون
+        $access_token = get_option('_um_azmoon_token');
+        if (!$access_token) {
+            wp_send_json_error('توکن دسترسی موجود نیست');
+        }
+
+        $response = wp_remote_request($api_url, array(
+            'method' => 'PUT',
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $access_token,
+                'Content-Type' => 'application/json'
+            ),
+            'body' => json_encode($azmoon_data),
+            'timeout' => 30
+        ));
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($http_code === 401) {
+            delete_option('_um_auth_status');
+            wp_send_json_error('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+
+        if (!$data) {
+            wp_send_json_error('خطا در پردازش پاسخ سرور');
+        }
+
+        if (isset($data['status']) && $data['status'] === 'success') {
+            wp_send_json_success($data['data']);
+        } else {
+            $error_message = isset($data['message']) ? $data['message'] : 'خطای نامشخص';
+            wp_send_json_error($error_message);
+        }
+    }
+    
+    /**
+     * AJAX: حذف آزمون
+     */
+    public function ajax_delete_azmoon() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_azmoon_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        $id = intval($_POST['id']);
+        if (!$id) {
+            wp_send_json_error('شناسه آزمون نامعتبر است');
+        }
+
+        // بررسی احراز هویت آزمون
+        $auth_status = get_option('_um_auth_status');
+        $token_expires = get_option('_um_azmoon_token_expires');
+        if ($auth_status !== 'authenticated' || time() > $token_expires) {
+            wp_send_json_error('لطفاً ابتدا وارد شوید');
+        }
+
+        $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php?id=' . $id;
+        
+        // دریافت توکن آزمون
+        $access_token = get_option('_um_azmoon_token');
+        if (!$access_token) {
+            wp_send_json_error('توکن دسترسی موجود نیست');
+        }
+
+        $response = wp_remote_request($api_url, array(
+            'method' => 'DELETE',
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $access_token,
+                'Content-Type' => 'application/json'
+            ),
+            'timeout' => 30
+        ));
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($http_code === 401) {
+            delete_option('_um_auth_status');
+            wp_send_json_error('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+
+        if (!$data) {
+            wp_send_json_error('خطا در پردازش پاسخ سرور');
+        }
+
+        if (isset($data['status']) && $data['status'] === 'success') {
+            wp_send_json_success($data['data']);
+        } else {
+            $error_message = isset($data['message']) ? $data['message'] : 'خطای نامشخص';
+            wp_send_json_error($error_message);
+        }
+    }
+
+    /**
+     * AJAX برای دریافت آزمون‌ها برای ویجت
+     */
+    public function ajax_get_azmoons_widget() {
+        // بررسی nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'university-management-nonce')) {
+            wp_die('خطای امنیتی');
+        }
+
+        $limit = intval($_POST['limit'] ?? 6);
+
+        // بررسی وجود توکن
+        $token = get_option('_um_azmoon_token');
+        $token_expiry = get_option('_um_azmoon_token_expiry');
+
+        if (!$token || (time() > $token_expiry)) {
+            // تلاش برای لاگین مجدد
+            $this->authenticate_azmoon_api();
+            $token = get_option('_um_azmoon_token');
+        }
+
+        if (!$token) {
+            wp_send_json_error(array('message' => 'خطا در احراز هویت'));
+            return;
+        }
+
+        $api_url = get_option('um_azmoon_api_url', '') . '/azmoons?limit=' . $limit;
+
+        $response = wp_remote_get($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type' => 'application/json',
+            ),
+            'timeout' => 30,
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array('message' => 'خطا در اتصال به سرور: ' . $response->get_error_message()));
+            return;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if (isset($data['data']) && is_array($data['data'])) {
+            $azmoons = array();
+            foreach ($data['data'] as $azmoon) {
+                $azmoons[] = array(
+                    'id' => $azmoon['id'] ?? 0,
+                    'title' => $azmoon['title'] ?? 'آزمون استخدامی',
+                    'date' => $azmoon['date'] ?? '۱۴۰۳/۰۱/۰۱',
+                    'department' => $azmoon['department'] ?? 'عمومی',
+                    'status' => $azmoon['status'] ?? 'active',
+                    'link' => $azmoon['link'] ?? '#',
+                    'image' => UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
+                    'button_text' => 'مشاهده جزئیات',
+                );
+            }
+            wp_send_json_success($azmoons);
+        } else {
+            wp_send_json_error(array('message' => 'خطا در دریافت داده‌ها'));
+        }
+    }
+
+    /**
+     * ثبت شورت‌کدهای داینامیک
+     */
+    public function register_shortcodes() {
+        add_shortcode('um_azmoon_title', array($this, 'azmoon_title_shortcode'));
+        add_shortcode('um_azmoon_date', array($this, 'azmoon_date_shortcode'));
+        add_shortcode('um_azmoon_department', array($this, 'azmoon_department_shortcode'));
+        add_shortcode('um_azmoon_status', array($this, 'azmoon_status_shortcode'));
+        add_shortcode('um_azmoon_link', array($this, 'azmoon_link_shortcode'));
+        add_shortcode('um_azmoon_image', array($this, 'azmoon_image_shortcode'));
+        add_shortcode('um_azmoon_description', array($this, 'azmoon_description_shortcode'));
+        add_shortcode('um_azmoon_list', array($this, 'azmoon_list_shortcode'));
+    }
+
+    /**
+     * شورت‌کد عنوان آزمون
+     */
+    public function azmoon_title_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => 'آزمون استخدامی'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            return $azmoon ? $azmoon['title'] : $atts['default'];
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد تاریخ آزمون
+     */
+    public function azmoon_date_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => '۱۴۰۳/۰۱/۰۱'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            return $azmoon ? $azmoon['date'] : $atts['default'];
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد دپارتمان آزمون
+     */
+    public function azmoon_department_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => 'عمومی'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            return $azmoon ? $azmoon['department'] : $atts['default'];
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد وضعیت آزمون
+     */
+    public function azmoon_status_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => 'فعال'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            if ($azmoon) {
+                $status_map = array(
+                    'active' => 'فعال',
+                    'inactive' => 'غیرفعال',
+                    'completed' => 'تکمیل شده'
+                );
+                return isset($status_map[$azmoon['status']]) ? $status_map[$azmoon['status']] : $atts['default'];
+            }
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد لینک آزمون
+     */
+    public function azmoon_link_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => '#'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            return $azmoon ? $azmoon['link'] : $atts['default'];
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد تصویر آزمون
+     */
+    public function azmoon_image_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            return $azmoon ? $azmoon['image'] : $atts['default'];
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد توضیحات آزمون
+     */
+    public function azmoon_description_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'id' => 0,
+            'default' => 'توضیحات آزمون'
+        ), $atts);
+
+        if ($atts['id'] > 0) {
+            $azmoon = $this->get_azmoon_by_id($atts['id']);
+            return $azmoon ? $azmoon['description'] : $atts['default'];
+        }
+
+        return $atts['default'];
+    }
+
+    /**
+     * شورت‌کد لیست آزمون‌ها
+     */
+    public function azmoon_list_shortcode($atts) {
+        $atts = shortcode_atts(array(
+            'limit' => 6,
+            'status' => 'active',
+            'department' => '',
+            'template' => 'grid'
+        ), $atts);
+
+        $azmoons = $this->get_azmoons_for_shortcode($atts);
+
+        if (empty($azmoons)) {
+            return '<div class="um-azmoon-empty">هیچ آزمونی یافت نشد.</div>';
+        }
+
+        $output = '<div class="um-azmoon-list um-template-' . esc_attr($atts['template']) . '">';
+        
+        foreach ($azmoons as $azmoon) {
+            $output .= $this->generate_azmoon_card_html($azmoon, $atts['template']);
+        }
+        
+        $output .= '</div>';
+
+        return $output;
+    }
+
+    /**
+     * دریافت آزمون بر اساس ID
+     */
+    private function get_azmoon_by_id($id) {
+        // بررسی وجود توکن
+        $token = get_option('_um_azmoon_token');
+        $token_expiry = get_option('_um_azmoon_token_expiry');
+
+        if (!$token || (time() > $token_expiry)) {
+            $this->authenticate_azmoon_api();
+            $token = get_option('_um_azmoon_token');
+        }
+
+        if (!$token) {
+            return false;
+        }
+
+        $api_url = get_option('um_azmoon_api_url', '') . '/azmoons/' . $id;
+
+        $response = wp_remote_get($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type' => 'application/json',
+            ),
+            'timeout' => 30,
+        ));
+
+        if (!is_wp_error($response)) {
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+
+            if (isset($data['data'])) {
+                return array(
+                    'id' => $data['data']['id'] ?? 0,
+                    'title' => $data['data']['title'] ?? 'آزمون استخدامی',
+                    'date' => $data['data']['date'] ?? '۱۴۰۳/۰۱/۰۱',
+                    'department' => $data['data']['department'] ?? 'عمومی',
+                    'status' => $data['data']['status'] ?? 'active',
+                    'link' => $data['data']['link'] ?? '#',
+                    'image' => UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
+                    'description' => $data['data']['description'] ?? 'توضیحات آزمون',
+                );
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * دریافت آزمون‌ها برای شورت‌کد
+     */
+    private function get_azmoons_for_shortcode($atts) {
+        // بررسی وجود توکن
+        $token = get_option('_um_azmoon_token');
+        $token_expiry = get_option('_um_azmoon_token_expiry');
+
+        if (!$token || (time() > $token_expiry)) {
+            $this->authenticate_azmoon_api();
+            $token = get_option('_um_azmoon_token');
+        }
+
+        if (!$token) {
+            return array();
+        }
+
+        $api_url = get_option('um_azmoon_api_url', '') . '/azmoons?limit=' . $atts['limit'];
+
+        if (!empty($atts['status'])) {
+            $api_url .= '&status=' . $atts['status'];
+        }
+
+        if (!empty($atts['department'])) {
+            $api_url .= '&department=' . urlencode($atts['department']);
+        }
+
+        $response = wp_remote_get($api_url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type' => 'application/json',
+            ),
+            'timeout' => 30,
+        ));
+
+        if (!is_wp_error($response)) {
+            $body = wp_remote_retrieve_body($response);
+            $data = json_decode($body, true);
+
+            if (isset($data['data']) && is_array($data['data'])) {
+                $azmoons = array();
+                foreach ($data['data'] as $azmoon) {
+                    $azmoons[] = array(
+                        'id' => $azmoon['id'] ?? 0,
+                        'title' => $azmoon['title'] ?? 'آزمون استخدامی',
+                        'date' => $azmoon['date'] ?? '۱۴۰۳/۰۱/۰۱',
+                        'department' => $azmoon['department'] ?? 'عمومی',
+                        'status' => $azmoon['status'] ?? 'active',
+                        'link' => $azmoon['link'] ?? '#',
+                        'image' => UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
+                        'description' => $azmoon['description'] ?? 'توضیحات آزمون',
+                    );
+                }
+                return $azmoons;
+            }
+        }
+
+        return array();
+    }
+
+    /**
+     * تولید HTML کارت آزمون
+     */
+    private function generate_azmoon_card_html($azmoon, $template = 'grid') {
+        $status_text = $this->get_azmoon_status_text($azmoon['status']);
+        $status_class = 'um-status-' . $azmoon['status'];
+
+        if ($template === 'list') {
+            return '
+                <div class="um-azmoon-item um-azmoon-list-item">
+                    <div class="um-azmoon-item-image">
+                        <img src="' . esc_url($azmoon['image']) . '" alt="' . esc_attr($azmoon['title']) . '">
+                        <div class="um-azmoon-status ' . $status_class . '">' . $status_text . '</div>
+                    </div>
+                    <div class="um-azmoon-item-content">
+                        <h3 class="um-azmoon-item-title">' . esc_html($azmoon['title']) . '</h3>
+                        <div class="um-azmoon-item-meta">
+                            <span class="um-azmoon-item-date">
+                                <i class="eicon-calendar"></i>' . esc_html($azmoon['date']) . '
+                            </span>
+                            <span class="um-azmoon-item-department">
+                                <i class="eicon-folder"></i>' . esc_html($azmoon['department']) . '
+                            </span>
+                        </div>
+                        <div class="um-azmoon-item-description">' . esc_html($azmoon['description']) . '</div>
+                        <div class="um-azmoon-item-actions">
+                            <a href="' . esc_url($azmoon['link']) . '" class="um-azmoon-button" target="_blank" rel="nofollow">
+                                مشاهده جزئیات
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            ';
+        }
+
+        // Template grid (پیش‌فرض)
+        return '
+            <div class="um-azmoon-card">
+                <div class="um-azmoon-image">
+                    <img src="' . esc_url($azmoon['image']) . '" alt="' . esc_attr($azmoon['title']) . '">
+                    <div class="um-azmoon-status ' . $status_class . '">' . $status_text . '</div>
+                </div>
+                <div class="um-azmoon-content">
+                    <h3 class="um-azmoon-card-title">' . esc_html($azmoon['title']) . '</h3>
+                    <div class="um-azmoon-meta">
+                        <span class="um-azmoon-date">
+                            <i class="eicon-calendar"></i>' . esc_html($azmoon['date']) . '
+                        </span>
+                        <span class="um-azmoon-department">
+                            <i class="eicon-folder"></i>' . esc_html($azmoon['department']) . '
+                        </span>
+                    </div>
+                    <div class="um-azmoon-actions">
+                        <a href="' . esc_url($azmoon['link']) . '" class="um-azmoon-button" target="_blank" rel="nofollow">
+                            مشاهده جزئیات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        ';
+    }
+
+    /**
+     * دریافت متن وضعیت آزمون
+     */
+    private function get_azmoon_status_text($status) {
+        $status_map = array(
+            'active' => 'فعال',
+            'inactive' => 'غیرفعال',
+            'completed' => 'تکمیل شده'
+        );
+        return isset($status_map[$status]) ? $status_map[$status] : 'نامشخص';
     }
 }
 

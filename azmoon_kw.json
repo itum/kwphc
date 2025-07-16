@@ -1,0 +1,526 @@
+{
+	"info": {
+		"_postman_id": "kwphc-azmoon-api",
+		"name": "KWPHC Azmoon API",
+		"description": "وب‌سرویس مدیریت آزمون‌ها - دیتابیس kwphc.ir_main",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "احراز هویت",
+			"item": [
+				{
+					"name": "ورود (Login)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "kwphc_2024!",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "تازه‌سازی توکن (Refresh Token)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php/refresh-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php",
+								"refresh-token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "عملیات CRUD آزمون‌ها",
+			"item": [
+				{
+					"name": "دریافت لیست آزمون‌ها",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?page=1&page_size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "دریافت آزمون بر اساس شناسه",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?id=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "دریافت آخرین آزمون‌ها",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?action=latest_records&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "action",
+									"value": "latest_records"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ایجاد آزمون جدید",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Title\": \"آزمون جذب نیروی کار جدید\",\n  \"Company\": \"شرکت پیمانکاری بهره برداری\",\n  \"City\": \"مسجد سلیمان\",\n  \"DSSabtName\": \"1402/01/01\",\n  \"DPSabtName\": \"1402/01/15\",\n  \"DAzmoon\": \"1402/02/01\",\n  \"Poster\": \"poster.jpg\",\n  \"Agahi\": \"advertisement.pdf\",\n  \"Tozihat\": \"توضیحات آزمون جدید\",\n  \"Link\": \"https://example.com\",\n  \"Active\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "بروزرسانی آزمون",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Id\": 1,\n  \"Title\": \"عنوان بروزرسانی شده\",\n  \"Company\": \"شرکت بروزرسانی شده\",\n  \"City\": \"شهر بروزرسانی شده\",\n  \"Active\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "حذف آزمون",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?id=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "فیلتر و جستجو",
+			"item": [
+				{
+					"name": "فیلتر بر اساس شهر",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?filters[City]=مسجد سلیمان&page=1&page_size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "filters[City]",
+									"value": "مسجد سلیمان"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "فیلتر بر اساس شرکت",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?filters[Company]=پیمانکاری&page=1&page_size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "filters[Company]",
+									"value": "پیمانکاری"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "فیلتر بر اساس عنوان",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php?filters[Title]=جذب&page=1&page_size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							],
+							"query": [
+								{
+									"key": "filters[Title]",
+									"value": "جذب"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "نمونه داده‌ها",
+			"item": [
+				{
+					"name": "ایجاد آزمون نمونه 1",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Title\": \"آگهی جذب نیروی کار در قالب فرا...\",\n  \"Company\": \"شرکت پیمانکاری بهره برداری (من...)\",\n  \"City\": \"مسجد سلیمان\",\n  \"DSSabtName\": \"1401/09/22\",\n  \"DPSabtName\": \"1401/11/01\",\n  \"DAzmoon\": \"1401/11/07\",\n  \"Poster\": \"jpg.1\",\n  \"Agahi\": \"ShadeganAdv.pdf\",\n  \"Tozihat\": \"https://www.kwphc.ir/...News.aspx\",\n  \"Link\": \"http://estekhdam.kwphc.ir/...azmo\",\n  \"Active\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ایجاد آزمون نمونه 2",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Title\": \"اعلام نتایج آزمون\",\n  \"Company\": \"شرکت های برجمان ارشیا\",\n  \"City\": \"ایذه\",\n  \"DSSabtName\": \"1401/11/08\",\n  \"DPSabtName\": \"1401/11/23\",\n  \"DAzmoon\": \"1401/11/27\",\n  \"Poster\": \"Padenapic.jpg\",\n  \"Agahi\": \"Az2509.pdf\",\n  \"Tozihat\": \"#\",\n  \"Link\": \"https://estekhdam.kwphc.ir/...azm\",\n  \"Active\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ایجاد آزمون نمونه 3",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Title\": \"آگهی جذب و بکارگیری نیروی حجمی...\",\n  \"Company\": \"مؤسسه خدمات حفاظتی و مراقبتی ج...\",\n  \"City\": \"اندیمشک\",\n  \"DSSabtName\": \"1401/11/24\",\n  \"DPSabtName\": \"1401/11/30\",\n  \"DAzmoon\": \"1402/02/08\",\n  \"Poster\": \"simban.jpg\",\n  \"Agahi\": \"AdvNegahban.pdf\",\n  \"Tozihat\": \"#\",\n  \"Link\": \"#\",\n  \"Active\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/webervice_Azmoon.php",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"webervice_Azmoon.php"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// تنظیم متغیرهای محیطی",
+					"if (!pm.environment.get('base_url')) {",
+					"    pm.environment.set('base_url', 'http://localhost');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// ذخیره توکن‌ها پس از ورود موفق",
+					"if (pm.response.code === 200) {",
+					"    const response = pm.response.json();",
+					"    if (response.status === 'success' && response.access_token) {",
+					"        pm.environment.set('access_token', response.access_token);",
+					"        pm.environment.set('refresh_token', response.refresh_token);",
+					"        console.log('توکن‌ها ذخیره شدند');",
+					"    }",
+					"}",
+					"",
+					"// بررسی خطاهای احراز هویت",
+					"if (pm.response.code === 401) {",
+					"    console.log('خطای احراز هویت - لطفاً دوباره وارد شوید');",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 

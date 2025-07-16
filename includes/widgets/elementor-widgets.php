@@ -70,12 +70,14 @@ class UM_Elementor_Widgets {
         require_once UM_PLUGIN_DIR . 'includes/widgets/class-timer-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/video-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/seminar-slider-widget.php';
+        require_once UM_PLUGIN_DIR . 'includes/widgets/azmoon-widget.php';
         
         // ثبت ویجت‌ها
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Calendar_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Class_Timer_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Video_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Seminar_Slider_Widget());
+        \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Azmoon_Widget());
     }
 
     /**
@@ -90,6 +92,7 @@ class UM_Elementor_Widgets {
         wp_enqueue_style('um-class-timer-widget', UM_PLUGIN_URL . 'assets/css/class-timer-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-video-widget', UM_PLUGIN_URL . 'assets/css/video-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/css/seminar-slider-widget.css', array(), UM_VERSION);
+        wp_enqueue_style('um-azmoon-widget', UM_PLUGIN_URL . 'assets/css/azmoon-widget.css', array(), UM_VERSION);
 
         // کتابخانه‌های خارجی
         wp_enqueue_style('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', array(), '11');
@@ -112,6 +115,7 @@ class UM_Elementor_Widgets {
         wp_register_script('um-class-timer-widget', UM_PLUGIN_URL . 'assets/js/class-timer-widget.js', array('jquery', 'moment', 'moment-jalaali'), UM_VERSION, true);
         wp_register_script('um-video-widget', UM_PLUGIN_URL . 'assets/js/video-widget.js', array('jquery'), UM_VERSION, true);
         wp_register_script('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/js/seminar-slider-widget.js', array('jquery', 'swiper', 'lucide'), UM_VERSION, true);
+        wp_register_script('um-azmoon-widget', UM_PLUGIN_URL . 'assets/js/azmoon-widget.js', array('jquery'), UM_VERSION, true);
 
         // لوکالایز اسکریپت‌ها
         wp_localize_script('um-calendar-widget', 'um_calendar_vars', array(
@@ -125,6 +129,11 @@ class UM_Elementor_Widgets {
         ));
         
         wp_localize_script('um-video-widget', 'um_video_vars', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('university-management-nonce')
+        ));
+        
+        wp_localize_script('um-azmoon-widget', 'um_azmoon_vars', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('university-management-nonce')
         ));

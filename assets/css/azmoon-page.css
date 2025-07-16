@@ -1,0 +1,408 @@
+/* استایل‌های صفحه مدیریت آزمون‌های استخدامی */
+
+.um-azmoon-settings .card {
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.um-status-display {
+    margin-bottom: 20px;
+}
+
+.spinner {
+    float: none;
+    margin: 0 10px;
+}
+
+.um-azmoon-list {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 15px;
+    background: #f9f9f9;
+}
+
+.um-azmoon-item {
+    padding: 20px;
+    margin-bottom: 15px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.um-azmoon-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.um-azmoon-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    border-bottom: 2px solid #e74c3c;
+    padding-bottom: 8px;
+}
+
+.um-azmoon-main-info {
+    background: #fdf2f2;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 10px 0;
+    border-left: 4px solid #e74c3c;
+    line-height: 1.6;
+}
+
+.um-azmoon-image {
+    text-align: center;
+    margin: 15px 0;
+}
+
+.um-azmoon-image img {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.um-azmoon-image img:hover {
+    transform: scale(1.05);
+}
+
+.um-azmoon-description {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #6c757d;
+}
+
+.um-azmoon-description .description-text {
+    margin-top: 8px;
+    line-height: 1.8;
+    white-space: pre-line;
+    color: #495057;
+}
+
+.um-azmoon-link {
+    background: #cce7ff;
+    color: #004085;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+    border-left: 4px solid #007bff;
+    font-weight: bold;
+}
+
+.um-azmoon-link a {
+    color: #004085;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.um-azmoon-link a:hover {
+    text-decoration: underline;
+}
+
+.um-azmoon-status {
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.um-azmoon-status.active {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.um-azmoon-status.inactive {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.um-azmoon-actions {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.um-azmoon-actions .button {
+    margin-right: 5px;
+}
+
+.azmoon-id {
+    color: #999;
+    font-size: 11px;
+    margin-left: auto;
+}
+
+#um-messages {
+    margin-bottom: 20px;
+}
+
+.no-azmoons {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.loading {
+    text-align: center;
+    color: #0073aa;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* مودال */
+.um-modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+.um-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s ease;
+}
+
+.um-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.um-modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.um-modal-close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.um-modal-close:hover {
+    color: #e74c3c;
+}
+
+.um-modal-body {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* فرم مودال */
+.um-modal-body .form-table {
+    margin-top: 0;
+}
+
+.um-modal-body .form-table th {
+    width: 150px;
+    padding: 15px 10px 15px 0;
+}
+
+.um-modal-body .form-table td {
+    padding: 15px 10px;
+}
+
+.um-modal-body input[type="text"],
+.um-modal-body input[type="url"],
+.um-modal-body input[type="number"],
+.um-modal-body textarea,
+.um-modal-body select {
+    width: 100%;
+    max-width: 400px;
+}
+
+.um-modal-body textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* دکمه‌های مودال */
+.um-modal-body .submit {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.um-modal-body .submit .button {
+    margin-right: 10px;
+}
+
+/* انیمیشن‌ها */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-50px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+.um-azmoon-item {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* بهبود نمایش در موبایل */
+@media (max-width: 768px) {
+    .um-azmoon-item {
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .um-azmoon-title {
+        font-size: 16px;
+    }
+    
+    .um-azmoon-image img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    .um-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .um-modal-body .form-table th,
+    .um-modal-body .form-table td {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+    }
+    
+    .um-azmoon-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .azmoon-id {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}
+
+/* استایل‌های اضافی برای بهبود UX */
+.um-azmoon-controls {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.um-azmoon-controls .button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+/* استایل برای پیام‌های موفقیت و خطا */
+.notice-success {
+    border-left-color: #28a745;
+}
+
+.notice-error {
+    border-left-color: #dc3545;
+}
+
+.notice-info {
+    border-left-color: #17a2b8;
+}
+
+.notice-warning {
+    border-left-color: #ffc107;
+}
+
+/* استایل برای فیلدهای اجباری */
+.um-modal-body input[required],
+.um-modal-body textarea[required] {
+    border-color: #e74c3c;
+}
+
+.um-modal-body input[required]:focus,
+.um-modal-body textarea[required]:focus {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 1px #e74c3c;
+}
+
+/* استایل برای دکمه‌های عملیات */
+.um-edit-azmoon {
+    background-color: #007cba;
+    border-color: #007cba;
+    color: white;
+}
+
+.um-edit-azmoon:hover {
+    background-color: #005a87;
+    border-color: #005a87;
+}
+
+.um-delete-azmoon {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.um-delete-azmoon:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* استایل برای آیکون‌ها */
+.um-azmoon-main-info::before {
+    content: "📋 ";
+}
+
+.um-azmoon-link::before {
+    content: "🔗 ";
+}
+
+.um-azmoon-status.active::before {
+    content: "✅ ";
+}
+
+.um-azmoon-status.inactive::before {
+    content: "❌ ";
+} 

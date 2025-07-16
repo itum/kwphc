@@ -134,6 +134,8 @@ $is_authenticated = ($auth_status === 'authenticated' && !empty($auth_username) 
             </div>
         </div>
         
+
+        
         <!-- بخش مدیریت سمینارها -->
         <div class="um-seminars-section">
             <div class="card">
@@ -347,6 +349,48 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     showMessage('تنظیمات با موفقیت ذخیره شد', 'success');
+                } else {
+                    showMessage('خطا در ذخیره تنظیمات: ' + response.data, 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                showMessage('خطا در اتصال به سرور: ' + error, 'error');
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+                $loading.hide();
+            }
+        });
+    });
+    
+    // ذخیره تنظیمات API آزمون‌ها
+    $('#um-azmoon-api-settings-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var limit = $('#um-azmoon-limit').val();
+        
+        if (!limit || limit < 1 || limit > 100) {
+            showMessage('حد آزمون‌ها باید بین 1 تا 100 باشد', 'error');
+            return;
+        }
+        
+        var $button = $(this).find('button[type="submit"]');
+        var $loading = $('#um-azmoon-api-loading');
+        
+        $button.prop('disabled', true);
+        $loading.show();
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'um_save_azmoon_api_settings',
+                limit: limit,
+                nonce: '<?php echo wp_create_nonce('um_azmoon_api_settings_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage('تنظیمات آزمون‌ها با موفقیت ذخیره شد', 'success');
                 } else {
                     showMessage('خطا در ذخیره تنظیمات: ' + response.data, 'error');
                 }
