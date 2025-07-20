@@ -4004,7 +4004,12 @@ class University_Management {
         }
 
         // دریافت آزمون‌ها از وب‌سرویس
-        $azmoons_data = $this->get_azmoons_from_webservice();
+        try {
+            $azmoons_data = $this->get_azmoons_from_webservice();
+        } catch (Exception $e) {
+            wp_send_json_error('خطا در دریافت آزمون‌ها از وب‌سرویس: ' . $e->getMessage());
+            return;
+        }
 
         if (empty($azmoons_data)) {
             wp_send_json_error('هیچ آزمونی از وب‌سرویس دریافت نشد.');
@@ -4074,79 +4079,111 @@ class University_Management {
     }
 
     private function get_azmoons_from_webservice() {
-        // فعلاً از نمونه داده‌های ساده استفاده کنیم تا خطا برطرف شود
-        return array(
-            array(
-                'ID' => 1,
-                'Title' => 'آگهی جذب نیروی کار شرکت نفت',
-                'Company' => 'شرکت ملی نفت ایران',
-                'City' => 'تهران',
-                'DSSabtName' => '1403/01/01',
-                'DPSabtName' => '1403/02/01',
-                'DAzmoon' => '1403/02/15',
-                'Poster' => 'https://kwphc.ir/uploads/azmoon/posters/poster1.jpg',
-                'Agahi' => 'https://kwphc.ir/uploads/azmoon/agahi/agahi1.pdf',
-                'Tozihat' => 'آزمون استخدامی برای پست‌های مختلف در شرکت نفت',
-                'Link' => 'https://nioc.ir',
-                'Active' => 1
+        // بررسی احراز هویت آزمون
+        $auth_status = get_option('_um_auth_status');
+        $token_expires = get_option('_um_azmoon_token_expires');
+        if ($auth_status !== 'authenticated' || time() > $token_expires) {
+            throw new Exception('لطفاً ابتدا وارد شوید');
+        }
+
+        $limit = 100; // دریافت حداکثر 100 آزمون
+        $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php';
+        
+        // دریافت توکن آزمون
+        $access_token = get_option('_um_azmoon_token');
+        if (!$access_token) {
+            throw new Exception('توکن دسترسی موجود نیست');
+        }
+
+        $response = wp_remote_get($api_url . '?page=1&page_size=' . $limit, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $access_token,
+                'Content-Type' => 'application/json'
             ),
-            array(
-                'ID' => 2,
-                'Title' => 'استخدام کارشناس IT',
-                'Company' => 'سازمان تأمین اجتماعی',
-                'City' => 'مشهد',
-                'DSSabtName' => '1403/02/01',
-                'DPSabtName' => '1403/03/01',
-                'DAzmoon' => '1403/03/15',
-                'Poster' => 'https://kwphc.ir/uploads/azmoon/posters/poster2.jpg',
-                'Agahi' => 'https://kwphc.ir/uploads/azmoon/agahi/agahi2.pdf',
-                'Tozihat' => 'استخدام متخصص فناوری اطلاعات',
-                'Link' => 'https://tamin.ir',
-                'Active' => 1
-            ),
-            array(
-                'ID' => 3,
-                'Title' => 'آزمون استخدامی وزارت بهداشت',
-                'Company' => 'وزارت بهداشت، درمان و آموزش پزشکی',
-                'City' => 'اصفهان',
-                'DSSabtName' => '1403/03/01',
-                'DPSabtName' => '1403/04/01',
-                'DAzmoon' => '1403/04/20',
-                'Poster' => 'https://kwphc.ir/uploads/azmoon/posters/poster3.jpg',
-                'Agahi' => 'https://kwphc.ir/uploads/azmoon/agahi/agahi3.pdf',
-                'Tozihat' => 'آزمون استخدامی برای پست‌های پزشکی و بهداشتی',
-                'Link' => 'https://behdasht.gov.ir',
-                'Active' => 1
-            ),
-            array(
-                'ID' => 4,
-                'Title' => 'جذب نیرو در صنعت پتروشیمی',
-                'Company' => 'شرکت پتروشیمی خوزستان',
-                'City' => 'اهواز',
-                'DSSabtName' => '1403/04/01',
-                'DPSabtName' => '1403/05/01',
-                'DAzmoon' => '1403/05/15',
-                'Poster' => 'https://kwphc.ir/uploads/azmoon/posters/poster4.jpg',
-                'Agahi' => 'https://kwphc.ir/uploads/azmoon/agahi/agahi4.pdf',
-                'Tozihat' => 'استخدام در بخش‌های مختلف صنعت پتروشیمی',
-                'Link' => 'https://kpc.ir',
-                'Active' => 1
-            ),
-            array(
-                'ID' => 5,
-                'Title' => 'آزمون استخدامی بانک مرکزی',
-                'Company' => 'بانک مرکزی جمهوری اسلامی ایران',
-                'City' => 'تهران',
-                'DSSabtName' => '1403/05/01',
-                'DPSabtName' => '1403/06/01',
-                'DAzmoon' => '1403/06/20',
-                'Poster' => 'https://kwphc.ir/uploads/azmoon/posters/poster5.jpg',
-                'Agahi' => 'https://kwphc.ir/uploads/azmoon/agahi/agahi5.pdf',
-                'Tozihat' => 'استخدام در پست‌های مالی و بانکی',
-                'Link' => 'https://cbi.ir',
-                'Active' => 1
-            )
-        );
+            'timeout' => 30
+        ));
+
+        $http_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        // لاگ پاسخ برای دیباگ
+        error_log('UM Load Azmoons Response Code: ' . $http_code);
+        error_log('UM Load Azmoons Response Body: ' . $body);
+
+        if ($http_code === 401) {
+            delete_option('_um_auth_status');
+            throw new Exception('توکن منقضی شده است. لطفاً مجدداً وارد شوید.');
+        }
+
+        if (!$data) {
+            throw new Exception('خطا در پردازش پاسخ سرور');
+        }
+
+        // استخراج آرایه آزمون‌ها
+        $azmoons_array = array();
+        if (isset($data['status']) && $data['status'] === 'success') {
+            if (isset($data['data'])) {
+                $azmoons_array = $data['data'];
+            }
+        } else if (isset($data['data'])) {
+            $azmoons_array = $data['data'];
+        } else if (is_array($data)) {
+            $azmoons_array = $data;
+        }
+
+        if (!is_array($azmoons_array)) {
+            throw new Exception('فرمت پاسخ وب‌سرویس نامعتبر است');
+        }
+
+        // پردازش و تبدیل داده‌ها
+        $processed_azmoons = array();
+        foreach ($azmoons_array as $azmoon) {
+            if (!is_array($azmoon)) {
+                continue;
+            }
+
+            // پردازش مسیر تصاویر
+            $poster_url = '';
+            $agahi_url = '';
+            
+            if (!empty($azmoon['Poster'])) {
+                if (filter_var($azmoon['Poster'], FILTER_VALIDATE_URL)) {
+                    $poster_url = $azmoon['Poster'];
+                } else {
+                    $poster_url = 'https://kwphc.ir/uploads/azmoon/posters/' . $azmoon['Poster'];
+                }
+            }
+            
+            if (!empty($azmoon['Agahi'])) {
+                if (filter_var($azmoon['Agahi'], FILTER_VALIDATE_URL)) {
+                    $agahi_url = $azmoon['Agahi'];
+                } else {
+                    $agahi_url = 'https://kwphc.ir/uploads/azmoon/agahi/' . $azmoon['Agahi'];
+                }
+            }
+
+            $processed_azmoons[] = array(
+                'ID' => $azmoon['Id'] ?? $azmoon['ID'] ?? 0,
+                'Title' => !empty($azmoon['Title']) ? $azmoon['Title'] : 'آزمون استخدامی',
+                'Company' => $azmoon['Company'] ?? '',
+                'City' => $azmoon['City'] ?? '',
+                'DSSabtName' => $azmoon['DSSabtName'] ?? '',
+                'DPSabtName' => $azmoon['DPSabtName'] ?? '',
+                'DAzmoon' => $azmoon['DAzmoon'] ?? '',
+                'Poster' => $poster_url,
+                'Agahi' => $agahi_url,
+                'Tozihat' => $azmoon['Tozihat'] ?? '',
+                'Link' => $azmoon['Link'] ?? '',
+                'Active' => isset($azmoon['Active']) ? intval($azmoon['Active']) : 1
+            );
+        }
+
+        if (empty($processed_azmoons)) {
+            throw new Exception('هیچ آزمونی از وب‌سرویس دریافت نشد');
+        }
+
+        return $processed_azmoons;
     }
 }
 
