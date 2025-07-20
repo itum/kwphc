@@ -4003,8 +4003,18 @@ class University_Management {
             wp_send_json_error('شما مجوز لازم برای این کار را ندارید.', 403);
         }
 
-        // دریافت آزمون‌ها از دیتابیس
-        $azmoons_data = $this->get_azmoons_from_database();
+        // دریافت آزمون‌ها از وب‌سرویس
+        try {
+            $azmoons_data = $this->get_azmoons_from_webservice();
+        } catch (Exception $e) {
+            wp_send_json_error('خطا در دریافت آزمون‌ها از وب‌سرویس: ' . $e->getMessage());
+            return;
+        }
+
+        if (empty($azmoons_data)) {
+            wp_send_json_error('هیچ آزمونی از وب‌سرویس دریافت نشد.');
+            return;
+        }
         
         $new_azmoons = array();
         $existing_azmoons_count = 0;
@@ -4063,37 +4073,39 @@ class University_Management {
 
         $total_fetched = count($azmoons_data);
         wp_send_json_success(array(
-            'message' => "عملیات با موفقیت انجام شد. از مجموع {$total_fetched} آزمون دریافت شده از دیتابیس، {$new_azmoons_count} آزمون جدید اضافه شد و {$existing_azmoons_count} آزمون تکراری یافت شد.",
+            'message' => "عملیات با موفقیت انجام شد. از مجموع {$total_fetched} آزمون دریافت شده از وب‌سرویس، {$new_azmoons_count} آزمون جدید اضافه شد و {$existing_azmoons_count} آزمون تکراری یافت شد.",
             'new_azmoons' => $new_azmoons
         ));
     }
 
-    private function get_azmoons_from_database() {
+    private function get_azmoons_from_webservice() {
         try {
-            // بررسی وجود SQL Server driver
-            if (!extension_loaded('sqlsrv') && !extension_loaded('pdo_sqlsrv')) {
-                throw new Exception('SQL Server driver is not installed');
+            // تعریف constant برای مجوز دسترسی به وب‌سرویس
+            if (!defined('KWPHC_WEBSERVICE_AUTHORIZED')) {
+                define('KWPHC_WEBSERVICE_AUTHORIZED', true);
             }
 
-            // اتصال مستقیم به دیتابیس
-            $server_ip = "185.128.81.210";
-            $port = "2033";
-            $username = "kwphc.ir_mainuesr";
-            $password = "AS*35Rt%@-l5f";
-            $dbName = "kwphc.ir_main";
+            // بارگذاری کلاس‌های وب‌سرویس
+            $webservice_file = plugin_dir_path(__FILE__) . 'kw_dsk_webservice_Azmoon.php';
+            
+            if (!file_exists($webservice_file)) {
+                throw new Exception('فایل وب‌سرویس یافت نشد');
+            }
 
-            $dsn = "sqlsrv:Server={$server_ip},{$port};Database={$dbName}";
-            $pdo = new PDO($dsn, $username, $password);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            require_once $webservice_file;
 
-            // دریافت آزمون‌ها از دیتابیس
-            $query = "SELECT TOP 100 * FROM Kw_Azmoon ORDER BY Id DESC";
-            $stmt = $pdo->prepare($query);
-            $stmt->execute();
-            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // ایجاد instance از کلاس دیتابیس
+            $database = new KwAzmoonDatabase();
+            
+            // دریافت آزمون‌ها با استفاده از متد getLatestRecords
+            $result = $database->getLatestRecords(100);
+            
+            if (!isset($result['records']) || !is_array($result['records'])) {
+                throw new Exception('خطا در دریافت داده‌ها از وب‌سرویس');
+            }
 
             $azmoons_data = array();
-            foreach ($records as $record) {
+            foreach ($result['records'] as $record) {
                 // پردازش مسیر تصاویر
                 $poster_url = '';
                 $agahi_url = '';
@@ -4137,25 +4149,9 @@ class University_Management {
             return $azmoons_data;
 
         } catch (Exception $e) {
-            // در صورت خطا، داده‌های نمونه برگردان
-            error_log('خطا در اتصال به دیتابیس آزمون‌ها: ' . $e->getMessage());
-            
-            return array(
-                array(
-                    'ID' => 1,
-                    'Title' => 'آگهی جذب نیروی کار در قالب قرارداد نیروی حجمی',
-                    'Company' => 'شرکت پیمانکاری بهره برداری (منطقه شادگان)',
-                    'City' => 'اهواز',
-                    'DSSabtName' => '1401/09/22',
-                    'DPSabtName' => '1401/11/01',
-                    'DAzmoon' => '1401/11/07',
-                    'Poster' => 'poster1.jpg',
-                    'Agahi' => 'agahi1.pdf',
-                    'Tozihat' => 'شرح کامل آزمون استخدامی',
-                    'Link' => 'https://example.com/exam1',
-                    'Active' => 1
-                )
-            );
+            // لاگ خطا و بازگشت آرایه خالی
+            error_log('خطا در دریافت آزمون‌ها از وب‌سرویس: ' . $e->getMessage());
+            throw $e; // پرتاب مجدد خطا
         }
     }
 }
