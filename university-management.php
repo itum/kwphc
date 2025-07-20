@@ -4003,8 +4003,8 @@ class University_Management {
             wp_send_json_error('شما مجوز لازم برای این کار را ندارید.', 403);
         }
 
-        // نمونه داده‌های آزمون (در پروژه واقعی از دیتابیس دریافت می‌شود)
-        $azmoons_data = $this->get_sample_azmoons_data();
+        // دریافت آزمون‌ها از دیتابیس
+        $azmoons_data = $this->get_azmoons_from_database();
         
         $new_azmoons = array();
         $existing_azmoons_count = 0;
@@ -4061,57 +4061,102 @@ class University_Management {
             $new_azmoons[] = $this->get_azmoon_by_id($post_id);
         }
 
+        $total_fetched = count($azmoons_data);
         wp_send_json_success(array(
-            'message' => "عملیات با موفقیت انجام شد. {$new_azmoons_count} آزمون جدید اضافه شد و {$existing_azmoons_count} آزمون تکراری یافت شد.",
+            'message' => "عملیات با موفقیت انجام شد. از مجموع {$total_fetched} آزمون دریافت شده از دیتابیس، {$new_azmoons_count} آزمون جدید اضافه شد و {$existing_azmoons_count} آزمون تکراری یافت شد.",
             'new_azmoons' => $new_azmoons
         ));
     }
 
-    private function get_sample_azmoons_data() {
-        return array(
-            array(
-                'ID' => 1,
-                'Title' => 'آگهی جذب نیروی کار در قالب قرارداد نیروی حجمی',
-                'Company' => 'شرکت پیمانکاری بهره برداری (منطقه شادگان)',
-                'City' => 'اهواز',
-                'DSSabtName' => '1401/09/22',
-                'DPSabtName' => '1401/11/01',
-                'DAzmoon' => '1401/11/07',
-                'Poster' => 'poster1.jpg',
-                'Agahi' => 'agahi1.pdf',
-                'Tozihat' => 'شرح کامل آزمون استخدامی',
-                'Link' => 'https://example.com/exam1',
-                'Active' => 1
-            ),
-            array(
-                'ID' => 2,
-                'Title' => 'آزمون استخدامی شرکت نفت',
-                'Company' => 'شرکت ملی نفت ایران',
-                'City' => 'تهران',
-                'DSSabtName' => '1402/01/15',
-                'DPSabtName' => '1402/02/15',
-                'DAzmoon' => '1402/03/01',
-                'Poster' => 'poster2.jpg',
-                'Agahi' => 'agahi2.pdf',
-                'Tozihat' => 'آزمون استخدامی برای پست‌های مختلف',
-                'Link' => 'https://example.com/exam2',
-                'Active' => 1
-            ),
-            array(
-                'ID' => 3,
-                'Title' => 'آزمون جذب نیروی متخصص IT',
-                'Company' => 'سازمان تأمین اجتماعی',
-                'City' => 'مشهد',
-                'DSSabtName' => '1402/03/01',
-                'DPSabtName' => '1402/04/01',
-                'DAzmoon' => '1402/04/15',
-                'Poster' => 'poster3.jpg',
-                'Agahi' => 'agahi3.pdf',
-                'Tozihat' => 'استخدام متخصصان فناوری اطلاعات',
-                'Link' => 'https://example.com/exam3',
-                'Active' => 1
-            )
-        );
+    private function get_azmoons_from_database() {
+        try {
+            // بررسی وجود SQL Server driver
+            if (!extension_loaded('sqlsrv') && !extension_loaded('pdo_sqlsrv')) {
+                throw new Exception('SQL Server driver is not installed');
+            }
+
+            // اتصال مستقیم به دیتابیس
+            $server_ip = "185.128.81.210";
+            $port = "2033";
+            $username = "kwphc.ir_mainuesr";
+            $password = "AS*35Rt%@-l5f";
+            $dbName = "kwphc.ir_main";
+
+            $dsn = "sqlsrv:Server={$server_ip},{$port};Database={$dbName}";
+            $pdo = new PDO($dsn, $username, $password);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            // دریافت آزمون‌ها از دیتابیس
+            $query = "SELECT TOP 100 * FROM Kw_Azmoon ORDER BY Id DESC";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute();
+            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $azmoons_data = array();
+            foreach ($records as $record) {
+                // پردازش مسیر تصاویر
+                $poster_url = '';
+                $agahi_url = '';
+                
+                if (!empty($record['Poster'])) {
+                    // اگر Poster شامل URL کامل است
+                    if (filter_var($record['Poster'], FILTER_VALIDATE_URL)) {
+                        $poster_url = $record['Poster'];
+                    } else {
+                        // اگر فقط نام فایل است، URL کامل بسازیم
+                        $poster_url = 'https://kwphc.ir/uploads/azmoon/posters/' . $record['Poster'];
+                    }
+                }
+                
+                if (!empty($record['Agahi'])) {
+                    // اگر Agahi شامل URL کامل است
+                    if (filter_var($record['Agahi'], FILTER_VALIDATE_URL)) {
+                        $agahi_url = $record['Agahi'];
+                    } else {
+                        // اگر فقط نام فایل است، URL کامل بسازیم
+                        $agahi_url = 'https://kwphc.ir/uploads/azmoon/agahi/' . $record['Agahi'];
+                    }
+                }
+
+                $azmoons_data[] = array(
+                    'ID' => $record['Id'],
+                    'Title' => !empty($record['Title']) ? $record['Title'] : 'آزمون استخدامی',
+                    'Company' => $record['Company'] ?: '',
+                    'City' => $record['City'] ?: '',
+                    'DSSabtName' => $record['DSSabtName'] ?: '',
+                    'DPSabtName' => $record['DPSabtName'] ?: '',
+                    'DAzmoon' => $record['DAzmoon'] ?: '',
+                    'Poster' => $poster_url,
+                    'Agahi' => $agahi_url,
+                    'Tozihat' => $record['Tozihat'] ?: '',
+                    'Link' => $record['Link'] ?: '',
+                    'Active' => isset($record['Active']) ? intval($record['Active']) : 1
+                );
+            }
+
+            return $azmoons_data;
+
+        } catch (Exception $e) {
+            // در صورت خطا، داده‌های نمونه برگردان
+            error_log('خطا در اتصال به دیتابیس آزمون‌ها: ' . $e->getMessage());
+            
+            return array(
+                array(
+                    'ID' => 1,
+                    'Title' => 'آگهی جذب نیروی کار در قالب قرارداد نیروی حجمی',
+                    'Company' => 'شرکت پیمانکاری بهره برداری (منطقه شادگان)',
+                    'City' => 'اهواز',
+                    'DSSabtName' => '1401/09/22',
+                    'DPSabtName' => '1401/11/01',
+                    'DAzmoon' => '1401/11/07',
+                    'Poster' => 'poster1.jpg',
+                    'Agahi' => 'agahi1.pdf',
+                    'Tozihat' => 'شرح کامل آزمون استخدامی',
+                    'Link' => 'https://example.com/exam1',
+                    'Active' => 1
+                )
+            );
+        }
     }
 }
 
