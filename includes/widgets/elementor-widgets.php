@@ -71,6 +71,7 @@ class UM_Elementor_Widgets {
         require_once UM_PLUGIN_DIR . 'includes/widgets/video-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/seminar-slider-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/azmoon-widget.php';
+        require_once UM_PLUGIN_DIR . 'includes/widgets/employment-exams-widget.php';
         
         // ثبت ویجت‌ها
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Calendar_Widget());
@@ -78,6 +79,7 @@ class UM_Elementor_Widgets {
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Video_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Seminar_Slider_Widget());
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Azmoon_Widget());
+        \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Employment_Exams_Widget());
     }
 
     /**
@@ -92,6 +94,7 @@ class UM_Elementor_Widgets {
         wp_enqueue_style('um-class-timer-widget', UM_PLUGIN_URL . 'assets/css/class-timer-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-video-widget', UM_PLUGIN_URL . 'assets/css/video-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/css/seminar-slider-widget.css', array(), UM_VERSION);
+        wp_enqueue_style('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/css/employment-exams-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-azmoon-widget', UM_PLUGIN_URL . 'assets/css/azmoon-widget.css', array(), UM_VERSION);
 
         // کتابخانه‌های خارجی
@@ -116,6 +119,7 @@ class UM_Elementor_Widgets {
         wp_register_script('um-video-widget', UM_PLUGIN_URL . 'assets/js/video-widget.js', array('jquery'), UM_VERSION, true);
         wp_register_script('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/js/seminar-slider-widget.js', array('jquery', 'swiper', 'lucide'), UM_VERSION, true);
         wp_register_script('um-azmoon-widget', UM_PLUGIN_URL . 'assets/js/azmoon-widget.js', array('jquery'), UM_VERSION, true);
+        wp_register_script('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/js/employment-exams-widget.js', array('jquery'), UM_VERSION, true);
 
         // لوکالایز اسکریپت‌ها
         wp_localize_script('um-calendar-widget', 'um_calendar_vars', array(

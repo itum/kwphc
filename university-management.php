@@ -68,6 +68,7 @@ class University_Management {
         // ذخیره متاباکس‌ها
         add_action('save_post_um_videos', array($this, 'save_video_meta'));
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
+        add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
@@ -253,6 +254,15 @@ class University_Management {
             'university-azmoon',
             array($this, 'azmoon_admin_page')
         );
+        
+        add_submenu_page(
+            'university-management',
+            __('مدیریت آزمون‌های استخدامی', 'university-management'),
+            __('مدیریت آزمون‌های استخدامی', 'university-management'),
+            'manage_options',
+            'university-employment-exams',
+            array($this, 'employment_exams_admin_page')
+        );
     }
 
     /**
@@ -338,6 +348,18 @@ class University_Management {
             echo '<div class="wrap"><h1>خطا</h1><p>فایل azmoon-page.php یافت نشد.</p></div>';
         }
     }
+
+    /**
+     * صفحه مدیریت آزمون‌های استخدامی (پست تایپ)
+     */
+    public function employment_exams_admin_page() {
+        $employment_file = UM_PLUGIN_DIR . 'admin/employment-exams-page.php';
+        if (file_exists($employment_file)) {
+            require_once $employment_file;
+        } else {
+            echo '<div class="wrap"><h1>خطا</h1><p>فایل employment-exams-page.php یافت نشد.</p></div>';
+        }
+    }
     
     /**
      * افزودن متاباکس‌ها
@@ -356,6 +378,14 @@ class University_Management {
             __('جزئیات سمینار', 'university-management'),
             array($this, 'seminar_details_meta_box'),
             'um_seminars',
+            'normal',
+            'high'
+        );
+        add_meta_box(
+            'um_employment_exam_details',
+            __('جزئیات آزمون استخدامی', 'university-management'),
+            array($this, 'employment_exam_details_meta_box'),
+            'um_employment_exams',
             'normal',
             'high'
         );
@@ -908,6 +938,32 @@ class University_Management {
             'show_in_rest'      => true,
         );
         register_taxonomy( 'um_seminar_category', array( 'um_seminars' ), $seminar_cat_args );
+
+        // ثبت پست تایپ آزمون‌های استخدامی
+        register_post_type('um_employment_exams', array(
+            'labels' => array(
+                'name'               => __('آزمون‌های استخدامی', 'university-management'),
+                'singular_name'      => __('آزمون استخدامی', 'university-management'),
+                'add_new'            => __('افزودن آزمون جدید', 'university-management'),
+                'add_new_item'       => __('افزودن آزمون استخدامی جدید', 'university-management'),
+                'edit_item'          => __('ویرایش آزمون استخدامی', 'university-management'),
+                'new_item'           => __('آزمون استخدامی جدید', 'university-management'),
+                'view_item'          => __('مشاهده آزمون استخدامی', 'university-management'),
+                'search_items'       => __('جستجوی آزمون‌های استخدامی', 'university-management'),
+                'not_found'          => __('آزمون استخدامی یافت نشد', 'university-management'),
+                'not_found_in_trash' => __('آزمون استخدامی در سطل زباله یافت نشد', 'university-management'),
+            ),
+            'public'              => true,
+            'has_archive'         => true,
+            'publicly_queryable'  => true,
+            'show_ui'             => true,
+            'show_in_menu'        => 'university-management',
+            'capability_type'     => 'post',
+            'hierarchical'        => false,
+            'supports'            => array('title', 'editor', 'thumbnail', 'custom-fields'),
+            'menu_icon'           => 'dashicons-clipboard',
+            'show_in_rest'        => true,
+        ));
     }
 
     /**
@@ -2108,6 +2164,59 @@ class University_Management {
     }
 
     /**
+     * نمایش متاباکس جزئیات آزمون استخدامی
+     */
+    public function employment_exam_details_meta_box($post) {
+        wp_nonce_field('um_save_employment_exam', 'um_employment_exam_nonce');
+
+        $exam_date = get_post_meta($post->ID, '_exam_date', true);
+        $exam_time = get_post_meta($post->ID, '_exam_time', true);
+        $exam_duration = get_post_meta($post->ID, '_exam_duration', true);
+        $exam_position = get_post_meta($post->ID, '_exam_position', true);
+        $exam_department = get_post_meta($post->ID, '_exam_department', true);
+        $exam_location = get_post_meta($post->ID, '_exam_location', true);
+        $exam_requirements = get_post_meta($post->ID, '_exam_requirements', true);
+        $exam_application_deadline = get_post_meta($post->ID, '_exam_application_deadline', true);
+        $exam_status = get_post_meta($post->ID, '_exam_status', true);
+
+        echo '<table class="form-table">';
+        
+        echo '<tr><th><label for="exam_date">' . __('تاریخ آزمون', 'university-management') . '</label></th>';
+        echo '<td><input type="date" id="exam_date" name="exam_date" value="' . esc_attr($exam_date) . '" class="regular-text"></td></tr>';
+
+        echo '<tr><th><label for="exam_time">' . __('زمان آزمون', 'university-management') . '</label></th>';
+        echo '<td><input type="time" id="exam_time" name="exam_time" value="' . esc_attr($exam_time) . '" class="regular-text"></td></tr>';
+
+        echo '<tr><th><label for="exam_duration">' . __('مدت زمان آزمون (دقیقه)', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="exam_duration" name="exam_duration" value="' . esc_attr($exam_duration) . '" class="regular-text" min="30" step="15"></td></tr>';
+
+        echo '<tr><th><label for="exam_position">' . __('موقعیت شغلی', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="exam_position" name="exam_position" value="' . esc_attr($exam_position) . '" class="regular-text" placeholder="مثال: مهندس نرم‌افزار"></td></tr>';
+
+        echo '<tr><th><label for="exam_department">' . __('دپارتمان', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="exam_department" name="exam_department" value="' . esc_attr($exam_department) . '" class="regular-text" placeholder="مثال: فناوری اطلاعات"></td></tr>';
+
+        echo '<tr><th><label for="exam_location">' . __('محل برگزاری', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="exam_location" name="exam_location" value="' . esc_attr($exam_location) . '" class="regular-text" placeholder="مثال: سالن اجتماعات دانشگاه"></td></tr>';
+
+        echo '<tr><th><label for="exam_application_deadline">' . __('مهلت ثبت‌نام', 'university-management') . '</label></th>';
+        echo '<td><input type="date" id="exam_application_deadline" name="exam_application_deadline" value="' . esc_attr($exam_application_deadline) . '" class="regular-text"></td></tr>';
+
+        echo '<tr><th><label for="exam_status">' . __('وضعیت آزمون', 'university-management') . '</label></th>';
+        echo '<td><select id="exam_status" name="exam_status" class="regular-text">';
+        echo '<option value="upcoming"' . selected($exam_status, 'upcoming', false) . '>' . __('در انتظار برگزاری', 'university-management') . '</option>';
+        echo '<option value="registration"' . selected($exam_status, 'registration', false) . '>' . __('در حال ثبت‌نام', 'university-management') . '</option>';
+        echo '<option value="closed"' . selected($exam_status, 'closed', false) . '>' . __('بسته', 'university-management') . '</option>';
+        echo '<option value="completed"' . selected($exam_status, 'completed', false) . '>' . __('برگزار شده', 'university-management') . '</option>';
+        echo '</select></td></tr>';
+
+        echo '<tr><th><label for="exam_requirements">' . __('شرایط و الزامات', 'university-management') . '</label></th>';
+        echo '<td><textarea id="exam_requirements" name="exam_requirements" rows="5" class="large-text" placeholder="شرایط و الزامات مورد نیاز برای شرکت در آزمون...">' . esc_textarea($exam_requirements) . '</textarea></td></tr>';
+
+        echo '</table>';
+    }
+
+    /**
      * ذخیره متاباکس جزئیات سمینار
      */
     public function save_seminar_meta($post_id) {
@@ -2137,6 +2246,63 @@ class University_Management {
 
         if (isset($_POST['seminar_button_link'])) {
             update_post_meta($post_id, '_seminar_button_link', esc_url_raw($_POST['seminar_button_link']));
+        }
+    }
+
+    /**
+     * ذخیره متادیتای آزمون‌های استخدامی
+     */
+    public function save_employment_exam_meta($post_id) {
+        // بررسی امنیت
+        if (!isset($_POST['um_employment_exam_nonce']) || !wp_verify_nonce($_POST['um_employment_exam_nonce'], 'um_save_employment_exam')) {
+            return;
+        }
+
+        // بررسی autosave
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // بررسی دسترسی
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        // ذخیره فیلدها
+        if (isset($_POST['exam_date'])) {
+            update_post_meta($post_id, '_exam_date', sanitize_text_field($_POST['exam_date']));
+        }
+
+        if (isset($_POST['exam_time'])) {
+            update_post_meta($post_id, '_exam_time', sanitize_text_field($_POST['exam_time']));
+        }
+
+        if (isset($_POST['exam_duration'])) {
+            update_post_meta($post_id, '_exam_duration', absint($_POST['exam_duration']));
+        }
+
+        if (isset($_POST['exam_position'])) {
+            update_post_meta($post_id, '_exam_position', sanitize_text_field($_POST['exam_position']));
+        }
+
+        if (isset($_POST['exam_department'])) {
+            update_post_meta($post_id, '_exam_department', sanitize_text_field($_POST['exam_department']));
+        }
+
+        if (isset($_POST['exam_location'])) {
+            update_post_meta($post_id, '_exam_location', sanitize_text_field($_POST['exam_location']));
+        }
+
+        if (isset($_POST['exam_requirements'])) {
+            update_post_meta($post_id, '_exam_requirements', wp_kses_post($_POST['exam_requirements']));
+        }
+
+        if (isset($_POST['exam_application_deadline'])) {
+            update_post_meta($post_id, '_exam_application_deadline', sanitize_text_field($_POST['exam_application_deadline']));
+        }
+
+        if (isset($_POST['exam_status'])) {
+            update_post_meta($post_id, '_exam_status', sanitize_text_field($_POST['exam_status']));
         }
     }
     
