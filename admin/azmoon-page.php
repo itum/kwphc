@@ -156,9 +156,13 @@ $is_authenticated = ($auth_status === 'authenticated' && !empty($auth_username) 
                 </div>
                 
                 <div class="um-azmoon-controls">
-                    <button type="button" id="um-load-azmoon-btn" class="button button-secondary" 
+                    <button type="button" id="um-load-azmoon-from-api-btn" class="button button-secondary"
                             <?php echo !$is_authenticated ? 'disabled' : ''; ?>>
-                        <?php _e('بارگذاری آزمون‌ها', 'university-management'); ?>
+                        <?php _e('بارگذاری آزمون‌ها از API', 'university-management'); ?>
+                    </button>
+                    <button type="button" id="um-load-azmoon-btn" class="button button-secondary"
+                            <?php echo !$is_authenticated ? 'disabled' : ''; ?>>
+                        <?php _e('نمایش آزمون‌های موجود', 'university-management'); ?>
                     </button>
                     <button type="button" id="um-add-azmoon-btn" class="button button-primary" 
                             <?php echo !$is_authenticated ? 'disabled' : ''; ?>>
@@ -447,6 +451,12 @@ jQuery(document).ready(function($) {
         loadAzmoons();
     });
     
+    // بارگذاری آزمون‌ها از API
+    $('#um-load-azmoon-from-api-btn').on('click', function(e) {
+        e.preventDefault();
+        loadAndInsertAzmoonsFromAPI();
+    });
+    
     // تازه‌سازی لیست
     $('#um-refresh-azmoon-btn').on('click', function(e) {
         e.preventDefault();
@@ -557,7 +567,46 @@ jQuery(document).ready(function($) {
             }
         });
     }
-    
+
+    // تابع بارگذاری و افزودن آزمون‌ها از API
+    function loadAndInsertAzmoonsFromAPI() {
+        var $button = $('#um-load-azmoon-from-api-btn');
+        var $loading = $('#um-azmoon-loading');
+        var $list = $('#um-azmoon-list');
+
+        $button.prop('disabled', true);
+        $loading.show();
+        $list.html('<div class="loading">در حال بارگذاری و افزودن آزمون‌ها از API...</div>');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'um_load_and_insert_azmoons_from_api',
+                nonce: '<?php echo wp_create_nonce('um_load_and_insert_azmoons_from_api_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage(response.data.message, 'success');
+                    if (response.data.new_azmoons) {
+                        displayAzmoons(response.data.new_azmoons);
+                    }
+                } else {
+                    showMessage('خطا: ' + response.data, 'error');
+                    $list.html('<div class="no-azmoons">خطا در بارگذاری آزمون‌ها از API</div>');
+                }
+            },
+            error: function(xhr, status, error) {
+                showMessage('خطا در اتصال به سرور: ' + error, 'error');
+                $list.html('<div class="no-azmoons">خطا در اتصال به سرور</div>');
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+                $loading.hide();
+            }
+        });
+    }
+
     // تابع نمایش آزمون‌ها
     function displayAzmoons(azmoons) {
         var $list = $('#um-azmoon-list');

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آگهی آزمون بکارگیری نیروی جمعی</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tahoma', 'Arial', sans-serif;
+            background: #f5f7fa;
+            padding: 30px 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            border: 3px solid #4285f4;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            height: 320px;
+            position: relative;
+        }
+
+        .card.featured {
+            border-color: #3f51b5;
+        }
+
+        .card.ongoing {
+            border-color: #ff9800;
+        }
+
+        .card.completed {
+            border-color: #4caf50;
+        }
+
+        .card-sidebar {
+            width: 80px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+            position: relative;
+            overflow: hidden;
+            /* Place the sidebar on the far right side of the card (order 0 < content order 1) */
+            order: 0;
+        }
+
+        .card.ongoing .card-sidebar {
+            background: linear-gradient(135deg, #ff9800, #ffb74d);
+        }
+
+        .card.completed .card-sidebar {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+        }
+
+        .card-sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.1) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.1) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .sidebar-circle {
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            position: absolute;
+            top: 25px;
+            z-index: 2;
+        }
+
+        .sidebar-text {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            letter-spacing: 2px;
+            z-index: 2;
+            position: relative;
+            transform: rotate(180deg);
+        }
+
+        .card-content {
+            flex: 1;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            order: 1;
+        }
+
+        .card-image {
+            width: 200px;
+            background: #d0d0d0;
+            border-radius: 15px;
+            margin: 15px;
+            flex-shrink: 0;
+            order: 2;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .card.featured .card-title {
+            color: #3f51b5;
+        }
+
+        .card.ongoing .card-title {
+            color: #ff9800;
+        }
+
+        .card.completed .card-title {
+            color: #4caf50;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .info-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+
+        .clock-icon {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .calendar-icon {
+            background: #3498db;
+            color: white;
+        }
+
+        .location-icon {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .info-label {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #95a5a6;
+            font-size: 13px;
+        }
+
+        .company-section {
+            margin: 20px 0;
+            flex: 1;
+        }
+
+        .company-text {
+            font-size: 13px;
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        .more-info-btn {
+            padding: 15px 0;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #3f51b5;
+            color: white;
+            /* Occupy full content width and stick to bottom */
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .more-info-btn:hover {
+            background: #303f9f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(63, 81, 181, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .card {
+                height: auto;
+                min-height: 320px;
+                flex-direction: column;
+            }
+            
+            .card-image {
+                width: auto;
+                height: 150px;
+                margin: 15px 15px 0 15px;
+                order: 2;
+            }
+            
+            .card-sidebar {
+                width: auto;
+                height: 60px;
+                flex-direction: row;
+                /* Keep sidebar at the bottom on mobile layouts */
+                order: 3;
+            }
+            
+            .sidebar-text {
+                writing-mode: horizontal-tb;
+                text-orientation: initial;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Card 1 - Regular -->
+        <div class="card">
+            <div class="card-content">
+                <h2 class="card-title">آگهی آزمون بکارگیری نیروی جمعی</h2>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon clock-icon">🕐</div>
+                        <span class="info-label">پایان ثبت نام:</span>
+                    </div>
+                    <span class="info-value">1403/12/09</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon calendar-icon">📅</div>
+                        <span class="info-label">زمان آزمون:</span>
+                    </div>
+                    <span class="info-value">1403/12/23</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon location-icon">📍</div>
+                        <span class="info-label">محل خدمت:</span>
+                    </div>
+                    <span class="info-value">خوزستان</span>
+                </div>
+                
+                <div class="company-section">
+                    <p class="company-text">شرکت متقاضی : شرکت پیمانکار دیتاکاران جنوب</p>
+                </div>
+                
+                <button class="more-info-btn">اطلاعات بیشتر</button>
+            </div>
+            <div class="card-image"></div>
+            <div class="card-sidebar">
+                <div class="sidebar-circle"></div>
+                <div class="sidebar-text">در حال برگزاری</div>
+            </div>
+        </div>
+
+        <!-- Card 2 - Featured -->
+        <div class="card featured">
+            <div class="card-content">
+                <h2 class="card-title">آگهی آزمون بکارگیری نیروی جمعی<br>آگهی آزمون</h2>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon clock-icon">🕐</div>
+                        <span class="info-label">پایان ثبت نام:</span>
+                    </div>
+                    <span class="info-value">1403/12/09</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon calendar-icon">📅</div>
+                        <span class="info-label">زمان آزمون:</span>
+                    </div>
+                    <span class="info-value">1403/12/23</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon location-icon">📍</div>
+                        <span class="info-label">محل خدمت:</span>
+                    </div>
+                    <span class="info-value">خوزستان</span>
+                </div>
+                
+                <div class="company-section">
+                    <p class="company-text">شرکت متقاضی : شرکت پیمانکار دیتاکاران جنوب</p>
+                </div>
+                
+                <button class="more-info-btn">اطلاعات بیشتر</button>
+            </div>
+            <div class="card-image"></div>
+            <div class="card-sidebar">
+                <div class="sidebar-circle"></div>
+                <div class="sidebar-text">در حال برگزاری</div>
+            </div>
+        </div>
+
+        <!-- Card 3 - Ongoing -->
+        <div class="card ongoing">
+            <div class="card-content">
+                <h2 class="card-title">آگهی آزمون بکارگیری نیروی جمعی</h2>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon clock-icon">🕐</div>
+                        <span class="info-label">پایان ثبت نام:</span>
+                    </div>
+                    <span class="info-value">1403/12/09</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon calendar-icon">📅</div>
+                        <span class="info-label">زمان آزمون:</span>
+                    </div>
+                    <span class="info-value">1403/12/23</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon location-icon">📍</div>
+                        <span class="info-label">محل خدمت:</span>
+                    </div>
+                    <span class="info-value">خوزستان</span>
+                </div>
+                
+                <div class="company-section">
+                    <p class="company-text">شرکت متقاضی : شرکت پیمانکار دیتاکاران جنوب</p>
+                </div>
+                
+                <button class="more-info-btn">اطلاعات بیشتر</button>
+            </div>
+            <div class="card-image"></div>
+            <div class="card-sidebar">
+                <div class="sidebar-circle"></div>
+                <div class="sidebar-text">در حال برگزاری</div>
+            </div>
+        </div>
+
+        <!-- Card 4 - Completed -->
+        <div class="card completed">
+            <div class="card-content">
+                <h2 class="card-title">آگهی آزمون بکارگیری نیروی جمعی</h2>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon clock-icon">🕐</div>
+                        <span class="info-label">پایان ثبت نام:</span>
+                    </div>
+                    <span class="info-value">1403/12/09</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon calendar-icon">📅</div>
+                        <span class="info-label">زمان آزمون:</span>
+                    </div>
+                    <span class="info-value">1403/12/23</span>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-right">
+                        <div class="info-icon location-icon">📍</div>
+                        <span class="info-label">محل خدمت:</span>
+                    </div>
+                    <span class="info-value">خوزستان</span>
+                </div>
+                
+                <div class="company-section">
+                    <p class="company-text">شرکت متقاضی : شرکت پیمانکار دیتاکاران جنوب</p>
+                </div>
+                
+                <button class="more-info-btn">اطلاعات بیشتر</button>
+            </div>
+            <div class="card-image"></div>
+            <div class="card-sidebar">
+                <div class="sidebar-circle"></div>
+                <div class="sidebar-text">برگزار شده</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.more-info-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const card = this.closest('.card');
+                let status = 'در حال برگزاری';
+                if (card.classList.contains('completed')) {
+                    status = 'برگزار شده';
+                }
+                alert(`وضعیت آزمون: ${status}\nدر حال بارگذاری اطلاعات بیشتر...`);
+            });
+        });
+    </script>
+</body>
+</html>
