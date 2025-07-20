@@ -4003,22 +4003,8 @@ class University_Management {
             wp_send_json_error('شما مجوز لازم برای این کار را ندارید.', 403);
         }
 
-        $api_file = plugin_dir_path(__FILE__) . 'kw_dsk_webservice_Azmoon.php';
-
-        if (!file_exists($api_file)) {
-            wp_send_json_error('فایل API یافت نشد.', 404);
-        }
-
-        // Capture the output of the included file
-        ob_start();
-        include $api_file;
-        $api_response = ob_get_clean();
-
-        $azmoons_data = json_decode($api_response, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($azmoons_data)) {
-            wp_send_json_error('خطا در خواندن اطلاعات از API: ' . json_last_error_msg(), 400);
-        }
+        // نمونه داده‌های آزمون (در پروژه واقعی از دیتابیس دریافت می‌شود)
+        $azmoons_data = $this->get_sample_azmoons_data();
         
         $new_azmoons = array();
         $existing_azmoons_count = 0;
@@ -4079,6 +4065,53 @@ class University_Management {
             'message' => "عملیات با موفقیت انجام شد. {$new_azmoons_count} آزمون جدید اضافه شد و {$existing_azmoons_count} آزمون تکراری یافت شد.",
             'new_azmoons' => $new_azmoons
         ));
+    }
+
+    private function get_sample_azmoons_data() {
+        return array(
+            array(
+                'ID' => 1,
+                'Title' => 'آگهی جذب نیروی کار در قالب قرارداد نیروی حجمی',
+                'Company' => 'شرکت پیمانکاری بهره برداری (منطقه شادگان)',
+                'City' => 'اهواز',
+                'DSSabtName' => '1401/09/22',
+                'DPSabtName' => '1401/11/01',
+                'DAzmoon' => '1401/11/07',
+                'Poster' => 'poster1.jpg',
+                'Agahi' => 'agahi1.pdf',
+                'Tozihat' => 'شرح کامل آزمون استخدامی',
+                'Link' => 'https://example.com/exam1',
+                'Active' => 1
+            ),
+            array(
+                'ID' => 2,
+                'Title' => 'آزمون استخدامی شرکت نفت',
+                'Company' => 'شرکت ملی نفت ایران',
+                'City' => 'تهران',
+                'DSSabtName' => '1402/01/15',
+                'DPSabtName' => '1402/02/15',
+                'DAzmoon' => '1402/03/01',
+                'Poster' => 'poster2.jpg',
+                'Agahi' => 'agahi2.pdf',
+                'Tozihat' => 'آزمون استخدامی برای پست‌های مختلف',
+                'Link' => 'https://example.com/exam2',
+                'Active' => 1
+            ),
+            array(
+                'ID' => 3,
+                'Title' => 'آزمون جذب نیروی متخصص IT',
+                'Company' => 'سازمان تأمین اجتماعی',
+                'City' => 'مشهد',
+                'DSSabtName' => '1402/03/01',
+                'DPSabtName' => '1402/04/01',
+                'DAzmoon' => '1402/04/15',
+                'Poster' => 'poster3.jpg',
+                'Agahi' => 'agahi3.pdf',
+                'Tozihat' => 'استخدام متخصصان فناوری اطلاعات',
+                'Link' => 'https://example.com/exam3',
+                'Active' => 1
+            )
+        );
     }
 }
 
