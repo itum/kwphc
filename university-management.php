@@ -844,7 +844,7 @@ class University_Management {
             'label'                 => __( 'ویدیو', 'university-management' ),
             'description'           => __( 'برای مدیریت ویدیوهای آموزشی', 'university-management' ),
             'labels'                => $video_labels,
-            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt' ),
+            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
             'taxonomies'            => array( 'um_video_category' ),
             'hierarchical'          => false,
             'public'                => true,
