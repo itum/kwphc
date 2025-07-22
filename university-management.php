@@ -594,22 +594,42 @@ class University_Management {
         ?>
         <div class="um-custom-fields-meta-box">
             <p>
-                <strong><?php _e('عنوان ویدیو:', 'university-management'); ?></strong><br>
+                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>video_title</code><br>
+                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
                 <input type="text" value="<?php echo esc_attr($video_title); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
             </p>
+            <hr>
             <p>
-                <strong><?php _e('فایل ویدیو (لینک):', 'university-management'); ?></strong><br>
+                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>video_link</code><br>
+                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
                 <input type="text" value="<?php echo esc_url($video_link); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
             </p>
+            <hr>
             <p>
-                <strong><?php _e('دسته‌بندی‌ها:', 'university-management'); ?></strong><br>
+                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>category_video</code><br>
+                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
                 <input type="text" value="<?php echo esc_attr($category_display); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
             </p>
+            <hr>
             <p>
-                <strong><?php _e('توضیحات:', 'university-management'); ?></strong><br>
-                <textarea readonly style="width: 100%; height: 150px; background-color: #f0f0f0;"><?php echo esc_textarea($video_content); ?></textarea>
+                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>description_video</code><br>
+                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
+                <textarea readonly style="width: 100%; height: 100px; background-color: #f0f0f0;"><?php echo esc_textarea($video_content); ?></textarea>
             </p>
         </div>
+        <style>
+            .um-custom-fields-meta-box hr {
+                margin: 15px 0;
+                border-top: 1px solid #ddd;
+                border-bottom: none;
+            }
+            .um-custom-fields-meta-box code {
+                background-color: #eee;
+                padding: 2px 4px;
+                border-radius: 3px;
+                font-family: monospace;
+            }
+        </style>
         <?php
     }
 
@@ -844,7 +864,7 @@ class University_Management {
             'label'                 => __( 'ویدیو', 'university-management' ),
             'description'           => __( 'برای مدیریت ویدیوهای آموزشی', 'university-management' ),
             'labels'                => $video_labels,
-            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
+            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt' ),
             'taxonomies'            => array( 'um_video_category' ),
             'hierarchical'          => false,
             'public'                => true,
