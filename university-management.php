@@ -67,6 +67,7 @@ class University_Management {
         
         // ذخیره متاباکس‌ها
         add_action('save_post_um_videos', array($this, 'save_video_meta'));
+        add_action('save_post_um_videos', array($this, 'save_video_custom_fields_meta'), 10, 1);
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         
@@ -579,6 +580,8 @@ class University_Management {
      * نمایش متاباکس زمینه‌های دلخواه ویدیو
      */
     public function video_custom_fields_meta_box($post) {
+        wp_nonce_field('um_video_custom_fields_nonce', 'um_video_custom_fields_nonce');
+
         // دریافت اطلاعات ویدیو
         $video_title = get_the_title($post->ID);
         $video_link = get_post_meta($post->ID, '_um_video_link', true);
@@ -590,47 +593,134 @@ class University_Management {
                 $category_names[] = $category->name;
             }
         }
-        $category_display = !empty($category_names) ? implode(', ', $category_names) : __('بدون دسته‌بندی', 'university-management');
+        $category_display = !empty($category_names) ? implode(', ', $category_names) : '';
         ?>
-        <div class="um-custom-fields-meta-box">
-            <p>
-                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>video_title</code><br>
-                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
-                <input type="text" value="<?php echo esc_attr($video_title); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
-            </p>
-            <hr>
-            <p>
-                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>video_link</code><br>
-                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
-                <input type="text" value="<?php echo esc_url($video_link); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
-            </p>
-            <hr>
-            <p>
-                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>category_video</code><br>
-                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
-                <input type="text" value="<?php echo esc_attr($category_display); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
-            </p>
-            <hr>
-            <p>
-                <strong><?php _e('نام:', 'university-management'); ?></strong> <code>description_video</code><br>
-                <strong><?php _e('مقدار:', 'university-management'); ?></strong><br>
-                <textarea readonly style="width: 100%; height: 100px; background-color: #f0f0f0;"><?php echo esc_textarea($video_content); ?></textarea>
-            </p>
+        <div class="custom-fields-table-wrapper">
+            <table class="wp-list-table widefat striped">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 70%; text-align: right;"><?php _e('مقدار', 'university-management'); ?></th>
+                        <th scope="col" style="width: 30%; text-align: right;"><?php _e('نام', 'university-management'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="text" name="video_title" value="<?php echo esc_attr($video_title); ?>" class="widefat">
+                        </td>
+                        <td>
+                            <input type="text" value="video_title" readonly class="widefat">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" name="video_link" value="<?php echo esc_url($video_link); ?>" class="widefat">
+                        </td>
+                        <td>
+                            <input type="text" value="video_link" readonly class="widefat">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" name="video_category" value="<?php echo esc_attr($category_display); ?>" class="widefat" placeholder="<?php _e('دسته‌بندی‌ها را با کاما جدا کنید', 'university-management'); ?>">
+                        </td>
+                        <td>
+                            <input type="text" value="category_video" readonly class="widefat">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <textarea name="video_description" class="widefat" rows="4"><?php echo esc_textarea($video_content); ?></textarea>
+                        </td>
+                        <td>
+                            <input type="text" value="description_video" readonly class="widefat">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         <style>
-            .um-custom-fields-meta-box hr {
-                margin: 15px 0;
-                border-top: 1px solid #ddd;
-                border-bottom: none;
+            .custom-fields-table-wrapper input,
+            .custom-fields-table-wrapper textarea {
+                background-color: #fff;
             }
-            .um-custom-fields-meta-box code {
-                background-color: #eee;
-                padding: 2px 4px;
-                border-radius: 3px;
-                font-family: monospace;
+            .custom-fields-table-wrapper input[readonly] {
+                background-color: #f9f9f9;
+                border-color: #ddd;
             }
         </style>
         <?php
+    }
+
+    /**
+     * ذخیره متاباکس زمینه‌های دلخواه ویدیو
+     */
+    public function save_video_custom_fields_meta($post_id) {
+        // Check nonce
+        if (!isset($_POST['um_video_custom_fields_nonce']) || !wp_verify_nonce($_POST['um_video_custom_fields_nonce'], 'um_video_custom_fields_nonce')) {
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+        
+        // Check for autosave
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // Check post type
+        if ('um_videos' !== get_post_type($post_id)) {
+            return;
+        }
+
+        $post_data = array(
+            'ID' => $post_id,
+        );
+
+        $update_post = false;
+
+        // Save Title
+        if (isset($_POST['video_title'])) {
+            if (get_the_title($post_id) !== $_POST['video_title']) {
+                $post_data['post_title'] = sanitize_text_field($_POST['video_title']);
+                $update_post = true;
+            }
+        }
+        
+        // Save Description
+        if (isset($_POST['video_description'])) {
+            $post = get_post($post_id);
+            if ($post && $post->post_content !== $_POST['video_description']) {
+                $post_data['post_content'] = sanitize_textarea_field($_POST['video_description']);
+                $update_post = true;
+            }
+        }
+
+        // Update post if title or description changed
+        if ($update_post) {
+            // Unhook this function to prevent infinite loops
+            remove_action('save_post_um_videos', array($this, 'save_video_custom_fields_meta'), 10);
+            
+            // Update the post
+            wp_update_post($post_data);
+            
+            // Re-hook the function
+            add_action('save_post_um_videos', array($this, 'save_video_custom_fields_meta'), 10, 1);
+        }
+
+        // Save Video Link
+        if (isset($_POST['video_link'])) {
+            update_post_meta($post_id, '_um_video_link', esc_url_raw($_POST['video_link']));
+        }
+
+        // Save Category
+        if (isset($_POST['video_category'])) {
+            $category_names = array_map('trim', explode(',', sanitize_text_field($_POST['video_category'])));
+            wp_set_post_terms($post_id, $category_names, 'um_video_category', false);
+        }
     }
 
     /**
