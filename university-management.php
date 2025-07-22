@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -583,6 +583,14 @@ class University_Management {
         $video_title = get_the_title($post->ID);
         $video_link = get_post_meta($post->ID, '_um_video_link', true);
         $video_content = $post->post_content;
+        $categories = get_the_terms($post->ID, 'um_video_category');
+        $category_names = array();
+        if ($categories && !is_wp_error($categories)) {
+            foreach ($categories as $category) {
+                $category_names[] = $category->name;
+            }
+        }
+        $category_display = !empty($category_names) ? implode(', ', $category_names) : __('بدون دسته‌بندی', 'university-management');
         ?>
         <div class="um-custom-fields-meta-box">
             <p>
@@ -592,6 +600,10 @@ class University_Management {
             <p>
                 <strong><?php _e('فایل ویدیو (لینک):', 'university-management'); ?></strong><br>
                 <input type="text" value="<?php echo esc_url($video_link); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
+            </p>
+            <p>
+                <strong><?php _e('دسته‌بندی‌ها:', 'university-management'); ?></strong><br>
+                <input type="text" value="<?php echo esc_attr($category_display); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
             </p>
             <p>
                 <strong><?php _e('توضیحات:', 'university-management'); ?></strong><br>
