@@ -390,6 +390,14 @@ class University_Management {
             'normal',
             'high'
         );
+        add_meta_box(
+            'um_video_custom_fields',
+            __('زمینه های دلخواه ویدیو', 'university-management'),
+            array($this, 'video_custom_fields_meta_box'),
+            'um_videos',
+            'normal',
+            'high'
+        );
     }
     
     /**
@@ -565,6 +573,32 @@ class University_Management {
                     break;
             }
         }
+    }
+
+    /**
+     * نمایش متاباکس زمینه‌های دلخواه ویدیو
+     */
+    public function video_custom_fields_meta_box($post) {
+        // دریافت اطلاعات ویدیو
+        $video_title = get_the_title($post->ID);
+        $video_link = get_post_meta($post->ID, '_um_video_link', true);
+        $video_content = $post->post_content;
+        ?>
+        <div class="um-custom-fields-meta-box">
+            <p>
+                <strong><?php _e('عنوان ویدیو:', 'university-management'); ?></strong><br>
+                <input type="text" value="<?php echo esc_attr($video_title); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
+            </p>
+            <p>
+                <strong><?php _e('فایل ویدیو (لینک):', 'university-management'); ?></strong><br>
+                <input type="text" value="<?php echo esc_url($video_link); ?>" readonly style="width: 100%; background-color: #f0f0f0;">
+            </p>
+            <p>
+                <strong><?php _e('توضیحات:', 'university-management'); ?></strong><br>
+                <textarea readonly style="width: 100%; height: 150px; background-color: #f0f0f0;"><?php echo esc_textarea($video_content); ?></textarea>
+            </p>
+        </div>
+        <?php
     }
 
     /**
