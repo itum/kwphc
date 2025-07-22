@@ -67,6 +67,7 @@ class University_Management {
         
         // ذخیره متاباکس‌ها
         add_action('save_post_um_videos', array($this, 'save_video_meta'));
+        add_action('save_post_um_videos', array($this, 'update_video_custom_fields'), 20, 1);
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         
@@ -568,7 +569,47 @@ class University_Management {
         }
     }
 
+    /**
+     * به‌روزرسانی خودکار زمینه‌های دلخواه ویدیو
+     */
+    public function update_video_custom_fields($post_id) {
+        // بررسی نوع پست
+        if ('um_videos' !== get_post_type($post_id)) {
+            return;
+        }
 
+        // بررسی autosave
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // دریافت اطلاعات ویدیو
+        $post = get_post($post_id);
+        if (!$post) {
+            return;
+        }
+
+        // به‌روزرسانی video_title
+        update_post_meta($post_id, 'video_title', $post->post_title);
+
+        // به‌روزرسانی video_link
+        $video_link = get_post_meta($post_id, '_um_video_link', true);
+        update_post_meta($post_id, 'video_link', $video_link);
+
+        // به‌روزرسانی category_video
+        $categories = get_the_terms($post_id, 'um_video_category');
+        $category_names = array();
+        if ($categories && !is_wp_error($categories)) {
+            foreach ($categories as $category) {
+                $category_names[] = $category->name;
+            }
+        }
+        $category_display = !empty($category_names) ? implode(', ', $category_names) : '';
+        update_post_meta($post_id, 'category_video', $category_display);
+
+        // به‌روزرسانی description_video
+        update_post_meta($post_id, 'description_video', $post->post_content);
+    }
 
     /**
      * بارگذاری فایل‌های CSS و JS در سمت کاربر
