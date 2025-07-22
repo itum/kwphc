@@ -103,6 +103,9 @@ class University_Management {
         add_action('wp_ajax_um_get_azmoons_widget', array($this, 'ajax_get_azmoons_widget'));
         add_action('wp_ajax_um_load_and_insert_azmoons_from_api', array($this, 'ajax_load_and_insert_azmoons_from_api'));
         
+        // اکشن برای به‌روزرسانی دسته‌ای زمینه‌های دلخواه ویدیو
+        add_action('wp_ajax_um_update_all_video_custom_fields', array($this, 'ajax_update_all_video_custom_fields'));
+        
         // ثبت شورت‌کدهای داینامیک
         add_action('init', array($this, 'register_shortcodes'));
         
@@ -570,31 +573,61 @@ class University_Management {
     }
 
     /**
+     * لاگ‌گیری برای دیباگ
+     */
+    private function log_debug($message, $data = array()) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('UM Video Custom Fields: ' . $message . ' - ' . print_r($data, true));
+        }
+    }
+
+    /**
      * به‌روزرسانی خودکار زمینه‌های دلخواه ویدیو
      */
     public function update_video_custom_fields($post_id) {
+        $this->log_debug('تابع update_video_custom_fields فراخوانی شد', array('post_id' => $post_id));
+        
         // بررسی نوع پست
-        if ('um_videos' !== get_post_type($post_id)) {
+        $post_type = get_post_type($post_id);
+        $this->log_debug('نوع پست بررسی شد', array('post_type' => $post_type));
+        
+        if ('um_videos' !== $post_type) {
+            $this->log_debug('نوع پست مطابقت ندارد - خروج از تابع');
             return;
         }
 
         // بررسی autosave
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            $this->log_debug('در حال autosave - خروج از تابع');
             return;
         }
 
         // دریافت اطلاعات ویدیو
         $post = get_post($post_id);
         if (!$post) {
+            $this->log_debug('پست یافت نشد - خروج از تابع');
             return;
         }
 
+        $this->log_debug('شروع به‌روزرسانی فیلدها', array(
+            'post_title' => $post->post_title,
+            'post_content' => substr($post->post_content, 0, 100) . '...'
+        ));
+
         // به‌روزرسانی video_title
-        update_post_meta($post_id, 'video_title', $post->post_title);
+        $title_result = update_post_meta($post_id, 'video_title', $post->post_title);
+        $this->log_debug('video_title به‌روزرسانی شد', array(
+            'value' => $post->post_title,
+            'result' => $title_result
+        ));
 
         // به‌روزرسانی video_link
         $video_link = get_post_meta($post_id, '_um_video_link', true);
-        update_post_meta($post_id, 'video_link', $video_link);
+        $link_result = update_post_meta($post_id, 'video_link', $video_link);
+        $this->log_debug('video_link به‌روزرسانی شد', array(
+            'value' => $video_link,
+            'result' => $link_result
+        ));
 
         // به‌روزرسانی category_video
         $categories = get_the_terms($post_id, 'um_video_category');
@@ -604,11 +637,50 @@ class University_Management {
                 $category_names[] = $category->name;
             }
         }
-        $category_display = !empty($category_names) ? implode(', ', $category_names) : '';
-        update_post_meta($post_id, 'category_video', $category_display);
+        $category_display = !empty($category_names) ? implode(', ', $category_names) : 'بدون دسته‌بندی';
+        $category_result = update_post_meta($post_id, 'category_video', $category_display);
+        $this->log_debug('category_video به‌روزرسانی شد', array(
+            'categories' => $categories,
+            'value' => $category_display,
+            'result' => $category_result
+        ));
 
         // به‌روزرسانی description_video
-        update_post_meta($post_id, 'description_video', $post->post_content);
+        $desc_result = update_post_meta($post_id, 'description_video', $post->post_content);
+        $this->log_debug('description_video به‌روزرسانی شد', array(
+            'value' => substr($post->post_content, 0, 100) . '...',
+            'result' => $desc_result
+        ));
+
+        $this->log_debug('تمام فیلدها به‌روزرسانی شدند');
+    }
+
+    /**
+     * AJAX: به‌روزرسانی زمینه‌های دلخواه همه ویدیوها
+     */
+    public function ajax_update_all_video_custom_fields() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_update_video_fields_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+
+        // دریافت همه ویدیوها
+        $videos = get_posts(array(
+            'post_type' => 'um_videos',
+            'posts_per_page' => -1,
+            'post_status' => array('publish', 'draft', 'private')
+        ));
+
+        $updated_count = 0;
+        foreach ($videos as $video) {
+            $this->update_video_custom_fields($video->ID);
+            $updated_count++;
+        }
+
+        wp_send_json_success(array(
+            'message' => sprintf('%d ویدیو به‌روزرسانی شد', $updated_count),
+            'count' => $updated_count
+        ));
     }
 
     /**

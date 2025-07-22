@@ -46,6 +46,15 @@ $page_title = __('مدیریت ویدیوها', 'university-management');
                 
                 <a href="<?php echo admin_url('edit-tags.php?taxonomy=um_video_category&post_type=um_videos'); ?>" class="button button-primary"><?php _e('مدیریت دسته‌بندی‌ها', 'university-management'); ?></a>
             </div>
+            
+            <div class="um-admin-card">
+                <h3><?php _e('زمینه‌های دلخواه ویدیوها', 'university-management'); ?></h3>
+                <p><?php _e('برای هر ویدیو، زمینه‌های دلخواه شامل عنوان، لینک، دسته‌بندی و توضیحات به‌طور خودکار ایجاد می‌شوند.', 'university-management'); ?></p>
+                <p><?php _e('اگر برای ویدیوهای قدیمی این زمینه‌ها ایجاد نشده‌اند، می‌توانید با کلیک روی دکمه زیر همه آنها را به‌روزرسانی کنید.', 'university-management'); ?></p>
+                
+                <button id="update-all-video-fields" class="button button-primary"><?php _e('به‌روزرسانی زمینه‌های دلخواه همه ویدیوها', 'university-management'); ?></button>
+                <span id="update-status" style="margin-right: 10px;"></span>
+            </div>
         </div>
     </div>
 </div>
@@ -71,4 +80,37 @@ $page_title = __('مدیریت ویدیوها', 'university-management');
     margin-top: 0;
     color: #0073aa;
 }
-</style> 
+</style>
+
+<script>
+jQuery(document).ready(function($) {
+    $('#update-all-video-fields').on('click', function() {
+        var button = $(this);
+        var status = $('#update-status');
+        
+        button.prop('disabled', true).text('در حال به‌روزرسانی...');
+        status.html('<span style="color: #0073aa;">لطفاً صبر کنید...</span>');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'um_update_all_video_custom_fields',
+                nonce: '<?php echo wp_create_nonce('um_update_video_fields_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    status.html('<span style="color: #46b450;">' + response.data.message + '</span>');
+                } else {
+                    status.html('<span style="color: #dc3232;">خطا: ' + response.data + '</span>');
+                }
+                button.prop('disabled', false).text('به‌روزرسانی زمینه‌های دلخواه همه ویدیوها');
+            },
+            error: function() {
+                status.html('<span style="color: #dc3232;">خطا در اتصال به سرور</span>');
+                button.prop('disabled', false).text('به‌روزرسانی زمینه‌های دلخواه همه ویدیوها');
+            }
+        });
+    });
+});
+</script> 
