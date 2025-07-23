@@ -9,7 +9,7 @@ function kw_add_slides_menu_page() {
         'university-management',           // منوی پدر
         'مدیریت اسلایدها',                 // عنوان صفحه
         'مدیریت اسلایدها',                 // عنوان منو
-        'manage_options',                  // قابلیت مورد نیاز
+        'edit_posts',                      // تغییر به edit_posts برای دسترسی مدیران
         'university-slides',               // شناسه صفحه
         'kw_render_slides_management_page' // تابع نمایش صفحه
     );
@@ -18,9 +18,16 @@ add_action('admin_menu', 'kw_add_slides_menu_page');
 
 // تابع رندر صفحه مدیریت اسلایدها
 function kw_render_slides_management_page() {
-    // بررسی مجوزهای کاربری
-    if (!current_user_can('manage_options')) {
-        wp_die('شما مجوز کافی برای دسترسی به این صفحه را ندارید.');
+    // بررسی مجوزهای کاربری با استفاده از current_user_can
+    if (!current_user_can('edit_posts')) {
+        wp_die(
+            'شما مجوز کافی برای دسترسی به این صفحه را ندارید.', 
+            'عدم دسترسی', 
+            array(
+                'response' => 403,
+                'back_link' => true
+            )
+        );
     }
 
     // پردازش اقدامات
