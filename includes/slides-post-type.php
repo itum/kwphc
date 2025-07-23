@@ -24,14 +24,17 @@ function kw_register_slides_post_type() {
 
     $args = array(
         'labels'             => $labels,
-        'public'             => false,
-        'publicly_queryable' => false,
+        'public'             => true,  // تغییر به true
+        'publicly_queryable' => true,  // تغییر به true
         'show_ui'            => true,
-        'show_in_menu'       => 'university-management', // تغییر به منوی اصلی افزونه
+        'show_in_menu'       => 'university-management',
         'query_var'          => true,
-        'rewrite'            => array('slug' => 'university-slide'),
+        'rewrite'            => array(
+            'slug'       => 'university-slides',
+            'with_front' => false  // جلوگیری از اضافه شدن پیشوند پیش‌فرض
+        ),
         'capability_type'    => 'post',
-        'has_archive'        => false,
+        'has_archive'        => true,  // تغییر به true
         'hierarchical'       => false,
         'menu_position'      => null,
         'supports'           => array('title', 'thumbnail', 'editor')
@@ -39,7 +42,7 @@ function kw_register_slides_post_type() {
 
     register_post_type('university_slide', $args);
 }
-add_action('init', 'kw_register_slides_post_type');
+add_action('init', 'kw_register_slides_post_type', 0);  // اضافه کردن اولویت 0
 
 // افزودن ستون‌های سفارشی به صفحه لیست اسلایدها
 function kw_slides_columns($columns) {
@@ -70,4 +73,11 @@ function kw_slides_column_content($column, $post_id) {
             break;
     }
 }
-add_action('manage_university_slide_posts_custom_column', 'kw_slides_column_content', 10, 2); 
+add_action('manage_university_slide_posts_custom_column', 'kw_slides_column_content', 10, 2);
+
+// تابع برای flush rewrite rules
+function kw_flush_rewrite_rules_for_slides() {
+    kw_register_slides_post_type();
+    flush_rewrite_rules();
+}
+register_activation_hook(UM_PLUGIN_DIR . 'university-management.php', 'kw_flush_rewrite_rules_for_slides'); 
