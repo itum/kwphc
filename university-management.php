@@ -20,6 +20,12 @@ define('UM_VERSION', '1.3.0');
 define('UM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+// لود فایل‌های جدید اسلایدها
+require_once plugin_dir_path(__FILE__) . 'includes/slides-post-type.php';
+require_once plugin_dir_path(__FILE__) . 'includes/slides-metabox.php';
+require_once plugin_dir_path(__FILE__) . 'admin/slides-page.php';
+require_once plugin_dir_path(__FILE__) . 'includes/slides-migration.php';
+
 /**
  * کلاس اصلی افزونه مدیریت دانشگاه
  */
@@ -4351,9 +4357,3 @@ function kwprc_localize_class_timer_script() {
     ]);
 }
 add_action('wp_enqueue_scripts', 'kwprc_localize_class_timer_script', 20);
-
-// ... existing code ...
-require_once plugin_dir_path(__FILE__) . 'includes/post-types/class-slides-post-type.php';
-
-// ... existing code ...
-require_once plugin_dir_path(__FILE__) . 'admin/slides-page.php';
