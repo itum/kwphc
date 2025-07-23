@@ -27,7 +27,7 @@ function kw_register_slides_post_type() {
         'public'             => false,
         'publicly_queryable' => false,
         'show_ui'            => true,
-        'show_in_menu'       => false, // موقتاً مخفی می‌کنیم تا از منوی اصلی اضافه شود
+        'show_in_menu'       => 'university-management', // تغییر به منوی اصلی افزونه
         'query_var'          => true,
         'rewrite'            => array('slug' => 'university-slide'),
         'capability_type'    => 'post',
