@@ -4351,3 +4351,9 @@ function kwprc_localize_class_timer_script() {
     ]);
 }
 add_action('wp_enqueue_scripts', 'kwprc_localize_class_timer_script', 20);
+
+// ... existing code ...
+require_once plugin_dir_path(__FILE__) . 'includes/post-types/class-slides-post-type.php';
+
+// ... existing code ...
+require_once plugin_dir_path(__FILE__) . 'admin/slides-page.php';
