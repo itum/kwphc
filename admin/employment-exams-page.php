@@ -228,14 +228,14 @@ $exams = new WP_Query($args);
                             $exam_status = get_post_meta(get_the_ID(), '_exam_status', true);
                             
                             // تبدیل تاریخ به فرمت مناسب نمایش
-                            $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : 'تاریخ نامعلوم';
+                            $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : __('تاریخ نامعلوم', 'university-management');
                             
                             // تبدیل وضعیت به متن فارسی
                             $status_labels = array(
-                                'upcoming' => 'در انتظار برگزاری',
-                                'registration' => 'در حال ثبت‌نام',
-                                'closed' => 'بسته',
-                                'completed' => 'برگزار شده'
+                                'upcoming' => __('در انتظار برگزاری', 'university-management'),
+                                'registration' => __('در حال ثبت‌نام', 'university-management'),
+                                'closed' => __('بسته', 'university-management'),
+                                'completed' => __('برگزار شده', 'university-management')
                             );
                             $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
                         ?>

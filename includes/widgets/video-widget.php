@@ -357,7 +357,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                     }
                     $video_url = get_post_meta(get_the_ID(), '_um_video_link', true);
                     $terms = get_the_terms(get_the_ID(), 'um_video_category');
-                    $category = !empty($terms) ? $terms[0]->name : 'عمومی';
+                    $category = !empty($terms) ? $terms[0]->name : __('عمومی', 'university-management');
 
                     if ($video_url) {
                         $videos[] = [
@@ -378,7 +378,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                             'title' => $video['video_title'],
                             'src' => $video['video_url'],
                             'thumbnail' => !empty($video['video_thumbnail']['url']) ? $video['video_thumbnail']['url'] : UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
-                            'category' => 'عمومی',
+                            'category' => __('عمومی', 'university-management'),
                         ];
                     }
                 }
@@ -394,15 +394,15 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             <div class="videoApp-wrapper">
                 <div class="videoApp-sidebar">
                     <div class="videoApp-header">
-                        <span>دسته بندی ها</span>
+                        <span><?php echo esc_html__('دسته بندی ها', 'university-management'); ?></span>
                         <select class="videoApp-category"></select>
                     </div>
                     <div class="videoApp-thumbnails"></div>
                 </div>
                 <div class="videoApp-main">
-                    <img class="videoApp-preview" src="" alt="پیش‌نمایش ویدیو">
+                    <img class="videoApp-preview" src="" alt="<?php echo esc_attr__('پیش‌نمایش ویدیو', 'university-management'); ?>">
                     <video class="videoApp-current" controls></video>
-                    <div class="videoApp-playPauseBtn" title="پخش ویدیو">
+                    <div class="videoApp-playPauseBtn" title="<?php echo esc_attr__('پخش ویدیو', 'university-management'); ?>">
                         <svg width="15" height="15" viewBox="0 0 31 35" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M28 12.3039C32 14.6133 32 20.3868 28 22.6962L9.24999 33.5215C5.24999 35.8309 0.250002 32.9441 0.250002 28.3253L0.250003 6.67467C0.250003 2.05587 5.25 -0.830872 9.25 1.47853L28 12.3039Z" fill="white"/>
                         </svg>

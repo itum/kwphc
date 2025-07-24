@@ -49,6 +49,9 @@ class University_Management {
         // بارگذاری متن‌های قابل ترجمه
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         
+        // پشتیبانی از WPML
+        add_action('init', array($this, 'wpml_compatibility'));
+        
         // بررسی وجود المنتور
         add_action('plugins_loaded', array($this, 'check_elementor'));
         
@@ -117,6 +120,167 @@ class University_Management {
      */
     public function load_textdomain() {
         load_plugin_textdomain('university-management', false, dirname(plugin_basename(__FILE__)) . '/languages');
+    }
+
+    /**
+     * تنظیمات سازگاری با WPML
+     */
+    public function wpml_compatibility() {
+        // بررسی فعال بودن WPML
+        if (function_exists('icl_register_string')) {
+            // ثبت رشته‌های مهم برای ترجمه
+            $this->register_wpml_strings();
+        }
+
+        // اضافه کردن فیلتر برای فیلدهای دلخواه
+        add_filter('wpml_translatable_fields', array($this, 'wpml_translatable_fields'));
+        
+        // اضافه کردن hook برای کپی کردن فیلدهای مشخص
+        add_action('wpml_post_duplicated', array($this, 'wpml_copy_custom_fields'), 10, 3);
+        
+        // تنظیم زبان پیش‌فرض برای پست‌تایپ‌های جدید
+        add_filter('wpml_set_translated_posts_date', '__return_true');
+    }
+
+    /**
+     * ثبت رشته‌های مهم در WPML
+     */
+    private function register_wpml_strings() {
+        if (!function_exists('icl_register_string')) {
+            return;
+        }
+
+        // رشته‌های عمومی افزونه
+        icl_register_string('university-management', 'Plugin Name', 'مدیریت دانشگاه آب و برق خوزستان');
+        icl_register_string('university-management', 'General Category', 'عمومی');
+        icl_register_string('university-management', 'Video Categories', 'دسته بندی ها');
+        icl_register_string('university-management', 'Video Preview Alt', 'پیش‌نمایش ویدیو');
+        icl_register_string('university-management', 'Play Video', 'پخش ویدیو');
+        
+        // رشته‌های مربوط به وضعیت آزمون‌ها
+        icl_register_string('university-management', 'Status Upcoming', 'در انتظار برگزاری');
+        icl_register_string('university-management', 'Status Registration', 'در حال ثبت‌نام');
+        icl_register_string('university-management', 'Status Closed', 'بسته');
+        icl_register_string('university-management', 'Status Completed', 'برگزار شده');
+        icl_register_string('university-management', 'Unknown Date', 'تاریخ نامعلوم');
+        
+        // رشته‌های مربوط به سمینارها
+        icl_register_string('university-management', 'Seminar Time Label', 'زمان برگزاری:');
+        icl_register_string('university-management', 'Seminar Teacher Label', 'مدرس:');
+        icl_register_string('university-management', 'Start Learning', 'شروع یادگیری');
+    }
+
+    /**
+     * تعریف فیلدهای قابل ترجمه برای WPML
+     */
+    public function wpml_translatable_fields($fields) {
+        // فیلدهای قابل ترجمه ویدیوها
+        $fields[] = array(
+            'field' => 'video_title',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => 'description_video',
+            'type' => 'AREA',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => 'category_video',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        
+        // فیلدهای قابل ترجمه سمینارها
+        $fields[] = array(
+            'field' => '_seminar_teacher',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => '_seminar_time',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => '_seminar_button_text',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        
+        // فیلدهای قابل ترجمه آزمون‌های استخدامی
+        $fields[] = array(
+            'field' => '_exam_position',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => '_exam_department',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => '_exam_location',
+            'type' => 'LINE',
+            'translate' => 1
+        );
+        $fields[] = array(
+            'field' => '_exam_requirements',
+            'type' => 'AREA',
+            'translate' => 1
+        );
+
+        return $fields;
+    }
+
+    /**
+     * کپی فیلدهای دلخواه هنگام ترجمه پست
+     */
+    public function wpml_copy_custom_fields($original_post_id, $lang, $translated_post_details) {
+        if (!$translated_post_details || !isset($translated_post_details['ID'])) {
+            return;
+        }
+
+        $translated_post_id = $translated_post_details['ID'];
+        $post_type = get_post_type($original_post_id);
+
+        // فیلدهایی که باید کپی شوند (نه ترجمه)
+        $copy_fields = array();
+
+        switch ($post_type) {
+            case 'um_videos':
+                $copy_fields = array(
+                    '_um_video_type',
+                    '_um_video_file_id', 
+                    '_um_video_views',
+                    '_um_video_link' // لینک ویدیو معمولاً کپی می‌شود
+                );
+                break;
+                
+            case 'um_seminars':
+                $copy_fields = array(
+                    '_seminar_button_link'
+                );
+                break;
+                
+            case 'um_employment_exams':
+                $copy_fields = array(
+                    '_exam_date',
+                    '_exam_time',
+                    '_exam_duration',
+                    '_exam_application_deadline',
+                    '_exam_status'
+                );
+                break;
+        }
+
+        // کپی کردن فیلدها
+        foreach ($copy_fields as $field) {
+            $value = get_post_meta($original_post_id, $field, true);
+            if ($value !== '') {
+                update_post_meta($translated_post_id, $field, $value);
+            }
+        }
     }
 
     /**

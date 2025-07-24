@@ -52,7 +52,7 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
             [
                 'label' => __('عنوان اصلی', 'university-management'),
                 'type' => \Elementor\Controls_Manager::TEXTAREA,
-                'default' => "دوره سمینار و\nگارگاه های\nبرگزاری شده",
+                'default' => __("دوره سمینار و\nکارگاه‌های\nبرگزاری شده", 'university-management'),
                 'rows' => 3,
             ]
         );
@@ -115,7 +115,7 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
             [
                 'label' => __('عنوان کارگاه', 'university-management'),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('فرانت‌اند', 'university-management'),
+                'default' => __('عنوان کارگاه', 'university-management'),
             ]
         );
 
@@ -133,7 +133,7 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
             [
                 'label' => __('مدرس', 'university-management'),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('مهدی بیگدلی', 'university-management'),
+                'default' => __('نام مدرس', 'university-management'),
             ]
         );
 
@@ -316,14 +316,14 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                             <svg width="12" height="12" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M5.5 2.38379V5.63379H7.9375M10.375 5.63379C10.375 6.27398 10.2489 6.90791 10.0039 7.49937C9.75892 8.09083 9.39983 8.62825 8.94715 9.08093C8.49446 9.53362 7.95704 9.89271 7.36558 10.1377C6.77412 10.3827 6.14019 10.5088 5.5 10.5088C4.85981 10.5088 4.22588 10.3827 3.63442 10.1377C3.04296 9.89271 2.50554 9.53362 2.05285 9.08093C1.60017 8.62825 1.24108 8.09083 0.996087 7.49937C0.751096 6.90791 0.625 6.27398 0.625 5.63379C0.625 4.34086 1.13861 3.10088 2.05285 2.18664C2.96709 1.2724 4.20707 0.758789 5.5 0.758789C6.79293 0.758789 8.03291 1.2724 8.94715 2.18664C9.86139 3.10088 10.375 4.34086 10.375 5.63379Z" stroke="#212179" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
                                             </svg>
-                                            <span>زمان برگزاری:</span>
+                                            <span><?php echo esc_html__('زمان برگزاری:', 'university-management'); ?></span>
                                             <span style="color:#1e2a78;"><?php echo esc_html($item['seminar_time']); ?></span>
                                         </div>
                                         <div class="info-row">
                                             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M7.87499 3C7.87499 3.49728 7.67744 3.97419 7.32581 4.32583C6.97418 4.67746 6.49727 4.875 5.99999 4.875C5.50271 4.875 5.02579 4.67746 4.67416 4.32583C4.32253 3.97419 4.12499 3.49728 4.12499 3C4.12499 2.50272 4.32253 2.02581 4.67416 1.67417C5.02579 1.32254 5.50271 1.125 5.99999 1.125C6.49727 1.125 6.97418 1.32254 7.32581 1.67417C7.67744 2.02581 7.87499 2.50272 7.87499 3ZM2.25049 10.059C2.26656 9.07518 2.66866 8.13708 3.37008 7.44702C4.0715 6.75696 5.01603 6.37023 5.99999 6.37023C6.98394 6.37023 7.92848 6.75696 8.6299 7.44702C9.33132 8.13708 9.73342 9.07518 9.74949 10.059C8.57318 10.5984 7.29406 10.8768 5.99999 10.875C4.66199 10.875 3.39199 10.583 2.25049 10.059Z" stroke="#212179" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
                                             </svg>
-                                            <span>مدرس:</span>
+                                            <span><?php echo esc_html__('مدرس:', 'university-management'); ?></span>
                                             <span style="color:#1e2a78;"><?php echo esc_html($item['seminar_teacher']); ?></span>
                                         </div>
                                     </div>

@@ -259,10 +259,10 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             $deadline_display = $exam_application_deadline ? date_i18n('Y/m/d', strtotime($exam_application_deadline)) : '';
             
             $status_labels = array(
-                'upcoming' => 'در انتظار برگزاری',
-                'registration' => 'در حال ثبت‌نام',
-                'closed' => 'بسته',
-                'completed' => 'برگزار شده'
+                'upcoming' => __('در انتظار برگزاری', 'university-management'),
+                'registration' => __('در حال ثبت‌نام', 'university-management'),
+                'closed' => __('بسته', 'university-management'),
+                'completed' => __('برگزار شده', 'university-management')
             );
             $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
             
@@ -346,13 +346,13 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                     $exam_position = get_post_meta(get_the_ID(), '_exam_position', true);
                     $exam_status = get_post_meta(get_the_ID(), '_exam_status', true);
                     
-                    $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : 'تاریخ نامعلوم';
+                    $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : __('تاریخ نامعلوم', 'university-management');
                     
                     $status_labels = array(
-                        'upcoming' => 'در انتظار برگزاری',
-                        'registration' => 'در حال ثبت‌نام',
-                        'closed' => 'بسته',
-                        'completed' => 'برگزار شده'
+                        'upcoming' => __('در انتظار برگزاری', 'university-management'),
+                        'registration' => __('در حال ثبت‌نام', 'university-management'),
+                        'closed' => __('بسته', 'university-management'),
+                        'completed' => __('برگزار شده', 'university-management')
                     );
                     $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
                     
@@ -388,10 +388,10 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : '';
             
             $status_labels = array(
-                'upcoming' => 'در انتظار برگزاری',
-                'registration' => 'در حال ثبت‌نام',
-                'closed' => 'بسته',
-                'completed' => 'برگزار شده'
+                'upcoming' => __('در انتظار برگزاری', 'university-management'),
+                'registration' => __('در حال ثبت‌نام', 'university-management'),
+                'closed' => __('بسته', 'university-management'),
+                'completed' => __('برگزار شده', 'university-management')
             );
             $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
             
