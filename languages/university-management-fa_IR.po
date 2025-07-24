@@ -1,15 +1,12 @@
-# LANGUAGE FILE FOR UNIVERSITY MANAGEMENT PLUGIN
-# Copyright (C) 2024 University Management
-# This file is distributed under the same license as the University Management Plugin.
 msgid ""
 msgstr ""
 "Project-Id-Version: University Management 1.3.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-07-28 10:00+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2024-07-28 10:05+0330\n"
+"Last-Translator: Faraz Team <info@farazec.com>\n"
+"Language-Team: Persian <fa@li.org>\n"
+"Language: fa_IR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -17,385 +14,385 @@ msgstr ""
 
 #: university-management.php:121
 msgid "مدیریت دانشگاه"
-msgstr ""
+msgstr "مدیریت دانشگاه"
 
 #: university-management.php:131
 msgid "تقویم دانشگاه"
-msgstr ""
+msgstr "تقویم دانشگاه"
 
 #: university-management.php:139
 msgid "زمان‌بندی کلاس‌ها"
-msgstr ""
+msgstr "زمان‌بندی کلاس‌ها"
 
 #: university-management.php:147
 msgid "مدیریت ویدیوها"
-msgstr ""
+msgstr "مدیریت ویدیوها"
 
 #: university-management.php:155
 msgid "ورود اطلاعات پایگاه داده"
-msgstr ""
+msgstr "ورود اطلاعات پایگاه داده"
 
 #: university-management.php:163
 msgid "تنظیمات عمومی"
-msgstr ""
+msgstr "تنظیمات عمومی"
 
 #: university-management.php:171
 msgid "آزمون‌های استخدامی"
-msgstr ""
+msgstr "آزمون‌های استخدامی"
 
 #: university-management.php:179
 msgid "مدیریت آزمون‌های استخدامی"
-msgstr ""
+msgstr "مدیریت آزمون‌های استخدامی"
 
 #: includes/widgets/video-widget.php:73
 msgid "تنظیمات عمومی"
-msgstr ""
+msgstr "تنظیمات عمومی"
 
 #: includes/widgets/video-widget.php:82
 msgid "عنوان اول"
-msgstr ""
+msgstr "عنوان اول"
 
 #: includes/widgets/video-widget.php:86
 msgid "لورم ایپسوم"
-msgstr ""
+msgstr "لورم ایپسوم"
 
 #: includes/widgets/video-widget.php:94
 msgid "عنوان دوم"
-msgstr ""
+msgstr "عنوان دوم"
 
 #: includes/widgets/video-widget.php:98
 msgid "صنعت آب و برق خوزستان"
-msgstr ""
+msgstr "صنعت آب و برق خوزستان"
 
 #: includes/widgets/video-widget.php:106
 msgid "منبع ویدیوها"
-msgstr ""
+msgstr "منبع ویدیوها"
 
 #: includes/widgets/video-widget.php:111
 msgid "خودکار (از پست‌تایپ)"
-msgstr ""
+msgstr "خودکار (از پست‌تایپ)"
 
 #: includes/widgets/video-widget.php:112
 msgid "دستی"
-msgstr ""
+msgstr "دستی"
 
 #: includes/widgets/video-widget.php:121
 msgid "دسته‌بندی ویدیوها"
-msgstr ""
+msgstr "دسته‌بندی ویدیوها"
 
 #: includes/widgets/video-widget.php:135
 msgid "تعداد ویدیوها"
-msgstr ""
+msgstr "تعداد ویدیوها"
 
 #: includes/widgets/video-widget.php:154
 msgid "ویدیوهای دستی"
-msgstr ""
+msgstr "ویدیوهای دستی"
 
 #: includes/widgets/video-widget.php:164
 msgid "عنوان ویدیو"
-msgstr ""
+msgstr "عنوان ویدیو"
 
 #: includes/widgets/video-widget.php:173
 msgid "آدرس ویدیو (MP4)"
-msgstr ""
+msgstr "آدرس ویدیو (MP4)"
 
 #: includes/widgets/video-widget.php:181
 msgid "تصویر کوچک ویدیو"
-msgstr ""
+msgstr "تصویر کوچک ویدیو"
 
 #: includes/widgets/video-widget.php:193
 msgid "ویدیوها"
-msgstr ""
+msgstr "ویدیوها"
 
 #: includes/widgets/video-widget.php:200
 msgid "ویدیو اول"
-msgstr ""
+msgstr "ویدیو اول"
 
 #: includes/widgets/video-widget.php:204
 msgid "ویدیو دوم"
-msgstr ""
+msgstr "ویدیو دوم"
 
 #: includes/widgets/video-widget.php:214
 msgid "استایل"
-msgstr ""
+msgstr "استایل"
 
 #: includes/widgets/video-widget.php:223
 msgid "رنگ عنوان اول"
-msgstr ""
+msgstr "رنگ عنوان اول"
 
 #: includes/widgets/video-widget.php:235
 msgid "تایپوگرافی عنوان اول"
-msgstr ""
+msgstr "تایپوگرافی عنوان اول"
 
 #: includes/widgets/video-widget.php:244
 msgid "رنگ عنوان دوم"
-msgstr ""
+msgstr "رنگ عنوان دوم"
 
 #: includes/widgets/video-widget.php:256
 msgid "تایپوگرافی عنوان دوم"
-msgstr ""
+msgstr "تایپوگرافی عنوان دوم"
 
 #: includes/widgets/video-widget.php:265
 msgid "رنگ پس‌زمینه دسته‌بندی"
-msgstr ""
+msgstr "رنگ پس‌زمینه دسته‌بندی"
 
 #: includes/widgets/video-widget.php:277
 msgid "رنگ متن دسته‌بندی"
-msgstr ""
+msgstr "رنگ متن دسته‌بندی"
 
 #: includes/widgets/video-widget.php:289
 msgid "ارتفاع ویدیو"
-msgstr ""
+msgstr "ارتفاع ویدیو"
 
 #: includes/widgets/video-widget.php:437
 msgid "پیش‌فرض"
-msgstr ""
+msgstr "پیش‌فرض"
 
 #: includes/widgets/video-widget.php:364
 msgid "عمومی"
-msgstr ""
+msgstr "عمومی"
 
 #: includes/widgets/video-widget.php:382
 msgid "دسته بندی ها"
-msgstr ""
+msgstr "دسته بندی ها"
 
 #: includes/widgets/video-widget.php:386
 msgid "پیش‌نمایش ویدیو"
-msgstr ""
+msgstr "پیش‌نمایش ویدیو"
 
 #: includes/widgets/video-widget.php:388
 msgid "پخش ویدیو"
-msgstr ""
+msgstr "پخش ویدیو"
 
 #: includes/widgets/calendar-widget.php:83
 msgid "منبع رویدادها"
-msgstr ""
+msgstr "منبع رویدادها"
 
 #: includes/widgets/calendar-widget.php:97
 msgid "تعداد رویدادها"
-msgstr ""
+msgstr "تعداد رویدادها"
 
 #: includes/widgets/calendar-widget.php:116
 msgid "رویدادهای دستی"
-msgstr ""
+msgstr "رویدادهای دستی"
 
 #: includes/widgets/calendar-widget.php:126
 msgid "تاریخ رویداد"
-msgstr ""
+msgstr "تاریخ رویداد"
 
 #: includes/widgets/calendar-widget.php:135
 msgid "عنوان رویداد"
-msgstr ""
+msgstr "عنوان رویداد"
 
 #: includes/widgets/calendar-widget.php:143
 msgid "رویداد مهم (هایلایت)"
-msgstr ""
+msgstr "رویداد مهم (هایلایت)"
 
 #: includes/widgets/calendar-widget.php:145
 msgid "بله"
-msgstr ""
+msgstr "بله"
 
 #: includes/widgets/calendar-widget.php:146
 msgid "خیر"
-msgstr ""
+msgstr "خیر"
 
 #: includes/widgets/calendar-widget.php:153
 msgid "رویدادها"
-msgstr ""
+msgstr "رویدادها"
 
 #: includes/widgets/calendar-widget.php:161
 msgid "شروع کلاس‌ها"
-msgstr ""
+msgstr "شروع کلاس‌ها"
 
 #: includes/widgets/calendar-widget.php:166
 msgid "ارائه پروژه"
-msgstr ""
+msgstr "ارائه پروژه"
 
 #: includes/widgets/calendar-widget.php:171
 msgid "میان‌ترم"
-msgstr ""
+msgstr "میان‌ترم"
 
 #: includes/widgets/calendar-widget.php:187
 msgid "رنگ هایلایت"
-msgstr ""
+msgstr "رنگ هایلایت"
 
 #: includes/widgets/azmoon-widget.php:31
 msgid "آزمون استخدامی"
-msgstr ""
+msgstr "آزمون استخدامی"
 
 #: includes/widgets/azmoon-widget.php:40
 msgid "محتوا"
-msgstr ""
+msgstr "محتوا"
 
 #: includes/widgets/azmoon-widget.php:48
 msgid "عنوان اصلی"
-msgstr ""
+msgstr "عنوان اصلی"
 
 #: includes/widgets/azmoon-widget.php:58
 msgid "منبع آزمون‌ها"
-msgstr ""
+msgstr "منبع آزمون‌ها"
 
 #: includes/widgets/azmoon-widget.php:63
 msgid "خودکار (از API)"
-msgstr ""
+msgstr "خودکار (از API)"
 
 #: includes/widgets/azmoon-widget.php:72
 msgid "تعداد برای نمایش"
-msgstr ""
+msgstr "تعداد برای نمایش"
 
 #: includes/widgets/azmoon-widget.php:89
 msgid "تصویر"
-msgstr ""
+msgstr "تصویر"
 
 #: includes/widgets/azmoon-widget.php:100
 msgid "عنوان آزمون"
-msgstr ""
+msgstr "عنوان آزمون"
 
 #: includes/widgets/azmoon-widget.php:104
 msgid "آزمون استخدامی مهندس نرم‌افزار"
-msgstr ""
+msgstr "آزمون استخدامی مهندس نرم‌افزار"
 
 #: includes/widgets/azmoon-widget.php:112
 msgid "تاریخ برگزاری"
-msgstr ""
+msgstr "تاریخ برگزاری"
 
 #: includes/widgets/azmoon-widget.php:116
 msgid "۱۴۰۳/۰۵/۲۰"
-msgstr ""
+msgstr "۱۴۰۳/۰۵/۲۰"
 
 #: includes/widgets/azmoon-widget.php:124
 msgid "دپارتمان"
-msgstr ""
+msgstr "دپارتمان"
 
 #: includes/widgets/azmoon-widget.php:128
 msgid "فنی و مهندسی"
-msgstr ""
+msgstr "فنی و مهندسی"
 
 #: includes/widgets/azmoon-widget.php:136
 msgid "وضعیت"
-msgstr ""
+msgstr "وضعیت"
 
 #: includes/widgets/azmoon-widget.php:141
 msgid "فعال"
-msgstr ""
+msgstr "فعال"
 
 #: includes/widgets/azmoon-widget.php:142
 msgid "غیرفعال"
-msgstr ""
+msgstr "غیرفعال"
 
 #: includes/widgets/azmoon-widget.php:143
 msgid "تکمیل شده"
-msgstr ""
+msgstr "تکمیل شده"
 
 #: includes/widgets/azmoon-widget.php:151
 msgid "لینک دکمه"
-msgstr ""
+msgstr "لینک دکمه"
 
 #: includes/widgets/azmoon-widget.php:152
 msgid "https://your-link.com"
-msgstr ""
+msgstr "https://your-link.com"
 
 #: includes/widgets/azmoon-widget.php:164
 msgid "عنوان دکمه"
-msgstr ""
+msgstr "عنوان دکمه"
 
 #: includes/widgets/azmoon-widget.php:168
 msgid "مشاهده جزئیات"
-msgstr ""
+msgstr "مشاهده جزئیات"
 
 #: includes/widgets/azmoon-widget.php:175
 msgid "لیست آزمون‌ها"
-msgstr ""
+msgstr "لیست آزمون‌ها"
 
 #: includes/widgets/seminar-slider-widget.php:26
 msgid "اسلایدر کارگاه و سمینار"
-msgstr ""
+msgstr "اسلایدر کارگاه و سمینار"
 
 #: includes/widgets/seminar-slider-widget.php:50
 msgid "دوره سمینار و\nکارگاه‌های\nبرگزاری شده"
-msgstr ""
+msgstr "دوره سمینار و\nکارگاه‌های\nبرگزاری شده"
 
 #: includes/widgets/seminar-slider-widget.php:57
 msgid "منبع کارگاه‌ها"
-msgstr ""
+msgstr "منبع کارگاه‌ها"
 
 #: includes/widgets/seminar-slider-widget.php:67
 msgid "دسته‌بندی کارگاه‌ها"
-msgstr ""
+msgstr "دسته‌بندی کارگاه‌ها"
 
 #: includes/widgets/seminar-slider-widget.php:122
 msgid "عنوان کارگاه"
-msgstr ""
+msgstr "عنوان کارگاه"
 
 #: includes/widgets/seminar-slider-widget.php:138
 msgid "مدرس"
-msgstr ""
+msgstr "مدرس"
 
 #: includes/widgets/seminar-slider-widget.php:139
 msgid "نام مدرس"
-msgstr ""
+msgstr "نام مدرس"
 
 #: includes/widgets/seminar-slider-widget.php:164
 msgid "شروع یادگیری"
-msgstr ""
+msgstr "شروع یادگیری"
 
 #: includes/widgets/seminar-slider-widget.php:171
 msgid "لیست کارگاه‌ها"
-msgstr ""
+msgstr "لیست کارگاه‌ها"
 
 #: includes/widgets/seminar-slider-widget.php:332
 msgid "زمان برگزاری:"
-msgstr ""
+msgstr "زمان برگزاری:"
 
 #: includes/widgets/seminar-slider-widget.php:336
 msgid "مدرس:"
-msgstr ""
+msgstr "مدرس:"
 
 #: includes/widgets/employment-exams-widget.php:291
 msgid "موقعیت:"
-msgstr ""
+msgstr "موقعیت:"
 
 #: includes/widgets/employment-exams-widget.php:297
 msgid "دپارتمان:"
-msgstr ""
+msgstr "دپارتمان:"
 
 #: includes/widgets/employment-exams-widget.php:303
 msgid "تاریخ آزمون:"
-msgstr ""
+msgstr "تاریخ آزمون:"
 
 #: includes/widgets/employment-exams-widget.php:309
 msgid "محل برگزاری:"
-msgstr ""
+msgstr "محل برگزاری:"
 
 #: includes/widgets/employment-exams-widget.php:315
 msgid "مهلت ثبت‌نام:"
-msgstr ""
+msgstr "مهلت ثبت‌نام:"
 
 #: includes/widgets/employment-exams-widget.php:262
 #: includes/widgets/employment-exams-widget.php:351
 #: includes/widgets/employment-exams-widget.php:390
 msgid "در انتظار برگزاری"
-msgstr ""
+msgstr "در انتظار برگزاری"
 
 #: includes/widgets/employment-exams-widget.php:263
 #: includes/widgets/employment-exams-widget.php:352
 #: includes/widgets/employment-exams-widget.php:391
 msgid "در حال ثبت‌نام"
-msgstr ""
+msgstr "در حال ثبت‌نام"
 
 #: includes/widgets/employment-exams-widget.php:264
 #: includes/widgets/employment-exams-widget.php:353
 #: includes/widgets/employment-exams-widget.php:392
 msgid "بسته"
-msgstr ""
+msgstr "بسته"
 
 #: includes/widgets/employment-exams-widget.php:265
 #: includes/widgets/employment-exams-widget.php:354
 #: includes/widgets/employment-exams-widget.php:393
 msgid "برگزار شده"
-msgstr ""
+msgstr "برگزار شده"
 
 #: includes/widgets/employment-exams-widget.php:349
 #: admin/employment-exams-page.php:232
 msgid "تاریخ نامعلوم"
-msgstr ""
+msgstr "تاریخ نامعلوم" 
