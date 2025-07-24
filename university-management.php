@@ -20,12 +20,6 @@ define('UM_VERSION', '1.3.0');
 define('UM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-// لود فایل‌های جدید اسلایدها
-require_once plugin_dir_path(__FILE__) . 'includes/slides-post-type.php';
-require_once plugin_dir_path(__FILE__) . 'includes/slides-metabox.php';
-require_once plugin_dir_path(__FILE__) . 'admin/slides-page.php';
-require_once plugin_dir_path(__FILE__) . 'includes/slides-migration.php';
-
 /**
  * کلاس اصلی افزونه مدیریت دانشگاه
  */
@@ -4327,14 +4321,9 @@ register_deactivation_hook(__FILE__, 'university_management_deactivate');
  * فعال‌سازی افزونه
  */
 function university_management_activate() {
-    // لود فایل پست تایپ
-    require_once plugin_dir_path(__FILE__) . 'includes/slides-post-type.php';
-    
-    // ثبت پست تایپ
-    kw_register_slides_post_type();
-    
-    // بازسازی rewrite rules
-    flush_rewrite_rules();
+    // فراخوانی متد activation کلاس اصلی
+    $plugin = University_Management::get_instance();
+    $plugin->on_activation();
 }
 
 /**
@@ -4362,15 +4351,3 @@ function kwprc_localize_class_timer_script() {
     ]);
 }
 add_action('wp_enqueue_scripts', 'kwprc_localize_class_timer_script', 20);
-
-// هوک برای اطمینان از به‌روزرسانی rewrite rules
-add_action('init', 'university_management_ensure_rewrite_rules');
-function university_management_ensure_rewrite_rules() {
-    $rewrite_rules_updated = get_option('um_slides_rewrite_rules_updated');
-    
-    if (!$rewrite_rules_updated) {
-        kw_register_slides_post_type();
-        flush_rewrite_rules();
-        update_option('um_slides_rewrite_rules_updated', true);
-    }
-}
