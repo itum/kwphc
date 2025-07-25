@@ -559,6 +559,14 @@ class University_Management {
             'normal',
             'high'
         );
+        add_meta_box(
+            'um_staff_details',
+            __('جزئیات پرسنل', 'university-management'),
+            array($this, 'staff_details_meta_box'),
+            'um_staff',
+            'normal',
+            'high'
+        );
 
     }
     
@@ -4556,6 +4564,16 @@ class University_Management {
             return;
         }
 
+        // بررسی nonce
+        if (!isset($_POST['um_staff_meta_nonce']) || !wp_verify_nonce($_POST['um_staff_meta_nonce'], 'um_save_staff_meta')) {
+            return;
+        }
+
+        // دسترسی کاربر
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
         // فقط برای پست تایپ پرسنل
         if (get_post_type($post_id) !== 'um_staff') {
             return;
@@ -4577,11 +4595,91 @@ class University_Management {
             '_staff_successful_projects'=> 0,
         ];
 
+        // به‌روزرسانی/ایجاد کلیدهای پیشفرض
         foreach ($default_meta as $key => $value) {
             if (!metadata_exists('post', $post_id, $key)) {
                 add_post_meta($post_id, $key, $value, true);
             }
         }
+
+        // ذخیره مقادیر ارسالی فرم
+        $text_fields = [
+            'staff_first_name'  => '_staff_first_name',
+            'staff_last_name'   => '_staff_last_name',
+        ];
+
+        for ($i = 1; $i <= 4; $i++) {
+            $text_fields['staff_title_' . $i]    = '_staff_title_' . $i;
+            $text_fields['staff_subtitle_' . $i] = '_staff_subtitle_' . $i;
+        }
+
+        foreach ($text_fields as $form_key => $meta_key) {
+            if (isset($_POST[$form_key])) {
+                update_post_meta($post_id, $meta_key, sanitize_text_field($_POST[$form_key]));
+            }
+        }
+
+        $number_fields = [
+            'staff_years_experience'    => '_staff_years_experience',
+            'staff_total_projects'      => '_staff_total_projects',
+            'staff_successful_projects' => '_staff_successful_projects',
+        ];
+
+        foreach ($number_fields as $form_key => $meta_key) {
+            if (isset($_POST[$form_key])) {
+                update_post_meta($post_id, $meta_key, absint($_POST[$form_key]));
+            }
+        }
+    }
+
+    /**
+     * نمایش متاباکس جزئیات پرسنل
+     */
+    public function staff_details_meta_box($post) {
+        wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
+
+        $meta = [
+            'first_name'          => get_post_meta($post->ID, '_staff_first_name', true),
+            'last_name'           => get_post_meta($post->ID, '_staff_last_name', true),
+            'title_1'             => get_post_meta($post->ID, '_staff_title_1', true),
+            'subtitle_1'          => get_post_meta($post->ID, '_staff_subtitle_1', true),
+            'title_2'             => get_post_meta($post->ID, '_staff_title_2', true),
+            'subtitle_2'          => get_post_meta($post->ID, '_staff_subtitle_2', true),
+            'title_3'             => get_post_meta($post->ID, '_staff_title_3', true),
+            'subtitle_3'          => get_post_meta($post->ID, '_staff_subtitle_3', true),
+            'title_4'             => get_post_meta($post->ID, '_staff_title_4', true),
+            'subtitle_4'          => get_post_meta($post->ID, '_staff_subtitle_4', true),
+            'years_experience'    => get_post_meta($post->ID, '_staff_years_experience', true),
+            'total_projects'      => get_post_meta($post->ID, '_staff_total_projects', true),
+            'successful_projects' => get_post_meta($post->ID, '_staff_successful_projects', true),
+        ];
+
+        echo '<table class="form-table">';
+
+        echo '<tr><th><label for="staff_first_name">' . __('نام', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="staff_first_name" name="staff_first_name" value="' . esc_attr($meta['first_name']) . '" class="regular-text"></td></tr>';
+
+        echo '<tr><th><label for="staff_last_name">' . __('نام خانوادگی', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="staff_last_name" name="staff_last_name" value="' . esc_attr($meta['last_name']) . '" class="regular-text"></td></tr>';
+
+        for ($i = 1; $i <= 4; $i++) {
+            echo '<tr><th><label for="staff_title_' . $i . '">' . sprintf(__('عنوان %d', 'university-management'), $i) . '</label></th>';
+            echo '<td><input type="text" id="staff_title_' . $i . '" name="staff_title_' . $i . '" value="' . esc_attr($meta['title_' . $i]) . '" class="regular-text"></td></tr>';
+
+            echo '<tr><th><label for="staff_subtitle_' . $i . '">' . sprintf(__('زیرعنوان %d', 'university-management'), $i) . '</label></th>';
+            echo '<td><input type="text" id="staff_subtitle_' . $i . '" name="staff_subtitle_' . $i . '" value="' . esc_attr($meta['subtitle_' . $i]) . '" class="regular-text"></td></tr>';
+        }
+
+        echo '<tr><th><label for="staff_years_experience">' . __('سال تجربه', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="staff_years_experience" name="staff_years_experience" value="' . esc_attr($meta['years_experience']) . '" class="small-text" min="0"></td></tr>';
+
+        echo '<tr><th><label for="staff_total_projects">' . __('کل پروژه‌ها', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="staff_total_projects" name="staff_total_projects" value="' . esc_attr($meta['total_projects']) . '" class="small-text" min="0"></td></tr>';
+
+        echo '<tr><th><label for="staff_successful_projects">' . __('پروژه‌های موفق', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="staff_successful_projects" name="staff_successful_projects" value="' . esc_attr($meta['successful_projects']) . '" class="small-text" min="0"></td></tr>';
+
+        echo '</table>';
     }
 }
 
