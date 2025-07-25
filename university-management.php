@@ -1324,19 +1324,19 @@ class University_Management {
 
         /* ثبت کلیدهای متای پرسنل برای REST و استفاده در زمینه‌های دلخواه */
         $staff_meta_keys = [
-            '_staff_first_name'        => 'string',
-            '_staff_last_name'         => 'string',
-            '_staff_title_1'           => 'string',
-            '_staff_subtitle_1'        => 'string',
-            '_staff_title_2'           => 'string',
-            '_staff_subtitle_2'        => 'string',
-            '_staff_title_3'           => 'string',
-            '_staff_subtitle_3'        => 'string',
-            '_staff_title_4'           => 'string',
-            '_staff_subtitle_4'        => 'string',
-            '_staff_years_experience'  => 'integer',
-            '_staff_total_projects'    => 'integer',
-            '_staff_successful_projects'=> 'integer',
+            'staff_first_name'          => 'string',
+            'staff_last_name'           => 'string',
+            'staff_title_1'             => 'string',
+            'staff_subtitle_1'          => 'string',
+            'staff_title_2'             => 'string',
+            'staff_subtitle_2'          => 'string',
+            'staff_title_3'             => 'string',
+            'staff_subtitle_3'          => 'string',
+            'staff_title_4'             => 'string',
+            'staff_subtitle_4'          => 'string',
+            'staff_years_experience'    => 'integer',
+            'staff_total_projects'      => 'integer',
+            'staff_successful_projects' => 'integer',
         ];
 
         foreach ($staff_meta_keys as $meta_key => $type) {
@@ -4580,19 +4580,19 @@ class University_Management {
         }
 
         $default_meta = [
-            '_staff_first_name'         => '',
-            '_staff_last_name'          => '',
-            '_staff_title_1'            => '',
-            '_staff_subtitle_1'         => '',
-            '_staff_title_2'            => '',
-            '_staff_subtitle_2'         => '',
-            '_staff_title_3'            => '',
-            '_staff_subtitle_3'         => '',
-            '_staff_title_4'            => '',
-            '_staff_subtitle_4'         => '',
-            '_staff_years_experience'   => 0,
-            '_staff_total_projects'     => 0,
-            '_staff_successful_projects'=> 0,
+            'staff_first_name'          => '',
+            'staff_last_name'           => '',
+            'staff_title_1'             => '',
+            'staff_subtitle_1'          => '',
+            'staff_title_2'             => '',
+            'staff_subtitle_2'          => '',
+            'staff_title_3'             => '',
+            'staff_subtitle_3'          => '',
+            'staff_title_4'             => '',
+            'staff_subtitle_4'          => '',
+            'staff_years_experience'    => 0,
+            'staff_total_projects'      => 0,
+            'staff_successful_projects' => 0,
         ];
 
         // به‌روزرسانی/ایجاد کلیدهای پیشفرض
@@ -4604,13 +4604,13 @@ class University_Management {
 
         // ذخیره مقادیر ارسالی فرم
         $text_fields = [
-            'staff_first_name'  => '_staff_first_name',
-            'staff_last_name'   => '_staff_last_name',
+            'staff_first_name'  => 'staff_first_name',
+            'staff_last_name'   => 'staff_last_name',
         ];
 
         for ($i = 1; $i <= 4; $i++) {
-            $text_fields['staff_title_' . $i]    = '_staff_title_' . $i;
-            $text_fields['staff_subtitle_' . $i] = '_staff_subtitle_' . $i;
+            $text_fields['staff_title_' . $i]    = 'staff_title_' . $i;
+            $text_fields['staff_subtitle_' . $i] = 'staff_subtitle_' . $i;
         }
 
         foreach ($text_fields as $form_key => $meta_key) {
@@ -4620,9 +4620,9 @@ class University_Management {
         }
 
         $number_fields = [
-            'staff_years_experience'    => '_staff_years_experience',
-            'staff_total_projects'      => '_staff_total_projects',
-            'staff_successful_projects' => '_staff_successful_projects',
+            'staff_years_experience'    => 'staff_years_experience',
+            'staff_total_projects'      => 'staff_total_projects',
+            'staff_successful_projects' => 'staff_successful_projects',
         ];
 
         foreach ($number_fields as $form_key => $meta_key) {
@@ -4639,19 +4639,19 @@ class University_Management {
         wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
 
         $meta = [
-            'first_name'          => get_post_meta($post->ID, '_staff_first_name', true),
-            'last_name'           => get_post_meta($post->ID, '_staff_last_name', true),
-            'title_1'             => get_post_meta($post->ID, '_staff_title_1', true),
-            'subtitle_1'          => get_post_meta($post->ID, '_staff_subtitle_1', true),
-            'title_2'             => get_post_meta($post->ID, '_staff_title_2', true),
-            'subtitle_2'          => get_post_meta($post->ID, '_staff_subtitle_2', true),
-            'title_3'             => get_post_meta($post->ID, '_staff_title_3', true),
-            'subtitle_3'          => get_post_meta($post->ID, '_staff_subtitle_3', true),
-            'title_4'             => get_post_meta($post->ID, '_staff_title_4', true),
-            'subtitle_4'          => get_post_meta($post->ID, '_staff_subtitle_4', true),
-            'years_experience'    => get_post_meta($post->ID, '_staff_years_experience', true),
-            'total_projects'      => get_post_meta($post->ID, '_staff_total_projects', true),
-            'successful_projects' => get_post_meta($post->ID, '_staff_successful_projects', true),
+            'first_name'          => get_post_meta($post->ID, 'staff_first_name', true),
+            'last_name'           => get_post_meta($post->ID, 'staff_last_name', true),
+            'title_1'             => get_post_meta($post->ID, 'staff_title_1', true),
+            'subtitle_1'          => get_post_meta($post->ID, 'staff_subtitle_1', true),
+            'title_2'             => get_post_meta($post->ID, 'staff_title_2', true),
+            'subtitle_2'          => get_post_meta($post->ID, 'staff_subtitle_2', true),
+            'title_3'             => get_post_meta($post->ID, 'staff_title_3', true),
+            'subtitle_3'          => get_post_meta($post->ID, 'staff_subtitle_3', true),
+            'title_4'             => get_post_meta($post->ID, 'staff_title_4', true),
+            'subtitle_4'          => get_post_meta($post->ID, 'staff_subtitle_4', true),
+            'years_experience'    => get_post_meta($post->ID, 'staff_years_experience', true),
+            'total_projects'      => get_post_meta($post->ID, 'staff_total_projects', true),
+            'successful_projects' => get_post_meta($post->ID, 'staff_successful_projects', true),
         ];
 
         echo '<table class="form-table">';
