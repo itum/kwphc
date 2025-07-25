@@ -1258,6 +1258,60 @@ class University_Management {
         register_meta('post', 'agahi_file', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
         register_meta('post', 'link', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
         register_meta('post', 'is_active', array('show_in_rest' => true, 'single' => true, 'type' => 'boolean'));
+
+        // ثبت پست تایپ پرسنل دانشگاه
+        $staff_labels = array(
+            'name'                  => _x( 'پرسنل', 'Post Type General Name', 'university-management' ),
+            'singular_name'         => _x( 'پرسنل', 'Post Type Singular Name', 'university-management' ),
+            'menu_name'             => __( 'پرسنل', 'university-management' ),
+            'name_admin_bar'        => __( 'پرسنل', 'university-management' ),
+            'archives'              => __( 'آرشیو پرسنل', 'university-management' ),
+            'attributes'            => __( 'ویژگی‌های پرسنل', 'university-management' ),
+            'parent_item_colon'     => __( 'والد:', 'university-management' ),
+            'all_items'             => __( 'همه پرسنل', 'university-management' ),
+            'add_new_item'          => __( 'افزودن پرسنل جدید', 'university-management' ),
+            'add_new'               => __( 'افزودن جدید', 'university-management' ),
+            'new_item'              => __( 'پرسنل جدید', 'university-management' ),
+            'edit_item'             => __( 'ویرایش پرسنل', 'university-management' ),
+            'update_item'           => __( 'به‌روزرسانی پرسنل', 'university-management' ),
+            'view_item'             => __( 'مشاهده پرسنل', 'university-management' ),
+            'view_items'            => __( 'مشاهده پرسنل', 'university-management' ),
+            'search_items'          => __( 'جستجوی پرسنل', 'university-management' ),
+            'not_found'             => __( 'یافت نشد', 'university-management' ),
+            'not_found_in_trash'    => __( 'در زباله‌دان یافت نشد', 'university-management' ),
+            'featured_image'        => __( 'تصویر پرسنل', 'university-management' ),
+            'set_featured_image'    => __( 'تنظیم تصویر پرسنل', 'university-management' ),
+            'remove_featured_image' => __( 'حذف تصویر پرسنل', 'university-management' ),
+            'use_featured_image'    => __( 'استفاده به عنوان تصویر پرسنل', 'university-management' ),
+            'insert_into_item'      => __( 'درج در پرسنل', 'university-management' ),
+            'uploaded_to_this_item' => __( 'بارگذاری برای این پرسنل', 'university-management' ),
+            'items_list'            => __( 'لیست پرسنل', 'university-management' ),
+            'items_list_navigation' => __( 'ناوبری لیست پرسنل', 'university-management' ),
+            'filter_items_list'     => __( 'فیلتر لیست پرسنل', 'university-management' ),
+        );
+
+        $staff_args = array(
+            'label'                 => __( 'پرسنل', 'university-management' ),
+            'description'           => __( 'مدیریت پرسنل دانشگاه', 'university-management' ),
+            'labels'                => $staff_labels,
+            'supports'              => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
+            'hierarchical'          => false,
+            'public'                => true,
+            'show_ui'               => true,
+            'show_in_menu'          => 'university-management',
+            'menu_position'         => 5,
+            'show_in_admin_bar'     => true,
+            'show_in_nav_menus'     => true,
+            'can_export'            => true,
+            'has_archive'           => true,
+            'exclude_from_search'   => false,
+            'publicly_queryable'    => true,
+            'capability_type'       => 'post',
+            'menu_icon'             => 'dashicons-id',
+            'show_in_rest'          => true,
+        );
+
+        register_post_type( 'um_staff', $staff_args );
     }
 
     /**
