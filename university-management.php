@@ -73,6 +73,7 @@ class University_Management {
         add_action('save_post_um_videos', array($this, 'update_video_custom_fields'), 20, 1);
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
+        add_action('save_post_um_staff', array($this, 'save_staff_meta'));
         
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
@@ -1312,6 +1313,32 @@ class University_Management {
         );
 
         register_post_type( 'um_staff', $staff_args );
+
+        /* ثبت کلیدهای متای پرسنل برای REST و استفاده در زمینه‌های دلخواه */
+        $staff_meta_keys = [
+            '_staff_first_name'        => 'string',
+            '_staff_last_name'         => 'string',
+            '_staff_title_1'           => 'string',
+            '_staff_subtitle_1'        => 'string',
+            '_staff_title_2'           => 'string',
+            '_staff_subtitle_2'        => 'string',
+            '_staff_title_3'           => 'string',
+            '_staff_subtitle_3'        => 'string',
+            '_staff_title_4'           => 'string',
+            '_staff_subtitle_4'        => 'string',
+            '_staff_years_experience'  => 'integer',
+            '_staff_total_projects'    => 'integer',
+            '_staff_successful_projects'=> 'integer',
+        ];
+
+        foreach ($staff_meta_keys as $meta_key => $type) {
+            register_meta('post', $meta_key, array(
+                'show_in_rest'      => true,
+                'single'            => true,
+                'type'              => $type,
+                'sanitize_callback' => $type === 'integer' ? 'absint' : 'sanitize_text_field',
+            ));
+        }
     }
 
     /**
@@ -4518,6 +4545,43 @@ class University_Management {
         }
 
         return $processed_azmoons;
+    }
+
+    /**
+     * ایجاد کلیدهای متای پیشفرض برای پرسنل تا در بخش "زمینه‌های دلخواه" قابل انتخاب باشند
+     */
+    public function save_staff_meta($post_id) {
+        // جلوگیری از اجرا در حالت اتوسیو یا درخواست‌های سریع
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // فقط برای پست تایپ پرسنل
+        if (get_post_type($post_id) !== 'um_staff') {
+            return;
+        }
+
+        $default_meta = [
+            '_staff_first_name'         => '',
+            '_staff_last_name'          => '',
+            '_staff_title_1'            => '',
+            '_staff_subtitle_1'         => '',
+            '_staff_title_2'            => '',
+            '_staff_subtitle_2'         => '',
+            '_staff_title_3'            => '',
+            '_staff_subtitle_3'         => '',
+            '_staff_title_4'            => '',
+            '_staff_subtitle_4'         => '',
+            '_staff_years_experience'   => 0,
+            '_staff_total_projects'     => 0,
+            '_staff_successful_projects'=> 0,
+        ];
+
+        foreach ($default_meta as $key => $value) {
+            if (!metadata_exists('post', $post_id, $key)) {
+                add_post_meta($post_id, $key, $value, true);
+            }
+        }
     }
 }
 
