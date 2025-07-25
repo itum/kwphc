@@ -1337,6 +1337,7 @@ class University_Management {
             'staff_years_experience'    => 'integer',
             'staff_total_projects'      => 'integer',
             'staff_successful_projects' => 'integer',
+            'staff_thumbnail_url'       => 'string',
         ];
 
         foreach ($staff_meta_keys as $meta_key => $type) {
@@ -4593,6 +4594,7 @@ class University_Management {
             'staff_years_experience'    => 0,
             'staff_total_projects'      => 0,
             'staff_successful_projects' => 0,
+            'staff_thumbnail_url'       => '',
         ];
 
         // به‌روزرسانی/ایجاد کلیدهای پیشفرض
@@ -4629,6 +4631,13 @@ class University_Management {
             if (isset($_POST[$form_key])) {
                 update_post_meta($post_id, $meta_key, absint($_POST[$form_key]));
             }
+        }
+
+        // ذخیره لینک تصویر شاخص
+        $thumb_id = get_post_thumbnail_id($post_id);
+        if ($thumb_id) {
+            $thumb_url = wp_get_attachment_url($thumb_id);
+            update_post_meta($post_id, 'staff_thumbnail_url', esc_url_raw($thumb_url));
         }
     }
 
@@ -4678,6 +4687,13 @@ class University_Management {
 
         echo '<tr><th><label for="staff_successful_projects">' . __('پروژه‌های موفق', 'university-management') . '</label></th>';
         echo '<td><input type="number" id="staff_successful_projects" name="staff_successful_projects" value="' . esc_attr($meta['successful_projects']) . '" class="small-text" min="0"></td></tr>';
+
+        // نمایش لینک تصویر شاخص (فقط خواندنی)
+        $thumb_preview = get_post_meta($post->ID, 'staff_thumbnail_url', true);
+        if (!empty($thumb_preview)) {
+            echo '<tr><th>' . __('لینک تصویر شاخص', 'university-management') . '</th>';
+            echo '<td><input type="text" readonly value="' . esc_attr($thumb_preview) . '" class="regular-text"></td></tr>';
+        }
 
         echo '</table>';
     }
