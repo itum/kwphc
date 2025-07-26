@@ -28,7 +28,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
      * @return string
      */
     public function get_title() {
-        return __('زمان‌بندی کلاس‌ها', 'university-management');
+        return um_translate('زمان‌بندی کلاس‌ها', __('زمان‌بندی کلاس‌ها', 'university-management'));
     }
 
     /**
@@ -108,7 +108,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_general',
             [
-                'label' => __('تنظیمات عمومی', 'university-management'),
+                'label' => um_translate('تنظیمات عمومی', __('تنظیمات عمومی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -117,12 +117,12 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'class_source',
             [
-                'label' => __('منبع کلاس‌ها', 'university-management'),
+                'label' => um_translate('منبع کلاس‌ها', __('منبع کلاس‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'auto',
                 'options' => [
-                    'auto' => __('خودکار (از پست‌تایپ)', 'university-management'),
-                    'manual' => __('دستی', 'university-management'),
+                    'auto' => um_translate('خودکار (از پست‌تایپ)', __('خودکار (از پست‌تایپ)', 'university-management')),
+                    'manual' => um_translate('دستی', __('دستی', 'university-management')),
                 ],
             ]
         );
@@ -131,7 +131,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'classes_count',
             [
-                'label' => __('تعداد کلاس‌ها', 'university-management'),
+                'label' => um_translate('تعداد کلاس‌ها', __('تعداد کلاس‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'min' => 1,
                 'max' => 50,
@@ -149,7 +149,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_manual_classes',
             [
-                'label' => __('کلاس‌های دستی', 'university-management'),
+                'label' => um_translate('کلاس‌های دستی', __('کلاس‌های دستی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
                 'condition' => [
                     'class_source' => 'manual',
@@ -163,16 +163,16 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'class_name',
             [
-                'label' => __('نام کلاس', 'university-management'),
+                'label' => um_translate('نام کلاس', __('نام کلاس', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('نام کلاس', 'university-management'),
+                'default' => um_translate('نام کلاس', __('نام کلاس', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'class_date',
             [
-                'label' => __('تاریخ کلاس', 'university-management'),
+                'label' => um_translate('تاریخ کلاس', __('تاریخ کلاس', 'university-management')),
                 'type' => \Elementor\Controls_Manager::DATE_TIME,
                 'default' => date('Y-m-d H:i'),
                 'picker_options' => [
@@ -185,7 +185,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'class_duration',
             [
-                'label' => __('مدت زمان کلاس (دقیقه)', 'university-management'),
+                'label' => um_translate('مدت زمان کلاس (دقیقه)', __('مدت زمان کلاس (دقیقه)', 'university-management')),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'min' => 30,
                 'max' => 180,
@@ -197,16 +197,16 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'class_teacher',
             [
-                'label' => __('نام استاد', 'university-management'),
+                'label' => um_translate('نام استاد', __('نام استاد', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('نام استاد', 'university-management'),
+                'default' => um_translate('نام استاد', __('نام استاد', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'class_image',
             [
-                'label' => __('تصویر کلاس', 'university-management'),
+                'label' => um_translate('تصویر کلاس', __('تصویر کلاس', 'university-management')),
                 'type' => \Elementor\Controls_Manager::MEDIA,
                 'default' => [
                     'url' => \Elementor\Utils::get_placeholder_image_src(),
@@ -217,21 +217,21 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'manual_classes',
             [
-                'label' => __('کلاس‌ها', 'university-management'),
+                'label' => um_translate('کلاس‌ها', __('کلاس‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::REPEATER,
                 'fields' => $repeater->get_controls(),
                 'default' => [
                     [
-                        'class_name' => __('کلاس برنامه‌نویسی پایتون', 'university-management'),
+                        'class_name' => um_translate('کلاس برنامه‌نویسی پایتون', __('کلاس برنامه‌نویسی پایتون', 'university-management')),
                         'class_date' => date('Y-m-d H:i', strtotime('+1 day')),
                         'class_duration' => 90,
-                        'class_teacher' => __('دکتر محمدی', 'university-management'),
+                        'class_teacher' => um_translate('دکتر محمدی', __('دکتر محمدی', 'university-management')),
                     ],
                     [
-                        'class_name' => __('کلاس مبانی هوش مصنوعی', 'university-management'),
+                        'class_name' => um_translate('کلاس مبانی هوش مصنوعی', __('کلاس مبانی هوش مصنوعی', 'university-management')),
                         'class_date' => date('Y-m-d H:i', strtotime('+2 day')),
                         'class_duration' => 120,
-                        'class_teacher' => __('دکتر علوی', 'university-management'),
+                        'class_teacher' => um_translate('دکتر علوی', __('دکتر علوی', 'university-management')),
                     ],
                 ],
                 'title_field' => '{{{ class_name }}}',
@@ -244,7 +244,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_style',
             [
-                'label' => __('استایل', 'university-management'),
+                'label' => um_translate('استایل', __('استایل', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -253,7 +253,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'calendar_bg_color',
             [
-                'label' => __('رنگ پس‌زمینه هدر تقویم', 'university-management'),
+                'label' => um_translate('رنگ پس‌زمینه هدر تقویم', __('رنگ پس‌زمینه هدر تقویم', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#212179',
                 'selectors' => [
@@ -266,7 +266,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'active_day_color',
             [
-                'label' => __('رنگ متن روز فعال', 'university-management'),
+                'label' => um_translate('رنگ متن روز فعال', __('رنگ متن روز فعال', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#181818',
                 'selectors' => [
@@ -279,7 +279,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'active_day_bg_color',
             [
-                'label' => __('رنگ پس‌زمینه روز فعال', 'university-management'),
+                'label' => um_translate('رنگ پس‌زمینه روز فعال', __('رنگ پس‌زمینه روز فعال', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
@@ -292,7 +292,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'start_btn_color',
             [
-                'label' => __('رنگ دکمه شروع کلاس', 'university-management'),
+                'label' => um_translate('رنگ دکمه شروع کلاس', __('رنگ دکمه شروع کلاس', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#212179',
                 'selectors' => [
@@ -305,7 +305,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'start_btn_text_color',
             [
-                'label' => __('رنگ متن دکمه شروع کلاس', 'university-management'),
+                'label' => um_translate('رنگ متن دکمه شروع کلاس', __('رنگ متن دکمه شروع کلاس', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
@@ -318,7 +318,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'card_bg_color',
             [
-                'label' => __('رنگ پس‌زمینه کارت کلاس', 'university-management'),
+                'label' => um_translate('رنگ پس‌زمینه کارت کلاس', __('رنگ پس‌زمینه کارت کلاس', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
@@ -597,8 +597,8 @@ class KWPRC_Class_Timer_Widget extends \Elementor\Widget_Base {
         return [
             "2025-04-28" => [
                 [
-                    "name" => pll__('ریاضی پایه'), 
-                    "teacher" => pll__('خانم احمدی'), 
+                    "name" => um_translate('ریاضی پایه', __('ریاضی پایه', 'university-management')), 
+                    "teacher" => um_translate('خانم احمدی', __('خانم احمدی', 'university-management')), 
                     "time" => "10:00 - 11:00", 
                     "image" => plugin_dir_url(__FILE__) . "../../assets/images/Rectangle 5468.png", 
                     "link" => "#"

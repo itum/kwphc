@@ -28,7 +28,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
      * @return string
      */
     public function get_title() {
-        return __('تقویم دانشگاه', 'university-management');
+        return um_translate('تقویم دانشگاه', __('تقویم دانشگاه', 'university-management'));
     }
 
     /**
@@ -109,7 +109,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_general',
             [
-                'label' => __('تنظیمات عمومی', 'university-management'),
+                'label' => um_translate('تنظیمات عمومی', __('تنظیمات عمومی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -118,12 +118,12 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'event_source',
             [
-                'label' => __('منبع رویدادها', 'university-management'),
+                'label' => um_translate('منبع رویدادها', um_translate('منبع رویدادها', __('منبع رویدادها', 'university-management'))),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'auto',
                 'options' => [
-                    'auto' => __('خودکار (از پست‌تایپ)', 'university-management'),
-                    'manual' => __('دستی', 'university-management'),
+                    'auto' => um_translate('خودکار (از پست‌تایپ)', um_translate('خودکار (از پست‌تایپ)', __('خودکار (از پست‌تایپ)', 'university-management'))),
+                    'manual' => um_translate('دستی', um_translate('دستی', __('دستی', 'university-management'))),
                 ],
             ]
         );
@@ -132,7 +132,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'events_count',
             [
-                'label' => __('تعداد رویدادها', 'university-management'),
+                'label' => um_translate('تعداد رویدادها', __('تعداد رویدادها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'min' => 1,
                 'max' => 10,
@@ -150,7 +150,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_manual_events',
             [
-                'label' => __('رویدادهای دستی', 'university-management'),
+                'label' => um_translate('رویدادهای دستی', __('رویدادهای دستی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
                 'condition' => [
                     'event_source' => 'manual',
@@ -164,7 +164,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'event_date',
             [
-                'label' => __('تاریخ رویداد', 'university-management'),
+                'label' => um_translate('تاریخ رویداد', __('تاریخ رویداد', 'university-management')),
                 'type' => \Elementor\Controls_Manager::DATE_TIME,
                 'default' => date('Y-m-d'),
             ]
@@ -173,19 +173,19 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'event_title',
             [
-                'label' => __('عنوان رویداد', 'university-management'),
+                'label' => um_translate('عنوان رویداد', __('عنوان رویداد', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('عنوان رویداد', 'university-management'),
+                'default' => um_translate('عنوان رویداد', __('عنوان رویداد', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'is_important',
             [
-                'label' => __('رویداد مهم (هایلایت)', 'university-management'),
+                'label' => um_translate('رویداد مهم (هایلایت)', __('رویداد مهم (هایلایت)', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SWITCHER,
-                'label_on' => __('بله', 'university-management'),
-                'label_off' => __('خیر', 'university-management'),
+                'label_on' => um_translate('بله', __('بله', 'university-management')),
+                'label_off' => um_translate('خیر', __('خیر', 'university-management')),
                 'return_value' => 'yes',
                 'default' => '',
             ]
@@ -194,23 +194,23 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'manual_events',
             [
-                'label' => __('رویدادها', 'university-management'),
+                'label' => um_translate('رویدادها', __('رویدادها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::REPEATER,
                 'fields' => $repeater->get_controls(),
                 'default' => [
                     [
                         'event_date' => date('Y-m-d'),
-                        'event_title' => __('شروع کلاس‌ها', 'university-management'),
+                        'event_title' => um_translate('شروع کلاس‌ها', __('شروع کلاس‌ها', 'university-management')),
                         'is_important' => 'yes',
                     ],
                     [
                         'event_date' => date('Y-m-d', strtotime('+10 days')),
-                        'event_title' => __('ارائه پروژه', 'university-management'),
+                        'event_title' => um_translate('ارائه پروژه', __('ارائه پروژه', 'university-management')),
                         'is_important' => '',
                     ],
                     [
                         'event_date' => date('Y-m-d', strtotime('+20 days')),
-                        'event_title' => __('میان‌ترم', 'university-management'),
+                        'event_title' => um_translate('میان‌ترم', __('میان‌ترم', 'university-management')),
                         'is_important' => '',
                     ],
                 ],
@@ -224,7 +224,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_style',
             [
-                'label' => __('استایل', 'university-management'),
+                'label' => um_translate('استایل', __('استایل', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -233,7 +233,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'highlight_color',
             [
-                'label' => __('رنگ هایلایت', 'university-management'),
+                'label' => um_translate('رنگ هایلایت', __('رنگ هایلایت', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#212179',
                 'selectors' => [
@@ -248,7 +248,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'text_color',
             [
-                'label' => __('رنگ متن', 'university-management'),
+                'label' => um_translate('رنگ متن', __('رنگ متن', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#333333',
                 'selectors' => [
@@ -261,7 +261,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'highlight_text_color',
             [
-                'label' => __('رنگ متن هایلایت', 'university-management'),
+                'label' => um_translate('رنگ متن هایلایت', __('رنگ متن هایلایت', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
@@ -275,7 +275,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'day_color',
             [
-                'label' => __('رنگ عدد روز', 'university-management'),
+                'label' => um_translate('رنگ عدد روز', __('رنگ عدد روز', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#BE0000',
                 'selectors' => [
@@ -288,7 +288,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         $this->add_responsive_control(
             'event_padding',
             [
-                'label' => __('پدینگ رویداد', 'university-management'),
+                'label' => um_translate('پدینگ رویداد', __('پدینگ رویداد', 'university-management')),
                 'type' => \Elementor\Controls_Manager::DIMENSIONS,
                 'size_units' => ['px', 'em', '%'],
                 'selectors' => [
@@ -442,7 +442,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 <?php } ?>
             <?php } else { ?>
                 <div class="um-no-events">
-                    <?php _e('هیچ رویدادی یافت نشد.', 'university-management'); ?>
+                    <?php echo esc_html(um_translate('هیچ رویدادی یافت نشد.', __('هیچ رویدادی یافت نشد.', 'university-management'))); ?>
                 </div>
             <?php } ?>
         </div>

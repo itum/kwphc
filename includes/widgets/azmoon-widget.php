@@ -20,7 +20,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
     }
 
     public function get_title() {
-        return __('آزمون استخدامی', 'university-management');
+        return um_translate('آزمون استخدامی', __('آزمون استخدامی', 'university-management'));
     }
 
     public function get_icon() {
@@ -83,14 +83,14 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_content',
             [
-                'label' => __('محتوا', 'university-management'),
+                'label' => um_translate('محتوا', __('محتوا', 'university-management')),
             ]
         );
 
         $this->add_control(
             'main_title',
             [
-                'label' => __('عنوان اصلی', 'university-management'),
+                'label' => um_translate('عنوان اصلی', __('عنوان اصلی', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXTAREA,
                 'default' => "آزمون‌های\nاستخدامی\nبرگزاری شده",
                 'rows' => 3,
@@ -100,12 +100,12 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'azmoon_source',
             [
-                'label' => __('منبع آزمون‌ها', 'university-management'),
+                'label' => um_translate('منبع آزمون‌ها', __('منبع آزمون‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'manual',
                 'options' => [
-                    'manual' => __('دستی', 'university-management'),
-                    'auto' => __('خودکار (از API)', 'university-management'),
+                    'manual' => um_translate('دستی', __('دستی', 'university-management')),
+                    'auto' => um_translate('خودکار (از API)', __('خودکار (از API)', 'university-management')),
                 ],
             ]
         );
@@ -113,7 +113,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'posts_per_page',
             [
-                'label' => __('تعداد برای نمایش', 'university-management'),
+                'label' => um_translate('تعداد برای نمایش', __('تعداد برای نمایش', 'university-management')),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'default' => 6,
                 'min' => 1,
@@ -129,7 +129,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'azmoon_image',
             [
-                'label' => __('تصویر', 'university-management'),
+                'label' => um_translate('تصویر', __('تصویر', 'university-management')),
                 'type' => \Elementor\Controls_Manager::MEDIA,
                 'default' => [
                     'url' => UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
@@ -140,40 +140,40 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'azmoon_title',
             [
-                'label' => __('عنوان آزمون', 'university-management'),
+                'label' => um_translate('عنوان آزمون', __('عنوان آزمون', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('آزمون استخدامی مهندس نرم‌افزار', 'university-management'),
+                'default' => um_translate('آزمون استخدامی مهندس نرم‌افزار', __('آزمون استخدامی مهندس نرم‌افزار', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'azmoon_date',
             [
-                'label' => __('تاریخ برگزاری', 'university-management'),
+                'label' => um_translate('تاریخ برگزاری', __('تاریخ برگزاری', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('۱۴۰۳/۰۵/۲۰', 'university-management'),
+                'default' => um_translate('۱۴۰۳/۰۵/۲۰', __('۱۴۰۳/۰۵/۲۰', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'azmoon_department',
             [
-                'label' => __('دپارتمان', 'university-management'),
+                'label' => um_translate('دپارتمان', __('دپارتمان', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('فنی و مهندسی', 'university-management'),
+                'default' => um_translate('فنی و مهندسی', __('فنی و مهندسی', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'azmoon_status',
             [
-                'label' => __('وضعیت', 'university-management'),
+                'label' => um_translate('وضعیت', __('وضعیت', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'active',
                 'options' => [
-                    'active' => __('فعال', 'university-management'),
-                    'inactive' => __('غیرفعال', 'university-management'),
-                    'completed' => __('تکمیل شده', 'university-management'),
+                    'active' => um_translate('فعال', __('فعال', 'university-management')),
+                    'inactive' => um_translate('غیرفعال', __('غیرفعال', 'university-management')),
+                    'completed' => um_translate('تکمیل شده', __('تکمیل شده', 'university-management')),
                 ],
             ]
         );
@@ -181,9 +181,9 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'azmoon_link',
             [
-                'label' => __('لینک دکمه', 'university-management'),
+                'label' => um_translate('لینک دکمه', __('لینک دکمه', 'university-management')),
                 'type' => \Elementor\Controls_Manager::URL,
-                'placeholder' => __('https://your-link.com', 'university-management'),
+                'placeholder' => um_translate('https://your-link.com', __('https://your-link.com', 'university-management')),
                 'show_external' => true,
                 'default' => [
                     'url' => '#',
@@ -196,16 +196,16 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'azmoon_button_text',
             [
-                'label' => __('عنوان دکمه', 'university-management'),
+                'label' => um_translate('عنوان دکمه', __('عنوان دکمه', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('مشاهده جزئیات', 'university-management'),
+                'default' => um_translate('مشاهده جزئیات', __('مشاهده جزئیات', 'university-management')),
             ]
         );
 
         $this->add_control(
             'azmoons',
             [
-                'label' => __('لیست آزمون‌ها', 'university-management'),
+                'label' => um_translate('لیست آزمون‌ها', __('لیست آزمون‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::REPEATER,
                 'fields' => $repeater->get_controls(),
                 'default' => [
@@ -243,7 +243,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_style',
             [
-                'label' => __('استایل', 'university-management'),
+                'label' => um_translate('استایل', __('استایل', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -251,7 +251,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'title_color',
             [
-                'label' => __('رنگ عنوان', 'university-management'),
+                'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'selectors' => [
                     '{{WRAPPER}} .um-azmoon-title' => 'color: {{VALUE}};',
@@ -270,7 +270,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'card_background',
             [
-                'label' => __('رنگ پس‌زمینه کارت', 'university-management'),
+                'label' => um_translate('رنگ پس‌زمینه کارت', __('رنگ پس‌زمینه کارت', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'selectors' => [
                     '{{WRAPPER}} .um-azmoon-card' => 'background-color: {{VALUE}};',
@@ -293,7 +293,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         }
 
         if (empty($azmoons)) {
-            echo '<div class="um-azmoon-empty">' . esc_html(pll__('هیچ آزمونی یافت نشد.')) . '</div>';
+            echo '<div class="um-azmoon-empty">' . esc_html(um_translate('هیچ آزمونی یافت نشد.', __('هیچ آزمونی یافت نشد.', 'university-management'))) . '</div>';
             return;
         }
 
@@ -441,13 +441,13 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
     private function get_status_text($status) {
         switch ($status) {
             case 'active':
-                return pll__('فعال');
+                return um_translate('فعال', __('فعال', 'university-management'));
             case 'inactive':
-                return pll__('غیرفعال');
+                return um_translate('غیرفعال', __('غیرفعال', 'university-management'));
             case 'completed':
-                return pll__('تکمیل شده');
+                return um_translate('تکمیل شده', __('تکمیل شده', 'university-management'));
             default:
-                return pll__('نامشخص');
+                return um_translate('نامشخص', __('نامشخص', 'university-management'));
         }
     }
 } 

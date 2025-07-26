@@ -28,7 +28,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
      * @return string
      */
     public function get_title() {
-        return __('مدیریت ویدیوها', 'university-management');
+        return um_translate('مدیریت ویدیوها', __('مدیریت ویدیوها', 'university-management'));
     }
 
     /**
@@ -117,7 +117,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_general',
             [
-                'label' => __('تنظیمات عمومی', 'university-management'),
+                'label' => um_translate('تنظیمات عمومی', __('تنظیمات عمومی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -126,9 +126,9 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'title_one',
             [
-                'label' => __('عنوان اول', 'university-management'),
+                'label' => um_translate('عنوان اول', __('عنوان اول', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('لورم ایپسوم', 'university-management'),
+                'default' => um_translate('لورم ایپسوم', __('لورم ایپسوم', 'university-management')),
             ]
         );
 
@@ -136,9 +136,9 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'title_two',
             [
-                'label' => __('عنوان دوم', 'university-management'),
+                'label' => um_translate('عنوان دوم', __('عنوان دوم', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('صنعت آب و برق خوزستان', 'university-management'),
+                'default' => um_translate('صنعت آب و برق خوزستان', __('صنعت آب و برق خوزستان', 'university-management')),
             ]
         );
 
@@ -146,12 +146,12 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'video_source',
             [
-                'label' => __('منبع ویدیوها', 'university-management'),
+                'label' => um_translate('منبع ویدیوها', __('منبع ویدیوها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'auto',
                 'options' => [
-                    'auto' => __('خودکار (از پست‌تایپ)', 'university-management'),
-                    'manual' => __('دستی', 'university-management'),
+                    'auto' => um_translate('خودکار (از پست‌تایپ)', __('خودکار (از پست‌تایپ)', 'university-management')),
+                    'manual' => um_translate('دستی', __('دستی', 'university-management')),
                 ],
             ]
         );
@@ -160,7 +160,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'video_category',
             [
-                'label' => __('دسته‌بندی ویدیوها', 'university-management'),
+                'label' => um_translate('دسته‌بندی ویدیوها', __('دسته‌بندی ویدیوها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT2,
                 'options' => $this->get_video_categories(),
                 'multiple' => false,
@@ -174,7 +174,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'videos_count',
             [
-                'label' => __('تعداد ویدیوها', 'university-management'),
+                'label' => um_translate('تعداد ویدیوها', __('تعداد ویدیوها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'min' => 1,
                 'max' => 10,
@@ -192,7 +192,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_manual_videos',
             [
-                'label' => __('ویدیوهای دستی', 'university-management'),
+                'label' => um_translate('ویدیوهای دستی', __('ویدیوهای دستی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
                 'condition' => [
                     'video_source' => 'manual',
@@ -206,16 +206,16 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'video_title',
             [
-                'label' => __('عنوان ویدیو', 'university-management'),
+                'label' => um_translate('عنوان ویدیو', __('عنوان ویدیو', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('عنوان ویدیو', 'university-management'),
+                'default' => um_translate('عنوان ویدیو', __('عنوان ویدیو', 'university-management')),
             ]
         );
 
         $repeater->add_control(
             'video_url',
             [
-                'label' => __('آدرس ویدیو (MP4)', 'university-management'),
+                'label' => um_translate('آدرس ویدیو (MP4)', __('آدرس ویدیو (MP4)', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
                 'default' => '',
             ]
@@ -224,7 +224,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $repeater->add_control(
             'video_thumbnail',
             [
-                'label' => __('تصویر کوچک ویدیو', 'university-management'),
+                'label' => um_translate('تصویر کوچک ویدیو', __('تصویر کوچک ویدیو', 'university-management')),
                 'type' => \Elementor\Controls_Manager::MEDIA,
                 'default' => [
                     'url' => \Elementor\Utils::get_placeholder_image_src(),
@@ -235,16 +235,16 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'manual_videos',
             [
-                'label' => __('ویدیوها', 'university-management'),
+                'label' => um_translate('ویدیوها', __('ویدیوها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::REPEATER,
                 'fields' => $repeater->get_controls(),
                 'default' => [
                     [
-                        'video_title' => __('ویدیو اول', 'university-management'),
+                        'video_title' => um_translate('ویدیو اول', __('ویدیو اول', 'university-management')),
                         'video_url' => '',
                     ],
                     [
-                        'video_title' => __('ویدیو دوم', 'university-management'),
+                        'video_title' => um_translate('ویدیو دوم', __('ویدیو دوم', 'university-management')),
                         'video_url' => '',
                     ],
                 ],
@@ -258,7 +258,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_style',
             [
-                'label' => __('استایل', 'university-management'),
+                'label' => um_translate('استایل', __('استایل', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -267,7 +267,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'title_one_color',
             [
-                'label' => __('رنگ عنوان اول', 'university-management'),
+                'label' => um_translate('رنگ عنوان اول', __('رنگ عنوان اول', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#333',
                 'selectors' => [
@@ -281,7 +281,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             \Elementor\Group_Control_Typography::get_type(),
             [
                 'name' => 'title_one_typography',
-                'label' => __('تایپوگرافی عنوان اول', 'university-management'),
+                'label' => um_translate('تایپوگرافی عنوان اول', __('تایپوگرافی عنوان اول', 'university-management')),
                 'selector' => '{{WRAPPER}} .title-one',
             ]
         );
@@ -290,7 +290,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'title_two_color',
             [
-                'label' => __('رنگ عنوان دوم', 'university-management'),
+                'label' => um_translate('رنگ عنوان دوم', __('رنگ عنوان دوم', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#212179',
                 'selectors' => [
@@ -304,7 +304,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             \Elementor\Group_Control_Typography::get_type(),
             [
                 'name' => 'title_two_typography',
-                'label' => __('تایپوگرافی عنوان دوم', 'university-management'),
+                'label' => um_translate('تایپوگرافی عنوان دوم', __('تایپوگرافی عنوان دوم', 'university-management')),
                 'selector' => '{{WRAPPER}} .title-two',
             ]
         );
@@ -313,7 +313,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'category_bg_color',
             [
-                'label' => __('رنگ پس‌زمینه دسته‌بندی', 'university-management'),
+                'label' => um_translate('رنگ پس‌زمینه دسته‌بندی', __('رنگ پس‌زمینه دسته‌بندی', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#212179',
                 'selectors' => [
@@ -326,7 +326,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'category_text_color',
             [
-                'label' => __('رنگ متن دسته‌بندی', 'university-management'),
+                'label' => um_translate('رنگ متن دسته‌بندی', __('رنگ متن دسته‌بندی', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
@@ -339,7 +339,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $this->add_responsive_control(
             'video_height',
             [
-                'label' => __('ارتفاع ویدیو', 'university-management'),
+                'label' => um_translate('ارتفاع ویدیو', __('ارتفاع ویدیو', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SLIDER,
                 'size_units' => ['px', 'vh'],
                 'range' => [
@@ -403,7 +403,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                     }
                     $video_url = get_post_meta(get_the_ID(), '_um_video_link', true);
                     $terms = get_the_terms(get_the_ID(), 'um_video_category');
-                    $category = !empty($terms) ? $terms[0]->name : __('عمومی', 'university-management');
+                    $category = !empty($terms) ? $terms[0]->name : um_translate('عمومی', __('عمومی', 'university-management'));
 
                     if ($video_url) {
                         $videos[] = [
@@ -424,7 +424,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                             'title' => $video['video_title'],
                             'src' => $video['video_url'],
                             'thumbnail' => !empty($video['video_thumbnail']['url']) ? $video['video_thumbnail']['url'] : UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
-                            'category' => __('عمومی', 'university-management'),
+                            'category' => um_translate('عمومی', __('عمومی', 'university-management')),
                         ];
                     }
                 }
@@ -440,15 +440,15 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             <div class="videoApp-wrapper">
                 <div class="videoApp-sidebar">
                     <div class="videoApp-header">
-                        <span><?php echo esc_html__('دسته بندی ها', 'university-management'); ?></span>
+                        <span><?php echo esc_htmlum_translate('دسته بندی ها', __('دسته بندی ها', 'university-management')); ?></span>
                         <select class="videoApp-category"></select>
                     </div>
                     <div class="videoApp-thumbnails"></div>
                 </div>
                 <div class="videoApp-main">
-                    <img class="videoApp-preview" src="" alt="<?php echo esc_attr__('پیش‌نمایش ویدیو', 'university-management'); ?>">
+                    <img class="videoApp-preview" src="" alt="<?php echo esc_attrum_translate('پیش‌نمایش ویدیو', __('پیش‌نمایش ویدیو', 'university-management')); ?>">
                     <video class="videoApp-current" controls></video>
-                    <div class="videoApp-playPauseBtn" title="<?php echo esc_attr__('پخش ویدیو', 'university-management'); ?>">
+                    <div class="videoApp-playPauseBtn" title="<?php echo esc_attrum_translate('پخش ویدیو', __('پخش ویدیو', 'university-management')); ?>">
                         <svg width="15" height="15" viewBox="0 0 31 35" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M28 12.3039C32 14.6133 32 20.3868 28 22.6962L9.24999 33.5215C5.24999 35.8309 0.250002 32.9441 0.250002 28.3253L0.250003 6.67467C0.250003 2.05587 5.25 -0.830872 9.25 1.47853L28 12.3039Z" fill="white"/>
                         </svg>
@@ -479,7 +479,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         
         // اگر دسته‌بندی‌ای وجود نداشت، حداقل یک گزینه پیش‌فرض اضافه کنیم
         if (empty($categories)) {
-            $categories['default'] = __('پیش‌فرض', 'university-management');
+            $categories['default'] = um_translate('پیش‌فرض', __('پیش‌فرض', 'university-management'));
         }
         
         return $categories;

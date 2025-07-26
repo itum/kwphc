@@ -113,6 +113,8 @@ class University_Management {
         // ثبت شورت‌کدهای داینامیک
         add_action('init', array($this, 'register_shortcodes'));
         
+        // بارگذاری ادغام Polylang
+        $this->load_polylang_integration();
 
     }
 
@@ -121,6 +123,16 @@ class University_Management {
      */
     public function load_textdomain() {
         load_plugin_textdomain('university-management', false, dirname(plugin_basename(__FILE__)) . '/languages');
+    }
+
+    /**
+     * بارگذاری ادغام Polylang
+     */
+    public function load_polylang_integration() {
+        $polylang_file = UM_PLUGIN_DIR . 'includes/polylang-integration.php';
+        if (file_exists($polylang_file)) {
+            require_once $polylang_file;
+        }
     }
 
     /**

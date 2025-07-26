@@ -55,7 +55,7 @@ class UM_Elementor_Widgets {
         $elements_manager->add_category(
             'university-management',
             [
-                'title' => esc_html__('مدیریت دانشگاه', 'university-management'),
+                'title' => esc_html(um_translate('مدیریت دانشگاه', __('مدیریت دانشگاه', 'university-management'))),
                 'icon' => 'fa fa-university',
             ]
         );

@@ -28,7 +28,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
      * @return string
      */
     public function get_title() {
-        return __('آزمون‌های استخدامی', 'university-management');
+        return um_translate('آزمون‌های استخدامی', __('آزمون‌های استخدامی', 'university-management'));
     }
 
     /**
@@ -114,7 +114,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_general',
             [
-                'label' => __('تنظیمات عمومی', 'university-management'),
+                'label' => um_translate('تنظیمات عمومی', __('تنظیمات عمومی', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -123,10 +123,10 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'widget_title',
             [
-                'label' => __('عنوان ویجت', 'university-management'),
+                'label' => um_translate('عنوان ویجت', __('عنوان ویجت', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => __('آزمون‌های استخدامی', 'university-management'),
-                'placeholder' => __('عنوان را وارد کنید', 'university-management'),
+                'default' => um_translate('آزمون‌های استخدامی', __('آزمون‌های استخدامی', 'university-management')),
+                'placeholder' => um_translate('عنوان را وارد کنید', __('عنوان را وارد کنید', 'university-management')),
             ]
         );
 
@@ -134,7 +134,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'exams_count',
             [
-                'label' => __('تعداد آزمون‌ها', 'university-management'),
+                'label' => um_translate('تعداد آزمون‌ها', __('تعداد آزمون‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::NUMBER,
                 'min' => 1,
                 'max' => 50,
@@ -147,15 +147,15 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'status_filter',
             [
-                'label' => __('فیلتر وضعیت', 'university-management'),
+                'label' => um_translate('فیلتر وضعیت', __('فیلتر وضعیت', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'all',
                 'options' => [
-                    'all' => __('همه', 'university-management'),
-                    'upcoming' => __('در انتظار برگزاری', 'university-management'),
-                    'registration' => __('در حال ثبت‌نام', 'university-management'),
-                    'closed' => __('بسته', 'university-management'),
-                    'completed' => __('برگزار شده', 'university-management'),
+                    'all' => um_translate('همه', __('همه', 'university-management')),
+                    'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
+                    'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
+                    'closed' => um_translate('بسته', __('بسته', 'university-management')),
+                    'completed' => um_translate('برگزار شده', __('برگزار شده', 'university-management')),
                 ],
             ]
         );
@@ -164,13 +164,13 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'display_type',
             [
-                'label' => __('نوع نمایش', 'university-management'),
+                'label' => um_translate('نوع نمایش', __('نوع نمایش', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
                 'default' => 'cards',
                 'options' => [
-                    'cards' => __('کارت‌ها', 'university-management'),
-                    'table' => __('جدول', 'university-management'),
-                    'list' => __('لیست', 'university-management'),
+                    'cards' => um_translate('کارت‌ها', __('کارت‌ها', 'university-management')),
+                    'table' => um_translate('جدول', __('جدول', 'university-management')),
+                    'list' => um_translate('لیست', __('لیست', 'university-management')),
                 ],
             ]
         );
@@ -181,7 +181,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_style',
             [
-                'label' => __('استایل‌ها', 'university-management'),
+                'label' => um_translate('استایل‌ها', __('استایل‌ها', 'university-management')),
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -190,7 +190,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'background_color',
             [
-                'label' => __('رنگ پس‌زمینه', 'university-management'),
+                'label' => um_translate('رنگ پس‌زمینه', __('رنگ پس‌زمینه', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#ffffff',
                 'selectors' => [
@@ -203,7 +203,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'text_color',
             [
-                'label' => __('رنگ متن', 'university-management'),
+                'label' => um_translate('رنگ متن', __('رنگ متن', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#333333',
                 'selectors' => [
@@ -216,7 +216,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'primary_color',
             [
-                'label' => __('رنگ اصلی', 'university-management'),
+                'label' => um_translate('رنگ اصلی', __('رنگ اصلی', 'university-management')),
                 'type' => \Elementor\Controls_Manager::COLOR,
                 'default' => '#0073aa',
                 'selectors' => [
@@ -258,7 +258,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         $query = new \WP_Query($args);
 
         if (!$query->have_posts()) {
-            echo '<div class="um-no-exams"><p>' . __('هیچ آزمون استخدامی یافت نشد.', 'university-management') . '</p></div>';
+            echo '<div class="um-no-exams"><p>' . um_translate('هیچ آزمون استخدامی یافت نشد.', __('هیچ آزمون استخدامی یافت نشد.', 'university-management')) . '</p></div>';
             return;
         }
 
@@ -302,10 +302,10 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             $deadline_display = $exam_application_deadline ? date_i18n('Y/m/d', strtotime($exam_application_deadline)) : '';
             
             $status_labels = array(
-                'upcoming' => __('در انتظار برگزاری', 'university-management'),
-                'registration' => __('در حال ثبت‌نام', 'university-management'),
-                'closed' => __('بسته', 'university-management'),
-                'completed' => __('برگزار شده', 'university-management')
+                'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
+                'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
+                'closed' => um_translate('بسته', __('بسته', 'university-management')),
+                'completed' => um_translate('برگزار شده', __('برگزار شده', 'university-management'))
             );
             $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
             
@@ -322,31 +322,31 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                     
                     <?php if ($exam_position) : ?>
                         <div class="exam-position">
-                            <strong><?php _e('موقعیت:', 'university-management'); ?></strong> <?php echo esc_html($exam_position); ?>
+                            <strong><?php echo esc_html(um_translate('موقعیت:', __('موقعیت:', 'university-management'))); ?></strong> <?php echo esc_html($exam_position); ?>
                         </div>
                     <?php endif; ?>
                     
                     <?php if ($exam_department) : ?>
                         <div class="exam-department">
-                            <strong><?php _e('دپارتمان:', 'university-management'); ?></strong> <?php echo esc_html($exam_department); ?>
+                            <strong><?php echo esc_html(um_translate('دپارتمان:', __('دپارتمان:', 'university-management'))); ?></strong> <?php echo esc_html($exam_department); ?>
                         </div>
                     <?php endif; ?>
                     
                     <?php if ($date_display) : ?>
                         <div class="exam-date">
-                            <strong><?php _e('تاریخ آزمون:', 'university-management'); ?></strong> <?php echo esc_html($date_display); ?>
+                            <strong><?php echo esc_html(um_translate('تاریخ آزمون:', __('تاریخ آزمون:', 'university-management'))); ?></strong> <?php echo esc_html($date_display); ?>
                         </div>
                     <?php endif; ?>
                     
                     <?php if ($exam_location) : ?>
                         <div class="exam-location">
-                            <strong><?php _e('محل برگزاری:', 'university-management'); ?></strong> <?php echo esc_html($exam_location); ?>
+                            <strong><?php echo esc_html(um_translate('محل برگزاری:', __('محل برگزاری:', 'university-management'))); ?></strong> <?php echo esc_html($exam_location); ?>
                         </div>
                     <?php endif; ?>
                     
                     <?php if ($deadline_display) : ?>
                         <div class="exam-deadline">
-                            <strong><?php _e('مهلت ثبت‌نام:', 'university-management'); ?></strong> <?php echo esc_html($deadline_display); ?>
+                            <strong><?php echo esc_html(um_translate('مهلت ثبت‌نام:', __('مهلت ثبت‌نام:', 'university-management'))); ?></strong> <?php echo esc_html($deadline_display); ?>
                         </div>
                     <?php endif; ?>
                     
@@ -373,10 +373,10 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         <table class="um-exams-table">
             <thead>
                 <tr>
-                    <th><?php _e('عنوان آزمون', 'university-management'); ?></th>
-                    <th><?php _e('موقعیت شغلی', 'university-management'); ?></th>
-                    <th><?php _e('تاریخ آزمون', 'university-management'); ?></th>
-                    <th><?php _e('وضعیت', 'university-management'); ?></th>
+                    <th><?php echo esc_html(um_translate('عنوان آزمون', __('عنوان آزمون', 'university-management'))); ?></th>
+                    <th><?php echo esc_html(um_translate('موقعیت شغلی', __('موقعیت شغلی', 'university-management'))); ?></th>
+                    <th><?php echo esc_html(um_translate('تاریخ آزمون', __('تاریخ آزمون', 'university-management'))); ?></th>
+                    <th><?php echo esc_html(um_translate('وضعیت', __('وضعیت', 'university-management'))); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -389,13 +389,13 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                     $exam_position = get_post_meta(get_the_ID(), '_exam_position', true);
                     $exam_status = get_post_meta(get_the_ID(), '_exam_status', true);
                     
-                    $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : __('تاریخ نامعلوم', 'university-management');
+                    $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : um_translate('تاریخ نامعلوم', __('تاریخ نامعلوم', 'university-management'));
                     
                     $status_labels = array(
-                        'upcoming' => __('در انتظار برگزاری', 'university-management'),
-                        'registration' => __('در حال ثبت‌نام', 'university-management'),
-                        'closed' => __('بسته', 'university-management'),
-                        'completed' => __('برگزار شده', 'university-management')
+                        'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
+                        'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
+                        'closed' => um_translate('بسته', __('بسته', 'university-management')),
+                        'completed' => um_translate('برگزار شده', __('برگزار شده', 'university-management'))
                     );
                     $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
                     
@@ -431,10 +431,10 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : '';
             
             $status_labels = array(
-                'upcoming' => __('در انتظار برگزاری', 'university-management'),
-                'registration' => __('در حال ثبت‌نام', 'university-management'),
-                'closed' => __('بسته', 'university-management'),
-                'completed' => __('برگزار شده', 'university-management')
+                'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
+                'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
+                'closed' => um_translate('بسته', __('بسته', 'university-management')),
+                'completed' => um_translate('برگزار شده', __('برگزار شده', 'university-management'))
             );
             $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
             
