@@ -64,9 +64,52 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
     }
 
     /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            // رشته‌های بخش تنظیمات عمومی
+            pll_register_string('um_employment_exams_widget_general_settings', 'تنظیمات عمومی', 'University Management');
+            pll_register_string('um_employment_exams_widget_widget_title', 'عنوان ویجت', 'University Management');
+            pll_register_string('um_employment_exams_widget_default_widget_title', 'آزمون‌های استخدامی', 'University Management');
+            pll_register_string('um_employment_exams_widget_exams_count', 'تعداد آزمون‌ها', 'University Management');
+            pll_register_string('um_employment_exams_widget_status_filter', 'فیلتر وضعیت', 'University Management');
+            pll_register_string('um_employment_exams_widget_status_all', 'همه', 'University Management');
+            pll_register_string('um_employment_exams_widget_status_upcoming', 'در انتظار برگزاری', 'University Management');
+            pll_register_string('um_employment_exams_widget_status_registration', 'در حال ثبت‌نام', 'University Management');
+            pll_register_string('um_employment_exams_widget_status_closed', 'بسته', 'University Management');
+            pll_register_string('um_employment_exams_widget_status_completed', 'برگزار شده', 'University Management');
+            pll_register_string('um_employment_exams_widget_display_type', 'نوع نمایش', 'University Management');
+            pll_register_string('um_employment_exams_widget_display_type_cards', 'کارت‌ها', 'University Management');
+            pll_register_string('um_employment_exams_widget_display_type_table', 'جدول', 'University Management');
+            pll_register_string('um_employment_exams_widget_display_type_list', 'لیست', 'University Management');
+
+            // رشته‌های بخش استایل
+            pll_register_string('um_employment_exams_widget_style_section', 'استایل‌ها', 'University Management');
+            pll_register_string('um_employment_exams_widget_background_color', 'رنگ پس‌زمینه', 'University Management');
+            pll_register_string('um_employment_exams_widget_text_color', 'رنگ متن', 'University Management');
+            pll_register_string('um_employment_exams_widget_primary_color', 'رنگ اصلی', 'University Management');
+
+            // رشته‌های خروجی
+            pll_register_string('um_employment_exams_widget_no_exams_found', 'هیچ آزمون استخدامی یافت نشد.', 'University Management');
+            pll_register_string('um_employment_exams_widget_position_label', 'موقعیت:', 'University Management');
+            pll_register_string('um_employment_exams_widget_department_label', 'دپارتمان:', 'University Management');
+            pll_register_string('um_employment_exams_widget_exam_date_label', 'تاریخ آزمون:', 'University Management');
+            pll_register_string('um_employment_exams_widget_location_label', 'محل برگزاری:', 'University Management');
+            pll_register_string('um_employment_exams_widget_deadline_label', 'مهلت ثبت‌نام:', 'University Management');
+            pll_register_string('um_employment_exams_widget_table_header_title', 'عنوان آزمون', 'University Management');
+            pll_register_string('um_employment_exams_widget_table_header_position', 'موقعیت شغلی', 'University Management');
+            pll_register_string('um_employment_exams_widget_table_header_date', 'تاریخ آزمون', 'University Management');
+            pll_register_string('um_employment_exams_widget_table_header_status', 'وضعیت', 'University Management');
+            pll_register_string('um_employment_exams_widget_unknown_date', 'تاریخ نامعلوم', 'University Management');
+        }
+    }
+
+    /**
      * ثبت کنترل‌های ویجت
      */
     protected function _register_controls() {
+        $this->register_polylang_strings();
         // بخش تنظیمات عمومی
         $this->start_controls_section(
             'section_general',

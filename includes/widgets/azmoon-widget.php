@@ -39,7 +39,47 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         return ['um-azmoon-widget'];
     }
 
+    /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            // رشته‌های بخش محتوا
+            pll_register_string('um_azmoon_widget_content_section', 'محتوا', 'University Management');
+            pll_register_string('um_azmoon_widget_main_title', 'عنوان اصلی', 'University Management');
+            pll_register_string('um_azmoon_widget_default_main_title', "آزمون‌های\nاستخدامی\nبرگزاری شده", 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_source', 'منبع آزمون‌ها', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_source_manual', 'دستی', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_source_auto', 'خودکار (از API)', 'University Management');
+            pll_register_string('um_azmoon_widget_posts_per_page', 'تعداد برای نمایش', 'University Management');
+
+            // رشته‌های تکرارکننده
+            pll_register_string('um_azmoon_widget_azmoon_image', 'تصویر', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_title', 'عنوان آزمون', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_date', 'تاریخ برگزاری', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_department', 'دپارتمان', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_status', 'وضعیت', 'University Management');
+            pll_register_string('um_azmoon_widget_status_active', 'فعال', 'University Management');
+            pll_register_string('um_azmoon_widget_status_inactive', 'غیرفعال', 'University Management');
+            pll_register_string('um_azmoon_widget_status_completed', 'تکمیل شده', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_link', 'لینک دکمه', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_button_text', 'عنوان دکمه', 'University Management');
+            pll_register_string('um_azmoon_widget_azmoon_list', 'لیست آزمون‌ها', 'University Management');
+            pll_register_string('um_azmoon_widget_default_azmoon_button_text', 'مشاهده جزئیات', 'University Management');
+
+            // رشته‌های بخش استایل
+            pll_register_string('um_azmoon_widget_style_section', 'استایل', 'University Management');
+            pll_register_string('um_azmoon_widget_title_color', 'رنگ عنوان', 'University Management');
+            pll_register_string('um_azmoon_widget_card_background', 'رنگ پس‌زمینه کارت', 'University Management');
+            
+            // رشته‌های خروجی
+            pll_register_string('um_azmoon_widget_no_azmoon_found', 'هیچ آزمونی یافت نشد.', 'University Management');
+            pll_register_string('um_azmoon_widget_status_unknown', 'نامشخص', 'University Management');
+        }
+    }
+
     protected function _register_controls() {
+        $this->register_polylang_strings();
         $this->start_controls_section(
             'section_content',
             [
@@ -253,7 +293,7 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
         }
 
         if (empty($azmoons)) {
-            echo '<div class="um-azmoon-empty">هیچ آزمونی یافت نشد.</div>';
+            echo '<div class="um-azmoon-empty">' . esc_html(pll__('هیچ آزمونی یافت نشد.')) . '</div>';
             return;
         }
 
@@ -401,13 +441,13 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
     private function get_status_text($status) {
         switch ($status) {
             case 'active':
-                return 'فعال';
+                return pll__('فعال');
             case 'inactive':
-                return 'غیرفعال';
+                return pll__('غیرفعال');
             case 'completed':
-                return 'تکمیل شده';
+                return pll__('تکمیل شده');
             default:
-                return 'نامشخص';
+                return pll__('نامشخص');
         }
     }
 } 

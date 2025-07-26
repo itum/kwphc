@@ -64,9 +64,55 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
     }
 
     /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            // رشته‌های بخش تنظیمات عمومی
+            pll_register_string('um_video_widget_general_settings', 'تنظیمات عمومی', 'University Management');
+            pll_register_string('um_video_widget_title_one', 'عنوان اول', 'University Management');
+            pll_register_string('um_video_widget_default_title_one', 'لورم ایپسوم', 'University Management');
+            pll_register_string('um_video_widget_title_two', 'عنوان دوم', 'University Management');
+            pll_register_string('um_video_widget_default_title_two', 'صنعت آب و برق خوزستان', 'University Management');
+            pll_register_string('um_video_widget_video_source', 'منبع ویدیوها', 'University Management');
+            pll_register_string('um_video_widget_video_source_auto', 'خودکار (از پست‌تایپ)', 'University Management');
+            pll_register_string('um_video_widget_video_source_manual', 'دستی', 'University Management');
+            pll_register_string('um_video_widget_video_category', 'دسته‌بندی ویدیوها', 'University Management');
+            pll_register_string('um_video_widget_videos_count', 'تعداد ویدیوها', 'University Management');
+
+            // رشته‌های بخش ویدیوهای دستی
+            pll_register_string('um_video_widget_manual_videos', 'ویدیوهای دستی', 'University Management');
+            pll_register_string('um_video_widget_video_title', 'عنوان ویدیو', 'University Management');
+            pll_register_string('um_video_widget_video_url', 'آدرس ویدیو (MP4)', 'University Management');
+            pll_register_string('um_video_widget_video_thumbnail', 'تصویر کوچک ویدیو', 'University Management');
+            pll_register_string('um_video_widget_videos', 'ویدیوها', 'University Management');
+            pll_register_string('um_video_widget_default_video_title_1', 'ویدیو اول', 'University Management');
+            pll_register_string('um_video_widget_default_video_title_2', 'ویدیو دوم', 'University Management');
+
+            // رشته‌های بخش استایل
+            pll_register_string('um_video_widget_style_section', 'استایل', 'University Management');
+            pll_register_string('um_video_widget_title_one_color', 'رنگ عنوان اول', 'University Management');
+            pll_register_string('um_video_widget_title_one_typography', 'تایپوگرافی عنوان اول', 'University Management');
+            pll_register_string('um_video_widget_title_two_color', 'رنگ عنوان دوم', 'University Management');
+            pll_register_string('um_video_widget_title_two_typography', 'تایپوگرافی عنوان دوم', 'University Management');
+            pll_register_string('um_video_widget_category_bg_color', 'رنگ پس‌زمینه دسته‌بندی', 'University Management');
+            pll_register_string('um_video_widget_category_text_color', 'رنگ متن دسته‌بندی', 'University Management');
+            pll_register_string('um_video_widget_video_height', 'ارتفاع ویدیو', 'University Management');
+
+            // رشته‌های خروجی
+            pll_register_string('um_video_widget_general_category', 'عمومی', 'University Management');
+            pll_register_string('um_video_widget_categories_label', 'دسته بندی ها', 'University Management');
+            pll_register_string('um_video_widget_video_preview_alt', 'پیش‌نمایش ویدیو', 'University Management');
+            pll_register_string('um_video_widget_play_video_title', 'پخش ویدیو', 'University Management');
+            pll_register_string('um_video_widget_default_category', 'پیش‌فرض', 'University Management');
+        }
+    }
+
+    /**
      * ثبت کنترل‌های ویجت
      */
     protected function _register_controls() {
+        $this->register_polylang_strings();
         // بخش تنظیمات عمومی
         $this->start_controls_section(
             'section_general',

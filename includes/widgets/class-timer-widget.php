@@ -64,9 +64,46 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
     }
 
     /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            // رشته‌های بخش تنظیمات عمومی
+            pll_register_string('um_class_timer_widget_general_settings', 'تنظیمات عمومی', 'University Management');
+            pll_register_string('um_class_timer_widget_class_source', 'منبع کلاس‌ها', 'University Management');
+            pll_register_string('um_class_timer_widget_class_source_auto', 'خودکار (از پست‌تایپ)', 'University Management');
+            pll_register_string('um_class_timer_widget_class_source_manual', 'دستی', 'University Management');
+            pll_register_string('um_class_timer_widget_classes_count', 'تعداد کلاس‌ها', 'University Management');
+
+            // رشته‌های بخش کلاس‌های دستی
+            pll_register_string('um_class_timer_widget_manual_classes', 'کلاس‌های دستی', 'University Management');
+            pll_register_string('um_class_timer_widget_class_name', 'نام کلاس', 'University Management');
+            pll_register_string('um_class_timer_widget_class_date', 'تاریخ کلاس', 'University Management');
+            pll_register_string('um_class_timer_widget_class_duration', 'مدت زمان کلاس (دقیقه)', 'University Management');
+            pll_register_string('um_class_timer_widget_class_teacher', 'نام استاد', 'University Management');
+            pll_register_string('um_class_timer_widget_class_image', 'تصویر کلاس', 'University Management');
+            pll_register_string('um_class_timer_widget_classes', 'کلاس‌ها', 'University Management');
+            pll_register_string('um_class_timer_widget_default_class_name_1', 'کلاس برنامه‌نویسی پایتون', 'University Management');
+            pll_register_string('um_class_timer_widget_default_teacher_1', 'دکتر محمدی', 'University Management');
+            pll_register_string('um_class_timer_widget_default_class_name_2', 'کلاس مبانی هوش مصنوعی', 'University Management');
+            pll_register_string('um_class_timer_widget_default_teacher_2', 'دکتر علوی', 'University Management');
+
+            // رشته‌های بخش استایل
+            pll_register_string('um_class_timer_widget_style_section', 'استایل', 'University Management');
+            pll_register_string('um_class_timer_widget_calendar_bg_color', 'رنگ پس‌زمینه هدر تقویم', 'University Management');
+            pll_register_string('um_class_timer_widget_active_day_color', 'رنگ متن روز فعال', 'University Management');
+            pll_register_string('um_class_timer_widget_active_day_bg_color', 'رنگ پس‌زمینه روز فعال', 'University Management');
+            pll_register_string('um_class_timer_widget_start_btn_color', 'رنگ دکمه شروع کلاس', 'University Management');
+            pll_register_string('um_class_timer_widget_start_btn_text_color', 'رنگ متن دکمه شروع کلاس', 'University Management');
+            pll_register_string('um_class_timer_widget_card_bg_color', 'رنگ پس‌زمینه کارت کلاس', 'University Management');
+        }
+    }
+
+    /**
      * ثبت کنترل‌های ویجت
      */
     protected function _register_controls() {
+        $this->register_polylang_strings();
         // بخش تنظیمات عمومی
         $this->start_controls_section(
             'section_general',
@@ -455,7 +492,21 @@ class KWPRC_Class_Timer_Widget extends \Elementor\Widget_Base {
         return ['general'];
     }
 
+    /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_kwprc_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            pll_register_string('kwprc_class_timer_widget_title', 'تقویم کلاسی KWPRC', 'University Management');
+            pll_register_string('kwprc_class_timer_widget_settings', 'تنظیمات', 'University Management');
+            pll_register_string('kwprc_class_timer_widget_title_control', 'عنوان', 'University Management');
+            pll_register_string('kwprc_class_timer_widget_default_title', 'برنامه کلاسی', 'University Management');
+            pll_register_string('kwprc_class_timer_widget_live_class_info', 'دوره در حال برگزاری: 0 / 0', 'University Management');
+        }
+    }
+
     protected function register_controls() {
+        $this->register_kwprc_polylang_strings();
         $this->start_controls_section(
             'content_section',
             [
@@ -546,8 +597,8 @@ class KWPRC_Class_Timer_Widget extends \Elementor\Widget_Base {
         return [
             "2025-04-28" => [
                 [
-                    "name" => "ریاضی پایه", 
-                    "teacher" => "خانم احمدی", 
+                    "name" => pll__('ریاضی پایه'), 
+                    "teacher" => pll__('خانم احمدی'), 
                     "time" => "10:00 - 11:00", 
                     "image" => plugin_dir_url(__FILE__) . "../../assets/images/Rectangle 5468.png", 
                     "link" => "#"

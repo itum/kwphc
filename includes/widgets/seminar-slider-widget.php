@@ -39,7 +39,41 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
         return ['um-seminar-slider-widget', 'swiper'];
     }
 
+    /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            // رشته‌های بخش محتوا
+            pll_register_string('um_seminar_slider_widget_content_section', 'محتوا', 'University Management');
+            pll_register_string('um_seminar_slider_widget_main_title', 'عنوان اصلی', 'University Management');
+            pll_register_string('um_seminar_slider_widget_default_main_title', "دوره سمینار و\nکارگاه‌های\nبرگزاری شده", 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_source', 'منبع کارگاه‌ها', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_source_manual', 'دستی', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_source_auto', 'خودکار (از پست‌تایپ)', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_category', 'دسته‌بندی کارگاه‌ها', 'University Management');
+            pll_register_string('um_seminar_slider_widget_posts_per_page', 'تعداد برای نمایش', 'University Management');
+
+            // رشته‌های تکرارکننده
+            pll_register_string('um_seminar_slider_widget_seminar_image', 'تصویر', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_title', 'عنوان کارگاه', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_time', 'زمان برگزاری', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_teacher', 'مدرس', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_link', 'لینک دکمه', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_button_text', 'عنوان دکمه', 'University Management');
+            pll_register_string('um_seminar_slider_widget_seminar_list', 'لیست کارگاه‌ها', 'University Management');
+            pll_register_string('um_seminar_slider_widget_default_seminar_button_text', 'شروع یادگیری', 'University Management');
+            pll_register_string('um_seminar_slider_widget_default_seminar_time', '۱۴۰۳/۰۵/۲۰', 'University Management');
+            
+            // رشته‌های خروجی
+            pll_register_string('um_seminar_slider_widget_all_categories', 'همه دسته‌بندی‌ها', 'University Management');
+            pll_register_string('um_seminar_slider_widget_time_label', 'زمان برگزاری:', 'University Management');
+            pll_register_string('um_seminar_slider_widget_teacher_label', 'مدرس:', 'University Management');
+        }
+    }
+
     protected function _register_controls() {
+        $this->register_polylang_strings();
         $this->start_controls_section(
             'section_content',
             [

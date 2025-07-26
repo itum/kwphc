@@ -64,9 +64,47 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
     }
 
     /**
+     * ثبت رشته‌های ترجمه برای Polylang
+     */
+    protected function register_polylang_strings() {
+        if (function_exists('pll_register_string')) {
+            // رشته‌های بخش تنظیمات عمومی
+            pll_register_string('um_calendar_widget_general_settings', 'تنظیمات عمومی', 'University Management');
+            pll_register_string('um_calendar_widget_event_source', 'منبع رویدادها', 'University Management');
+            pll_register_string('um_calendar_widget_event_source_auto', 'خودکار (از پست‌تایپ)', 'University Management');
+            pll_register_string('um_calendar_widget_event_source_manual', 'دستی', 'University Management');
+            pll_register_string('um_calendar_widget_events_count', 'تعداد رویدادها', 'University Management');
+
+            // رشته‌های بخش رویدادهای دستی
+            pll_register_string('um_calendar_widget_manual_events', 'رویدادهای دستی', 'University Management');
+            pll_register_string('um_calendar_widget_event_date', 'تاریخ رویداد', 'University Management');
+            pll_register_string('um_calendar_widget_event_title', 'عنوان رویداد', 'University Management');
+            pll_register_string('um_calendar_widget_is_important', 'رویداد مهم (هایلایت)', 'University Management');
+            pll_register_string('um_calendar_widget_yes', 'بله', 'University Management');
+            pll_register_string('um_calendar_widget_no', 'خیر', 'University Management');
+            pll_register_string('um_calendar_widget_events', 'رویدادها', 'University Management');
+            pll_register_string('um_calendar_widget_default_event_title_1', 'شروع کلاس‌ها', 'University Management');
+            pll_register_string('um_calendar_widget_default_event_title_2', 'ارائه پروژه', 'University Management');
+            pll_register_string('um_calendar_widget_default_event_title_3', 'میان‌ترم', 'University Management');
+
+            // رشته‌های بخش استایل
+            pll_register_string('um_calendar_widget_style_section', 'استایل', 'University Management');
+            pll_register_string('um_calendar_widget_highlight_color', 'رنگ هایلایت', 'University Management');
+            pll_register_string('um_calendar_widget_text_color', 'رنگ متن', 'University Management');
+            pll_register_string('um_calendar_widget_highlight_text_color', 'رنگ متن هایلایت', 'University Management');
+            pll_register_string('um_calendar_widget_day_color', 'رنگ عدد روز', 'University Management');
+            pll_register_string('um_calendar_widget_event_padding', 'پدینگ رویداد', 'University Management');
+
+            // رشته‌های خروجی
+            pll_register_string('um_calendar_widget_no_events_found', 'هیچ رویدادی یافت نشد.', 'University Management');
+        }
+    }
+
+    /**
      * ثبت کنترل‌های ویجت
      */
     protected function _register_controls() {
+        $this->register_polylang_strings();
         // بخش تنظیمات عمومی
         $this->start_controls_section(
             'section_general',
