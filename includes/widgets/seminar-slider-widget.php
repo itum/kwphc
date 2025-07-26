@@ -305,7 +305,7 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                         'seminar_time' => get_post_meta(get_the_ID(), '_seminar_time', true),
                         'seminar_teacher' => get_post_meta(get_the_ID(), '_seminar_teacher', true),
                         'seminar_link' => ['url' => get_post_meta(get_the_ID(), '_seminar_button_link', true) ?: '#'],
-                        'seminar_button_text' => get_post_meta(get_the_ID(), '_seminar_button_text', true) ?: um_translate('شروع یادگیری', __('شروع یادگیری', 'university-management')),
+                        'seminar_button_text' => get_post_meta(get_the_ID(), '_seminar_button_text', true) ?: 'شروع یادگیری',
                     ];
                 }
                 wp_reset_postdata();
@@ -362,7 +362,13 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                         </div>
                                     </div>
                                     <?php
-                                    $button_text = !empty($item['seminar_button_text']) ? $item['seminar_button_text'] : um_translate('شروع یادگیری', __('شروع یادگیری', 'university-management'));
+                                    // استفاده از ترجمه برای دکمه
+                                    if (function_exists('pll__')) {
+                                        $button_text = pll__('شروع یادگیری') ?: 'شروع یادگیری';
+                                    } else {
+                                        $button_text = 'شروع یادگیری';
+                                    }
+                                    
                                     $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
                                     $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
                                     $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';

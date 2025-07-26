@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.4.2
+ * Version: 1.4.3
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // تعریف ثابت‌های افزونه
-define('UM_VERSION', '1.4.2');
+define('UM_VERSION', '1.4.3');
 define('UM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
