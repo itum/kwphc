@@ -86,7 +86,7 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
             [
                 'label' => um_translate('عنوان اصلی', __('عنوان اصلی', 'university-management')),
                 'type' => \Elementor\Controls_Manager::TEXTAREA,
-                'default' => __("دوره سمینار و\nکارگاه‌های\nبرگزاری شده", 'university-management'),
+                'default' => um_translate("دوره سمینار و\nکارگاه‌های\nبرگزاری شده", __("دوره سمینار و\nکارگاه‌های\nبرگزاری شده", 'university-management')),
                 'rows' => 3,
             ]
         );
@@ -204,39 +204,39 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                 'default' => [
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/63297photoqoran.jpg'],
-                        'seminar_title' => 'فرانت‌اند',
-                        'seminar_time' => '۱۴۰۳/۰۵/۲۰',
-                        'seminar_teacher' => 'مهدی بیگدلی',
+                        'seminar_title' => um_translate('فرانت‌اند', __('فرانت‌اند', 'university-management')),
+                        'seminar_time' => um_translate('۱۴۰۳/۰۵/۲۰', __('۱۴۰۳/۰۵/۲۰', 'university-management')),
+                        'seminar_teacher' => um_translate('مهدی بیگدلی', __('مهدی بیگدلی', 'university-management')),
                     ],
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/image_220.jpeg'],
-                        'seminar_title' => 'Node.js',
-                        'seminar_time' => '۱۴۰۳/۰۶/۱۰',
-                        'seminar_teacher' => 'سارا سلیمانی',
+                        'seminar_title' => um_translate('Node.js', __('Node.js', 'university-management')),
+                        'seminar_time' => um_translate('۱۴۰۳/۰۶/۱۰', __('۱۴۰۳/۰۶/۱۰', 'university-management')),
+                        'seminar_teacher' => um_translate('سارا سلیمانی', __('سارا سلیمانی', 'university-management')),
                     ],
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/image_219.jpeg'],
-                        'seminar_title' => 'UI/UX',
-                        'seminar_time' => '۱۴۰۳/۰۷/۰۵',
-                        'seminar_teacher' => 'محمد خانی',
+                        'seminar_title' => um_translate('UI/UX', __('UI/UX', 'university-management')),
+                        'seminar_time' => um_translate('۱۴۰۳/۰۷/۰۵', __('۱۴۰۳/۰۷/۰۵', 'university-management')),
+                        'seminar_teacher' => um_translate('محمد خانی', __('محمد خانی', 'university-management')),
                     ],
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/image_218.jpeg'],
-                        'seminar_title' => 'React.js',
-                        'seminar_time' => '۱۴۰۳/۰۷/۱۵',
-                        'seminar_teacher' => 'لیلا نادری',
+                        'seminar_title' => um_translate('React.js', __('React.js', 'university-management')),
+                        'seminar_time' => um_translate('۱۴۰۳/۰۷/۱۵', __('۱۴۰۳/۰۷/۱۵', 'university-management')),
+                        'seminar_teacher' => um_translate('لیلا نادری', __('لیلا نادری', 'university-management')),
                     ],
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/61270phototamdid.jpg'],
-                        'seminar_title' => 'Python',
-                        'seminar_time' => '۱۴۰۳/۰۸/۰۱',
-                        'seminar_teacher' => 'یاسر کرمی',
+                        'seminar_title' => um_translate('Python', __('Python', 'university-management')),
+                        'seminar_time' => um_translate('۱۴۰۳/۰۸/۰۱', __('۱۴۰۳/۰۸/۰۱', 'university-management')),
+                        'seminar_teacher' => um_translate('یاسر کرمی', __('یاسر کرمی', 'university-management')),
                     ],
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/60261savadabi.jpg'],
-                        'seminar_title' => 'DevOps',
-                        'seminar_time' => '۱۴۰۳/۰۸/۱۵',
-                        'seminar_teacher' => 'نگین مرادی',
+                        'seminar_title' => um_translate('DevOps', __('DevOps', 'university-management')),
+                        'seminar_time' => um_translate('۱۴۰۳/۰۸/۱۵', __('۱۴۰۳/۰۸/۱۵', 'university-management')),
+                        'seminar_teacher' => um_translate('نگین مرادی', __('نگین مرادی', 'university-management')),
                     ],
                     [
                         'seminar_image' => ['url' => 'https://appwordpresss.ir/wp-content/uploads/2025/07/image_206.jpeg'],
