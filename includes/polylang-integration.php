@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// تابع um_translate از فایل safe-polylang-fallback.php بارگذاری می‌شود
+
 /**
  * کلاس ادغام Polylang
  */
@@ -36,16 +38,21 @@ class UM_Polylang_Integration {
      * سازنده
      */
     private function __construct() {
-        add_action('init', array($this, 'register_all_strings'));
+        // فقط اگر Polylang موجود باشد رشته‌ها را ثبت کن
+        add_action('init', array($this, 'register_all_strings'), 20);
     }
 
     /**
      * ثبت تمام رشته‌های ترجمه
      */
     public function register_all_strings() {
+        // بررسی وجود Polylang
         if (!function_exists('pll_register_string')) {
+            error_log('UM Plugin: Polylang not available for string registration');
             return;
         }
+        
+        error_log('UM Plugin: Registering strings with Polylang');
 
         // رشته‌های عمومی
         $this->register_general_strings();
@@ -227,13 +234,16 @@ class UM_Polylang_Integration {
      * @return string
      */
     public static function get_translation($string, $fallback = null) {
+        // بررسی وجود Polylang
         if (function_exists('pll__')) {
             $translation = pll__($string);
+            // بررسی اینکه آیا ترجمه یافت شده یا نه
             if ($translation && $translation !== $string) {
                 return $translation;
             }
         }
         
+        // اگر ترجمه یافت نشد، fallback را برگردان
         return $fallback ?: $string;
     }
 }
@@ -241,13 +251,4 @@ class UM_Polylang_Integration {
 // راه‌اندازی کلاس
 UM_Polylang_Integration::get_instance();
 
-/**
- * تابع کمکی سراسری برای ترجمه
- * 
- * @param string $string رشته فارسی
- * @param string $fallback رشته پیش‌فرض
- * @return string
- */
-function um_translate($string, $fallback = null) {
-    return UM_Polylang_Integration::get_translation($string, $fallback);
-} 
+ 

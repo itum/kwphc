@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.3.1
+ * Version: 1.4.0
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // تعریف ثابت‌های افزونه
-define('UM_VERSION', '1.3.0');
+define('UM_VERSION', '1.4.0');
 define('UM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -46,6 +46,12 @@ class University_Management {
      * سازنده
      */
     public function __construct() {
+        // بارگذاری fallback امن برای Polylang
+        $this->load_safe_fallback();
+        
+        // بارگذاری ادغام Polylang (اولویت بالا)
+        $this->load_polylang_integration();
+        
         // بارگذاری متن‌های قابل ترجمه
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         
@@ -112,9 +118,6 @@ class University_Management {
         
         // ثبت شورت‌کدهای داینامیک
         add_action('init', array($this, 'register_shortcodes'));
-        
-        // بارگذاری ادغام Polylang
-        $this->load_polylang_integration();
 
     }
 
@@ -126,12 +129,33 @@ class University_Management {
     }
 
     /**
+     * بارگذاری fallback امن
+     */
+    public function load_safe_fallback() {
+        $fallback_file = UM_PLUGIN_DIR . 'includes/safe-polylang-fallback.php';
+        if (file_exists($fallback_file)) {
+            require_once $fallback_file;
+        }
+    }
+
+    /**
      * بارگذاری ادغام Polylang
      */
     public function load_polylang_integration() {
-        $polylang_file = UM_PLUGIN_DIR . 'includes/polylang-integration.php';
-        if (file_exists($polylang_file)) {
-            require_once $polylang_file;
+        try {
+            $polylang_file = UM_PLUGIN_DIR . 'includes/polylang-integration.php';
+            if (file_exists($polylang_file)) {
+                require_once $polylang_file;
+                
+                // تست تابع um_translate (فقط برای دیباگ)
+                if (function_exists('um_translate') && defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('UM Plugin: um_translate function loaded successfully');
+                }
+            } else {
+                error_log('UM Plugin: Polylang integration file not found');
+            }
+        } catch (Exception $e) {
+            error_log('UM Plugin: Error loading Polylang integration: ' . $e->getMessage());
         }
     }
 

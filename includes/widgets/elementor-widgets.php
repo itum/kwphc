@@ -10,6 +10,13 @@ if (!defined('ABSPATH')) {
     exit; // خروج در صورت دسترسی مستقیم
 }
 
+// اطمینان از وجود تابع um_translate
+if (!function_exists('um_translate')) {
+    function um_translate($string, $fallback = null) {
+        return $fallback ?: $string;
+    }
+}
+
 /**
  * کلاس اصلی ویجت‌های المنتور
  */
