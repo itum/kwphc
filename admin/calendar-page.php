@@ -18,7 +18,7 @@ if (isset($_POST['um_add_event_nonce']) && wp_verify_nonce($_POST['um_add_event_
     $event_language = isset($_POST['event_language']) ? sanitize_text_field($_POST['event_language']) : '';
     
     // بررسی داده‌های الزامی
-    if (!empty($event_title) && !empty($event_date)) {
+    if (!empty($event_title) && !empty($event_date) && !empty($event_language)) {
         // ایجاد پست جدید
         $post_data = array(
             'post_title'    => $event_title,
@@ -47,7 +47,7 @@ if (isset($_POST['um_add_event_nonce']) && wp_verify_nonce($_POST['um_add_event_
         }
     } else {
         // نمایش پیام خطا برای فیلدهای الزامی
-        add_settings_error('um_calendar', 'um_event_required', __('عنوان و تاریخ رویداد الزامی هستند.', 'university-management'), 'error');
+        add_settings_error('um_calendar', 'um_event_required', __('عنوان، تاریخ و زبان رویداد الزامی هستند.', 'university-management'), 'error');
     }
 }
 
@@ -67,6 +67,7 @@ $args = array(
 if (function_exists('pll_current_language') && isset($_GET['lang_filter'])) {
     $current_lang = sanitize_text_field($_GET['lang_filter']);
     if (!empty($current_lang)) {
+        // استفاده از API های Polylang برای فیلتر دقیق
         $args['lang'] = $current_lang;
     }
 }
@@ -110,7 +111,7 @@ $events = new WP_Query($args);
                 <?php if (function_exists('pll_the_languages')) : ?>
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="event_language" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('زبان رویداد', 'university-management'); ?></label>
-                    <select id="event_language" name="event_language" class="regular-text" style="width: 100%;">
+                    <select id="event_language" name="event_language" class="regular-text" style="width: 100%;" required>
                         <option value=""><?php _e('انتخاب زبان', 'university-management'); ?></option>
                         <?php
                         $languages = pll_the_languages(array('raw' => 1));
@@ -143,9 +144,26 @@ $events = new WP_Query($args);
                         <?php
                         $languages = pll_the_languages(array('raw' => 1));
                         $current_filter = isset($_GET['lang_filter']) ? $_GET['lang_filter'] : '';
+                        
+                        // بررسی اینکه کدام زبان‌ها رویداد دارند
+                        $languages_with_events = array();
+                        foreach ($languages as $lang) {
+                            $lang_args = array(
+                                'post_type' => 'um_calendar_events',
+                                'posts_per_page' => 1,
+                                'lang' => $lang['slug']
+                            );
+                            $lang_query = new WP_Query($lang_args);
+                            if ($lang_query->have_posts()) {
+                                $languages_with_events[] = $lang['slug'];
+                            }
+                            wp_reset_postdata();
+                        }
+                        
                         foreach ($languages as $lang) {
                             $selected = ($current_filter === $lang['slug']) ? 'selected' : '';
-                            echo '<option value="' . esc_attr($lang['slug']) . '" ' . $selected . '>' . esc_html($lang['name']) . '</option>';
+                            $disabled = !in_array($lang['slug'], $languages_with_events) ? 'disabled' : '';
+                            echo '<option value="' . esc_attr($lang['slug']) . '" ' . $selected . ' ' . $disabled . '>' . esc_html($lang['name']) . '</option>';
                         }
                         ?>
                     </select>
