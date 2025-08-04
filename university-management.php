@@ -84,6 +84,8 @@ class University_Management {
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
         add_action('wp_ajax_nopriv_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
+        add_action('wp_ajax_um_get_videos_by_language', array($this, 'ajax_get_videos_by_language'));
+        add_action('wp_ajax_nopriv_um_get_videos_by_language', array($this, 'ajax_get_videos_by_language'));
         
         // اکشن‌های AJAX برای پایگاه داده
         add_action('wp_ajax_um_import_database', array($this, 'ajax_import_database'));
@@ -949,6 +951,18 @@ class University_Management {
                 'nonce' => wp_create_nonce('um_video_nonce')
             )
         );
+        
+        // اضافه کردن متغیرهای اضافی برای ویجت ویدیو
+        wp_localize_script('um-video-widget', 'um_video_nonce', wp_create_nonce('um_video_nonce'));
+        wp_localize_script('um-video-widget', 'um_video_lang_nonce', wp_create_nonce('um_video_lang_nonce'));
+        wp_localize_script('um-video-widget', 'um_ajax_url', admin_url('admin-ajax.php'));
+        
+        // اضافه کردن زبان فعلی
+        if (function_exists('pll_current_language')) {
+            wp_localize_script('um-video-widget', 'umCurrentLang', pll_current_language());
+        } else {
+            wp_localize_script('um-video-widget', 'umCurrentLang', 'fa');
+        }
     }
 
     /**
@@ -1160,6 +1174,19 @@ class University_Management {
             'single'            => true,
             'type'              => 'string',
         ));
+
+        // تنظیمات Polylang برای پست‌تایپ ویدیوها
+        if (function_exists('pll_register_post_type')) {
+            pll_register_post_type('um_videos');
+        }
+        
+        // تنظیمات Polylang برای تاکسونومی دسته‌بندی ویدیوها
+        if (function_exists('pll_register_taxonomy')) {
+            pll_register_taxonomy('um_video_category');
+        }
+
+        // اطمینان از ثبت پست‌تایپ‌ها در Polylang
+        $this->ensure_polylang_registration();
 
         // پست‌تایپ کارگاه و سمینار
         $seminar_labels = array(
@@ -1380,6 +1407,14 @@ class University_Management {
             'orderby' => 'date',
             'order' => 'DESC',
         );
+        
+        // فیلتر بر اساس زبان فعلی Polylang
+        if (function_exists('pll_current_language')) {
+            $current_lang = pll_current_language();
+            if ($current_lang) {
+                $args['lang'] = $current_lang;
+            }
+        }
         
         // اضافه کردن فیلتر دسته‌بندی اگر انتخاب شده باشد
         if (!empty($category_id) && $category_id !== 'default') {
@@ -4902,6 +4937,95 @@ class University_Management {
         }
 
         echo '</table>';
+    }
+
+    /**
+     * اطمینان از ثبت پست‌تایپ‌ها در Polylang
+     */
+    private function ensure_polylang_registration() {
+        // بررسی وجود Polylang
+        if (function_exists('pll_register_post_type')) {
+            // ثبت پست‌تایپ‌ها در Polylang
+            pll_register_post_type('um_videos');
+            pll_register_post_type('um_seminars');
+            pll_register_post_type('um_employment_exams');
+            pll_register_post_type('um_staff');
+            
+            // ثبت تاکسونومی‌ها در Polylang
+            if (function_exists('pll_register_taxonomy')) {
+                pll_register_taxonomy('um_video_category');
+                pll_register_taxonomy('um_seminar_category');
+                pll_register_taxonomy('um_employment_exam_category');
+            }
+        }
+    }
+    
+    /**
+     * دریافت ویدیوها بر اساس زبان فعلی
+     * @param string $lang زبان مورد نظر
+     * @param int $limit تعداد ویدیوها
+     * @return array
+     */
+    public function get_videos_by_language($lang = null, $limit = 10) {
+        if (!$lang && function_exists('pll_current_language')) {
+            $lang = pll_current_language();
+        }
+        
+        $args = array(
+            'post_type' => 'um_videos',
+            'posts_per_page' => $limit,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC',
+        );
+        
+        if ($lang) {
+            $args['lang'] = $lang;
+        }
+        
+        $query = new WP_Query($args);
+        $videos = array();
+        
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                
+                $video_url = get_post_meta($post_id, '_um_video_link', true);
+                if ($video_url) {
+                    $videos[] = array(
+                        'id' => $post_id,
+                        'title' => get_the_title(),
+                        'url' => $video_url,
+                        'thumbnail' => get_the_post_thumbnail_url($post_id, 'medium'),
+                        'category' => wp_get_post_terms($post_id, 'um_video_category', array('fields' => 'names')),
+                        'lang' => $lang
+                    );
+                }
+            }
+            wp_reset_postdata();
+        }
+        
+        return $videos;
+    }
+    
+    /**
+     * AJAX: دریافت ویدیوها بر اساس زبان
+     */
+    public function ajax_get_videos_by_language() {
+        // بررسی نانس
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'um_video_lang_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+            return;
+        }
+        
+        // دریافت زبان
+        $lang = isset($_POST['lang']) ? sanitize_text_field($_POST['lang']) : null;
+        $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 10;
+        
+        $videos = $this->get_videos_by_language($lang, $limit);
+        
+        wp_send_json_success($videos);
     }
 }
 

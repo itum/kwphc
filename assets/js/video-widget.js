@@ -3,20 +3,46 @@
 jQuery(document).ready(function($) {
     console.log('=== VIDEO WIDGET JS DEBUG START ===');
     
+    // تابع تشخیص زبان فعلی
+    function getCurrentLanguage() {
+        // بررسی وجود متغیر زبان در صفحه
+        if (typeof umCurrentLang !== 'undefined') {
+            return umCurrentLang;
+        }
+        
+        // بررسی از URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('lang')) {
+            return urlParams.get('lang');
+        }
+        
+        // بررسی از pathname
+        const pathname = window.location.pathname;
+        const langMatch = pathname.match(/^\/([a-z]{2})\//);
+        if (langMatch) {
+            return langMatch[1];
+        }
+        
+        // پیش‌فرض فارسی
+        return 'fa';
+    }
+    
     // Find all video widget instances on the page
     $('.videoApp-container').each(function() {
         const container = $(this);
         const videos_json = container.attr('data-videos');
         const categories_json = container.attr('data-categories');
+        const currentLang = getCurrentLanguage();
 
         console.log('Video Widget Container Found:', container);
+        console.log('Current Language:', currentLang);
         console.log('Videos JSON from data attribute:', videos_json);
         console.log('Categories JSON from data attribute:', categories_json);
 
-        // If there's no data, do nothing for this instance
-        if (!videos_json) {
-            console.log('No videos JSON data found');
-            container.html('<p style="padding: 10px; text-align: center;">داده‌های ویدیو یافت نشد.</p>');
+        // If there's no data, try to load videos by language
+        if (!videos_json || videos_json === '[]') {
+            console.log('No videos JSON data found, trying to load by language');
+            loadVideosByLanguage(container, currentLang);
             return;
         }
 
@@ -27,10 +53,54 @@ jQuery(document).ready(function($) {
             console.log('Number of videos:', videos.length);
         } catch (e) {
             console.error('Error parsing videos JSON:', e);
-            container.html('<p style="padding: 10px; text-align: center;">خطا در پردازش داده‌های ویدیو.</p>');
+            loadVideosByLanguage(container, currentLang);
             return;
         }
 
+        // اگر ویدیویی وجود ندارد، بر اساس زبان بارگذاری کن
+        if (!videos || videos.length === 0) {
+            console.log('No videos available, loading by language');
+            loadVideosByLanguage(container, currentLang);
+            return;
+        }
+
+        initializeVideoWidget(container, videos, categories_json);
+    });
+    
+    /**
+     * بارگذاری ویدیوها بر اساس زبان
+     */
+    function loadVideosByLanguage(container, lang) {
+        console.log('Loading videos for language:', lang);
+        
+        $.ajax({
+            url: um_ajax_url,
+            type: 'POST',
+            data: {
+                action: 'um_get_videos_by_language',
+                lang: lang,
+                limit: 10,
+                nonce: um_video_nonce
+            },
+            success: function(response) {
+                console.log('Videos loaded by language:', response);
+                if (response.success && response.data.length > 0) {
+                    initializeVideoWidget(container, response.data, '{}');
+                } else {
+                    container.html('<p style="padding: 10px; text-align: center;">ویدیویی برای زبان ' + lang + ' یافت نشد.</p>');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading videos by language:', error);
+                container.html('<p style="padding: 10px; text-align: center;">خطا در بارگذاری ویدیوها.</p>');
+            }
+        });
+    }
+    
+    /**
+     * راه‌اندازی ویجت ویدیو
+     */
+    function initializeVideoWidget(container, videos, categories_json) {
         let all_categories = {};
         if (categories_json) {
             try {
@@ -142,5 +212,5 @@ jQuery(document).ready(function($) {
         if (initialCategory) {
             categorySelect.val(initialCategory);
         }
-    });
+    }
 });

@@ -388,6 +388,17 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                 // 'tax_query' => [], // We fetch from all categories now
             ];
 
+            // فیلتر بر اساس زبان فعلی Polylang
+            if (function_exists('pll_current_language')) {
+                $current_lang = pll_current_language();
+                error_log('Current Language: ' . $current_lang);
+                
+                if ($current_lang) {
+                    $args['lang'] = $current_lang;
+                    error_log('Added language filter: ' . $current_lang);
+                }
+            }
+
             /* We ignore the category selection to allow client-side filtering of all recent videos
             if (!empty($cat_id)) {
                 $args['tax_query'][] = [
@@ -509,10 +520,23 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         
         error_log('=== VIDEO CATEGORIES DEBUG ===');
         
-        $terms = get_terms(array(
+        $args = array(
             'taxonomy' => 'um_video_category',
             'hide_empty' => false,
-        ));
+        );
+        
+        // فیلتر بر اساس زبان فعلی Polylang
+        if (function_exists('pll_current_language')) {
+            $current_lang = pll_current_language();
+            error_log('Current Language for Categories: ' . $current_lang);
+            
+            if ($current_lang) {
+                $args['lang'] = $current_lang;
+                error_log('Added language filter for categories: ' . $current_lang);
+            }
+        }
+        
+        $terms = get_terms($args);
         
         error_log('Video Categories Terms: ' . print_r($terms, true));
         
