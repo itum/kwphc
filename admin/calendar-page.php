@@ -67,12 +67,60 @@ $args = array(
 if (function_exists('pll_current_language') && isset($_GET['lang_filter'])) {
     $current_lang = sanitize_text_field($_GET['lang_filter']);
     if (!empty($current_lang)) {
-        // استفاده از API های Polylang برای فیلتر دقیق
-        $args['lang'] = $current_lang;
+        // لاگ برای دیباگ
+        error_log('=== CALENDAR LANGUAGE FILTER DEBUG ===');
+        error_log('Selected Language: ' . $current_lang);
+        
+        // ابتدا همه پست‌ها را دریافت کن
+        $all_events = new WP_Query(array(
+            'post_type' => 'um_calendar_events',
+            'posts_per_page' => -1,
+            'orderby' => 'meta_value',
+            'meta_key' => '_event_date',
+            'order' => 'ASC',
+        ));
+        
+        // فیلتر بر اساس زبان
+        $filtered_posts = array();
+        if ($all_events->have_posts()) {
+            while ($all_events->have_posts()) {
+                $all_events->the_post();
+                $post_lang = pll_get_post_language(get_the_ID());
+                error_log('Post ID: ' . get_the_ID() . ', Title: ' . get_the_title() . ', Language: ' . $post_lang);
+                
+                if ($post_lang === $current_lang) {
+                    $filtered_posts[] = get_the_ID();
+                }
+            }
+            wp_reset_postdata();
+        }
+        
+        // کوئری جدید با پست‌های فیلتر شده
+        if (!empty($filtered_posts)) {
+            $args = array(
+                'post_type' => 'um_calendar_events',
+                'posts_per_page' => -1,
+                'orderby' => 'meta_value',
+                'meta_key' => '_event_date',
+                'order' => 'ASC',
+                'post__in' => $filtered_posts,
+            );
+        } else {
+            // اگر هیچ پستی با زبان انتخاب شده نباشد، کوئری خالی
+            $args = array(
+                'post_type' => 'um_calendar_events',
+                'posts_per_page' => -1,
+                'post__in' => array(0), // هیچ پستی
+            );
+        }
+        
+        error_log('Filtered Posts: ' . print_r($filtered_posts, true));
+        error_log('Final Query Args: ' . print_r($args, true));
     }
 }
 
 $events = new WP_Query($args);
+error_log('Found Posts: ' . $events->found_posts);
 ?>
 
 <div class="wrap">
