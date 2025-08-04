@@ -2360,6 +2360,202 @@ class University_Management {
     }
 
     /**
+     * تبدیل تاریخ میلادی به شمسی
+     * @param int $g_y سال میلادی
+     * @param int $g_m ماه میلادی
+     * @param int $g_d روز میلادی
+     * @return array تاریخ شمسی (سال، ماه، روز)
+     */
+    private function gregorian_to_jalaali($g_y, $g_m, $g_d) {
+        $g_days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        $j_days_in_month = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+        
+        $gy = $g_y - 1600;
+        $gm = $g_m - 1;
+        $gd = $g_d - 1;
+        
+        $g_day_no = 365 * $gy + intval(($gy + 3) / 4) - intval(($gy + 99) / 100) + intval(($gy + 399) / 400);
+        
+        for ($i = 0; $i < $gm; ++$i)
+            $g_day_no += $g_days_in_month[$i];
+        
+        if ($gm > 1 && (($gy % 4 == 0 && $gy % 100 != 0) || ($gy % 400 == 0)))
+            $g_day_no++;
+        
+        $g_day_no += $gd;
+        
+        $j_day_no = $g_day_no - 79;
+        
+        $j_np = intval($j_day_no / 12053);
+        $j_day_no %= 12053;
+        
+        $jy = 979 + 33 * $j_np + 4 * intval($j_day_no / 1461);
+        
+        $j_day_no %= 1461;
+        
+        if ($j_day_no >= 366) {
+            $jy += intval(($j_day_no - 1) / 365);
+            $j_day_no = ($j_day_no - 1) % 365;
+        }
+        
+        for ($i = 0; $i < 11 && $j_day_no >= $j_days_in_month[$i]; ++$i)
+            $j_day_no -= $j_days_in_month[$i];
+        
+        $jm = $i + 1;
+        $jd = $j_day_no + 1;
+        
+        return ['year' => $jy, 'month' => $jm, 'day' => $jd];
+    }
+
+    /**
+     * تبدیل تاریخ میلادی به هجری قمری
+     * @param int $g_y سال میلادی
+     * @param int $g_m ماه میلادی
+     * @param int $g_d روز میلادی
+     * @return array تاریخ هجری قمری (سال، ماه، روز)
+     */
+    private function gregorian_to_hijri($g_y, $g_m, $g_d) {
+        if (($g_y > 1582) || (($g_y == 1582) && ($g_m > 10)) || (($g_y == 1582) && ($g_m == 10) && ($g_d > 14))) {
+            $jd = intval((1461 * ($g_y + 4800 + intval(($g_m - 14) / 12))) / 4) + intval((367 * ($g_m - 2 - 12 * intval(($g_m - 14) / 12))) / 12) - intval((3 * intval(($g_y + 4900 + intval(($g_m - 14) / 12)) / 100)) / 4) + $g_d - 32075;
+        } else {
+            $jd = 367 * $g_y - intval((7 * ($g_y + 5001 + intval(($g_m - 9) / 7))) / 4) + intval((275 * $g_m) / 9) + $g_d + 1729777;
+        }
+        
+        $l = $jd + 68569;
+        $n = intval((4 * $l) / 146097);
+        $l = $l - intval((146097 * $n + 3) / 4);
+        $i = intval((4000 * ($l + 1)) / 1461001);
+        $l = $l - intval((1461 * $i) / 4) + 31;
+        $j = intval((80 * $l) / 2447);
+        $k = $l - intval((2447 * $j) / 80);
+        $l = intval($j / 11);
+        $j = $j + 2 - 12 * $l;
+        $i = 100 * ($n - 49) + $i + $l;
+        
+        $h_y = $i;
+        $h_m = $j;
+        $h_d = $k;
+        
+        return ['year' => $h_y, 'month' => $h_m, 'day' => $h_d];
+    }
+
+    /**
+     * دریافت نام ماه شمسی
+     * @param int $month شماره ماه
+     * @return string نام ماه
+     */
+    private function get_jalaali_month_name($month) {
+        $months = [
+            1 => 'فروردین',
+            2 => 'اردیبهشت',
+            3 => 'خرداد',
+            4 => 'تیر',
+            5 => 'مرداد',
+            6 => 'شهریور',
+            7 => 'مهر',
+            8 => 'آبان',
+            9 => 'آذر',
+            10 => 'دی',
+            11 => 'بهمن',
+            12 => 'اسفند',
+        ];
+        
+        return isset($months[$month]) ? $months[$month] : '';
+    }
+
+    /**
+     * دریافت نام ماه میلادی
+     * @param int $month شماره ماه
+     * @return string نام ماه
+     */
+    private function get_gregorian_month_name($month) {
+        $months = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
+        
+        return isset($months[$month]) ? $months[$month] : '';
+    }
+
+    /**
+     * دریافت نام ماه هجری قمری
+     * @param int $month شماره ماه
+     * @return string نام ماه
+     */
+    private function get_hijri_month_name($month) {
+        $months = [
+            1 => 'محرم',
+            2 => 'صفر',
+            3 => 'ربیع‌الاول',
+            4 => 'ربیع‌الثانی',
+            5 => 'جمادی‌الاول',
+            6 => 'جمادی‌الثانی',
+            7 => 'رجب',
+            8 => 'شعبان',
+            9 => 'رمضان',
+            10 => 'شوال',
+            11 => 'ذی‌القعده',
+            12 => 'ذی‌الحجه',
+        ];
+        
+        return isset($months[$month]) ? $months[$month] : '';
+    }
+
+    /**
+     * تبدیل تاریخ بر اساس زبان فعلی
+     * @param string $date تاریخ میلادی
+     * @param string $format فرمت خروجی
+     * @return string تاریخ تبدیل شده
+     */
+    private function convert_date_by_language($date, $format = 'Y-m-d') {
+        $timestamp = strtotime($date);
+        $year = date('Y', $timestamp);
+        $month = date('m', $timestamp);
+        $day = date('d', $timestamp);
+        
+        // دریافت زبان فعلی
+        $current_lang = 'fa'; // پیش‌فرض فارسی
+        if (function_exists('pll_current_language')) {
+            $current_lang = pll_current_language();
+        }
+        
+        switch ($current_lang) {
+            case 'fa':
+                // تقویم شمسی برای فارسی
+                $jalaali = $this->gregorian_to_jalaali($year, $month, $day);
+                $month_name = $this->get_jalaali_month_name($jalaali['month']);
+                return $jalaali['day'] . ' ' . $month_name . ' ' . $jalaali['year'];
+                
+            case 'en':
+                // تقویم میلادی برای انگلیسی
+                $month_name = $this->get_gregorian_month_name($month);
+                return $day . ' ' . $month_name . ' ' . $year;
+                
+            case 'ar':
+                // تقویم هجری قمری برای عربی
+                $hijri = $this->gregorian_to_hijri($year, $month, $day);
+                $month_name = $this->get_hijri_month_name($hijri['month']);
+                return $hijri['day'] . ' ' . $month_name . ' ' . $hijri['year'];
+                
+            default:
+                // پیش‌فرض شمسی
+                $jalaali = $this->gregorian_to_jalaali($year, $month, $day);
+                $month_name = $this->get_jalaali_month_name($jalaali['month']);
+                return $jalaali['day'] . ' ' . $month_name . ' ' . $jalaali['year'];
+        }
+    }
+
+    /**
      * حذف اطلاعات وارد شده
      */
     private function delete_imported_news_data() {

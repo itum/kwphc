@@ -409,29 +409,29 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
             }
         }
         
-        // تبدیل رویدادها به فرمت جلالی و مرتب‌سازی
-        $jalaali_events = array();
+        // تبدیل رویدادها بر اساس زبان فعلی و مرتب‌سازی
+        $converted_events = array();
         
         foreach ($events as $event) {
-            $timestamp = strtotime($event['date']);
-            $jalaali_date = $this->gregorian_to_jalaali(date('Y', $timestamp), date('m', $timestamp), date('d', $timestamp));
+            $converted_date = $this->convert_date_by_language($event['date']);
             
-            $jalaali_events[] = array(
-                'day' => $jalaali_date['day'],
-                'month' => $this->get_jalaali_month_name($jalaali_date['month']),
-                'year' => $jalaali_date['year'],
+            $converted_events[] = array(
+                'day' => $converted_date['day'],
+                'month' => $converted_date['month'],
+                'year' => $converted_date['year'],
+                'month_number' => $converted_date['month_number'],
                 'title' => $event['title'],
                 'important' => isset($event['important']) ? $event['important'] : 'no',
             );
         }
         
         // مرتب‌سازی رویدادها بر اساس تاریخ
-        usort($jalaali_events, function($a, $b) {
+        usort($converted_events, function($a, $b) {
             if ($a['year'] != $b['year']) {
                 return $a['year'] - $b['year'];
             }
             
-            $month_diff = $this->get_jalaali_month_number($a['month']) - $this->get_jalaali_month_number($b['month']);
+            $month_diff = $a['month_number'] - $b['month_number'];
             if ($month_diff != 0) {
                 return $month_diff;
             }
@@ -447,8 +447,8 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         <div <?php echo $this->get_render_attribute_string('wrapper'); ?>>
             <?php 
             // رویداد اول را به صورت هایلایت نمایش می‌دهیم
-            if (!empty($jalaali_events)) {
-                $first_event = array_shift($jalaali_events);
+            if (!empty($converted_events)) {
+                $first_event = array_shift($converted_events);
                 ?>
                 <div class="event-cal blue">
                     <div class="icon">
@@ -462,9 +462,9 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                     <div class="label-cal"><?php echo esc_html($first_event['title']); ?></div>
                 </div>
                 
-                <?php if (!empty($jalaali_events)) { ?>
+                <?php if (!empty($converted_events)) { ?>
                     <div class="wrapper-cal">
-                        <?php foreach ($jalaali_events as $event) { ?>
+                        <?php foreach ($converted_events as $event) { ?>
                             <div class="event-cal<?php echo (isset($event['important']) && $event['important'] === 'yes') ? ' blue' : ''; ?>">
                                 <div class="day-cal"><?php echo esc_html($event['day']); ?></div>
                                 <div class="month-year"><?php echo esc_html($event['month'] . ' - ' . $event['year']); ?></div>
@@ -500,6 +500,86 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
             <?php } ?>
         </div>
         <?php
+    }
+
+    /**
+     * تبدیل تاریخ بر اساس زبان فعلی
+     * @param string $date تاریخ میلادی
+     * @return array آرایه شامل روز، ماه، سال و نام ماه
+     */
+    private function convert_date_by_language($date) {
+        $timestamp = strtotime($date);
+        $year = date('Y', $timestamp);
+        $month = date('m', $timestamp);
+        $day = date('d', $timestamp);
+        
+        // دریافت زبان فعلی
+        $current_lang = 'fa'; // پیش‌فرض فارسی
+        if (function_exists('pll_current_language')) {
+            $current_lang = pll_current_language();
+        }
+        
+        switch ($current_lang) {
+            case 'fa':
+                // تقویم شمسی برای فارسی
+                return $this->convert_to_jalaali($year, $month, $day);
+                
+            case 'en':
+                // تقویم میلادی برای انگلیسی
+                return $this->convert_to_gregorian($year, $month, $day);
+                
+            case 'ar':
+                // تقویم هجری قمری برای عربی
+                return $this->convert_to_hijri($year, $month, $day);
+                
+            default:
+                // پیش‌فرض شمسی
+                return $this->convert_to_jalaali($year, $month, $day);
+        }
+    }
+
+    /**
+     * تبدیل به تقویم شمسی
+     */
+    private function convert_to_jalaali($year, $month, $day) {
+        $jalaali = $this->gregorian_to_jalaali($year, $month, $day);
+        $month_name = $this->get_jalaali_month_name($jalaali['month']);
+        
+        return [
+            'day' => $jalaali['day'],
+            'month' => $month_name,
+            'year' => $jalaali['year'],
+            'month_number' => $jalaali['month']
+        ];
+    }
+
+    /**
+     * تبدیل به تقویم میلادی
+     */
+    private function convert_to_gregorian($year, $month, $day) {
+        $month_name = $this->get_gregorian_month_name($month);
+        
+        return [
+            'day' => $day,
+            'month' => $month_name,
+            'year' => $year,
+            'month_number' => $month
+        ];
+    }
+
+    /**
+     * تبدیل به تقویم هجری قمری
+     */
+    private function convert_to_hijri($year, $month, $day) {
+        $hijri = $this->gregorian_to_hijri($year, $month, $day);
+        $month_name = $this->get_hijri_month_name($hijri['month']);
+        
+        return [
+            'day' => $hijri['day'],
+            'month' => $month_name,
+            'year' => $hijri['year'],
+            'month_number' => $hijri['month']
+        ];
     }
 
     /**
@@ -551,24 +631,104 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
     }
 
     /**
-     * تبدیل شماره ماه جلالی به نام
+     * تبدیل تاریخ میلادی به هجری قمری
+     * @param int $g_y سال میلادی
+     * @param int $g_m ماه میلادی
+     * @param int $g_d روز میلادی
+     * @return array تاریخ هجری قمری (سال، ماه، روز)
+     */
+    private function gregorian_to_hijri($g_y, $g_m, $g_d) {
+        if (($g_y > 1582) || (($g_y == 1582) && ($g_m > 10)) || (($g_y == 1582) && ($g_m == 10) && ($g_d > 14))) {
+            $jd = intval((1461 * ($g_y + 4800 + intval(($g_m - 14) / 12))) / 4) + intval((367 * ($g_m - 2 - 12 * intval(($g_m - 14) / 12))) / 12) - intval((3 * intval(($g_y + 4900 + intval(($g_m - 14) / 12)) / 100)) / 4) + $g_d - 32075;
+        } else {
+            $jd = 367 * $g_y - intval((7 * ($g_y + 5001 + intval(($g_m - 9) / 7))) / 4) + intval((275 * $g_m) / 9) + $g_d + 1729777;
+        }
+        
+        $l = $jd + 68569;
+        $n = intval((4 * $l) / 146097);
+        $l = $l - intval((146097 * $n + 3) / 4);
+        $i = intval((4000 * ($l + 1)) / 1461001);
+        $l = $l - intval((1461 * $i) / 4) + 31;
+        $j = intval((80 * $l) / 2447);
+        $k = $l - intval((2447 * $j) / 80);
+        $l = intval($j / 11);
+        $j = $j + 2 - 12 * $l;
+        $i = 100 * ($n - 49) + $i + $l;
+        
+        $h_y = $i;
+        $h_m = $j;
+        $h_d = $k;
+        
+        return ['year' => $h_y, 'month' => $h_m, 'day' => $h_d];
+    }
+
+    /**
+     * دریافت نام ماه شمسی
      * @param int $month شماره ماه
      * @return string نام ماه
      */
     private function get_jalaali_month_name($month) {
         $months = [
-            1 => 'فروردین',
-            2 => 'اردیبهشت',
-            3 => 'خرداد',
-            4 => 'تیر',
-            5 => 'مرداد',
-            6 => 'شهریور',
-            7 => 'مهر',
-            8 => 'آبان',
-            9 => 'آذر',
-            10 => 'دی',
-            11 => 'بهمن',
-            12 => 'اسفند',
+            1 => um_translate('فروردین', 'فروردین'),
+            2 => um_translate('اردیبهشت', 'اردیبهشت'),
+            3 => um_translate('خرداد', 'خرداد'),
+            4 => um_translate('تیر', 'تیر'),
+            5 => um_translate('مرداد', 'مرداد'),
+            6 => um_translate('شهریور', 'شهریور'),
+            7 => um_translate('مهر', 'مهر'),
+            8 => um_translate('آبان', 'آبان'),
+            9 => um_translate('آذر', 'آذر'),
+            10 => um_translate('دی', 'دی'),
+            11 => um_translate('بهمن', 'بهمن'),
+            12 => um_translate('اسفند', 'اسفند'),
+        ];
+        
+        return isset($months[$month]) ? $months[$month] : '';
+    }
+
+    /**
+     * دریافت نام ماه میلادی
+     * @param int $month شماره ماه
+     * @return string نام ماه
+     */
+    private function get_gregorian_month_name($month) {
+        $months = [
+            1 => um_translate('January', 'January'),
+            2 => um_translate('February', 'February'),
+            3 => um_translate('March', 'March'),
+            4 => um_translate('April', 'April'),
+            5 => um_translate('May', 'May'),
+            6 => um_translate('June', 'June'),
+            7 => um_translate('July', 'July'),
+            8 => um_translate('August', 'August'),
+            9 => um_translate('September', 'September'),
+            10 => um_translate('October', 'October'),
+            11 => um_translate('November', 'November'),
+            12 => um_translate('December', 'December'),
+        ];
+        
+        return isset($months[$month]) ? $months[$month] : '';
+    }
+
+    /**
+     * دریافت نام ماه هجری قمری
+     * @param int $month شماره ماه
+     * @return string نام ماه
+     */
+    private function get_hijri_month_name($month) {
+        $months = [
+            1 => um_translate('محرم', 'محرم'),
+            2 => um_translate('صفر', 'صفر'),
+            3 => um_translate('ربیع‌الاول', 'ربیع‌الاول'),
+            4 => um_translate('ربیع‌الثانی', 'ربیع‌الثانی'),
+            5 => um_translate('جمادی‌الاول', 'جمادی‌الاول'),
+            6 => um_translate('جمادی‌الثانی', 'جمادی‌الثانی'),
+            7 => um_translate('رجب', 'رجب'),
+            8 => um_translate('شعبان', 'شعبان'),
+            9 => um_translate('رمضان', 'رمضان'),
+            10 => um_translate('شوال', 'شوال'),
+            11 => um_translate('ذی‌القعده', 'ذی‌القعده'),
+            12 => um_translate('ذی‌الحجه', 'ذی‌الحجه'),
         ];
         
         return isset($months[$month]) ? $months[$month] : '';

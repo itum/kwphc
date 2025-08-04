@@ -106,6 +106,48 @@ class UM_Polylang_Integration {
         pll_register_string('um_calendar_widget_start_classes', 'شروع کلاس‌ها', 'University Management');
         pll_register_string('um_calendar_widget_project_presentation', 'ارائه پروژه', 'University Management');
         pll_register_string('um_calendar_widget_midterm_exam', 'میان‌ترم', 'University Management');
+        
+        // رشته‌های نام ماه‌های شمسی
+        pll_register_string('um_calendar_month_farvardin', 'فروردین', 'University Management');
+        pll_register_string('um_calendar_month_ordibehesht', 'اردیبهشت', 'University Management');
+        pll_register_string('um_calendar_month_khordad', 'خرداد', 'University Management');
+        pll_register_string('um_calendar_month_tir', 'تیر', 'University Management');
+        pll_register_string('um_calendar_month_mordad', 'مرداد', 'University Management');
+        pll_register_string('um_calendar_month_shahrivar', 'شهریور', 'University Management');
+        pll_register_string('um_calendar_month_mehr', 'مهر', 'University Management');
+        pll_register_string('um_calendar_month_aban', 'آبان', 'University Management');
+        pll_register_string('um_calendar_month_azar', 'آذر', 'University Management');
+        pll_register_string('um_calendar_month_dey', 'دی', 'University Management');
+        pll_register_string('um_calendar_month_bahman', 'بهمن', 'University Management');
+        pll_register_string('um_calendar_month_esfand', 'اسفند', 'University Management');
+        
+        // رشته‌های نام ماه‌های میلادی
+        pll_register_string('um_calendar_month_january', 'January', 'University Management');
+        pll_register_string('um_calendar_month_february', 'February', 'University Management');
+        pll_register_string('um_calendar_month_march', 'March', 'University Management');
+        pll_register_string('um_calendar_month_april', 'April', 'University Management');
+        pll_register_string('um_calendar_month_may', 'May', 'University Management');
+        pll_register_string('um_calendar_month_june', 'June', 'University Management');
+        pll_register_string('um_calendar_month_july', 'July', 'University Management');
+        pll_register_string('um_calendar_month_august', 'August', 'University Management');
+        pll_register_string('um_calendar_month_september', 'September', 'University Management');
+        pll_register_string('um_calendar_month_october', 'October', 'University Management');
+        pll_register_string('um_calendar_month_november', 'November', 'University Management');
+        pll_register_string('um_calendar_month_december', 'December', 'University Management');
+        
+        // رشته‌های نام ماه‌های هجری قمری
+        pll_register_string('um_calendar_month_muharram', 'محرم', 'University Management');
+        pll_register_string('um_calendar_month_safar', 'صفر', 'University Management');
+        pll_register_string('um_calendar_month_rabi_al_awwal', 'ربیع‌الاول', 'University Management');
+        pll_register_string('um_calendar_month_rabi_al_thani', 'ربیع‌الثانی', 'University Management');
+        pll_register_string('um_calendar_month_jumada_al_awwal', 'جمادی‌الاول', 'University Management');
+        pll_register_string('um_calendar_month_jumada_al_thani', 'جمادی‌الثانی', 'University Management');
+        pll_register_string('um_calendar_month_rajab', 'رجب', 'University Management');
+        pll_register_string('um_calendar_month_shaaban', 'شعبان', 'University Management');
+        pll_register_string('um_calendar_month_ramadan', 'رمضان', 'University Management');
+        pll_register_string('um_calendar_month_shawwal', 'شوال', 'University Management');
+        pll_register_string('um_calendar_month_dhu_al_qaadah', 'ذی‌القعده', 'University Management');
+        pll_register_string('um_calendar_month_dhu_al_hijjah', 'ذی‌الحجه', 'University Management');
     }
 
     /**
