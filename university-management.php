@@ -4967,8 +4967,12 @@ class University_Management {
      * @return array
      */
     public function get_videos_by_language($lang = null, $limit = 10) {
+        error_log('=== GET VIDEOS BY LANGUAGE DEBUG ===');
+        error_log('Requested Language: ' . $lang);
+        
         if (!$lang && function_exists('pll_current_language')) {
             $lang = pll_current_language();
+            error_log('Current Language from Polylang: ' . $lang);
         }
         
         $args = array(
@@ -4981,30 +4985,53 @@ class University_Management {
         
         if ($lang) {
             $args['lang'] = $lang;
+            error_log('Added language filter: ' . $lang);
+        } else {
+            error_log('No language filter applied');
         }
         
+        error_log('Query Args: ' . print_r($args, true));
+        
         $query = new WP_Query($args);
+        error_log('Query Found Posts: ' . $query->found_posts);
+        error_log('Query Post Count: ' . $query->post_count);
+        
         $videos = array();
         
         if ($query->have_posts()) {
+            error_log('Processing posts...');
             while ($query->have_posts()) {
                 $query->the_post();
                 $post_id = get_the_ID();
+                $post_title = get_the_title();
+                
+                error_log('Processing Post ID: ' . $post_id . ', Title: ' . $post_title);
                 
                 $video_url = get_post_meta($post_id, '_um_video_link', true);
+                error_log('Video URL: ' . $video_url);
+                
                 if ($video_url) {
                     $videos[] = array(
                         'id' => $post_id,
-                        'title' => get_the_title(),
-                        'url' => $video_url,
-                        'thumbnail' => get_the_post_thumbnail_url($post_id, 'medium'),
+                        'title' => $post_title,
+                        'src' => $video_url,
+                        'thumbnail' => get_the_post_thumbnail_url($post_id, 'medium') ?: UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg',
                         'category' => wp_get_post_terms($post_id, 'um_video_category', array('fields' => 'names')),
                         'lang' => $lang
                     );
+                    error_log('Added video: ' . $post_title);
+                } else {
+                    error_log('Skipped video (no URL): ' . $post_title);
                 }
             }
             wp_reset_postdata();
+        } else {
+            error_log('No posts found for language: ' . $lang);
         }
+        
+        error_log('Final Videos Count: ' . count($videos));
+        error_log('Final Videos: ' . print_r($videos, true));
+        error_log('=== END GET VIDEOS BY LANGUAGE DEBUG ===');
         
         return $videos;
     }

@@ -454,7 +454,51 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                 }
                 wp_reset_postdata();
             } else {
-                error_log('Video Widget: No posts found in query');
+                error_log('Video Widget: No posts found in query, trying without language filter');
+                
+                // اگر ویدیویی در زبان فعلی یافت نشد، همه ویدیوها را بگیر
+                $fallback_args = [
+                    'post_type' => 'um_videos',
+                    'posts_per_page' => $settings['videos_count'],
+                    'post_status' => 'publish',
+                ];
+                
+                $fallback_query = new \WP_Query($fallback_args);
+                error_log('Fallback Query Found Posts: ' . $fallback_query->found_posts);
+                
+                if ($fallback_query->have_posts()) {
+                    error_log('Video Widget: Found posts in fallback query, processing...');
+                    while ($fallback_query->have_posts()) {
+                        $fallback_query->the_post();
+                        $post_id = get_the_ID();
+                        $post_title = get_the_title();
+                        
+                        error_log('Processing Fallback Video Post ID: ' . $post_id . ', Title: ' . $post_title);
+                        
+                        $thumbnail_url = get_the_post_thumbnail_url($post_id, 'medium');
+                        if (!$thumbnail_url) {
+                            $thumbnail_url = UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg';
+                        }
+                        
+                        $video_url = get_post_meta($post_id, '_um_video_link', true);
+                        
+                        $terms = get_the_terms($post_id, 'um_video_category');
+                        $category = !empty($terms) ? $terms[0]->name : um_translate('عمومی', __('عمومی', 'university-management'));
+
+                        if ($video_url) {
+                            $videos[] = [
+                                'title' => $post_title,
+                                'src' => $video_url,
+                                'thumbnail' => $thumbnail_url,
+                                'category' => $category,
+                            ];
+                            error_log('Added fallback video to array: ' . $post_title);
+                        }
+                    }
+                    wp_reset_postdata();
+                } else {
+                    error_log('Video Widget: No posts found in fallback query either');
+                }
             }
         } else {
             error_log('Video Widget: Using manual videos');
