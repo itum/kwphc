@@ -15,6 +15,7 @@ if (isset($_POST['um_add_event_nonce']) && wp_verify_nonce($_POST['um_add_event_
     $event_date = sanitize_text_field($_POST['event_date']);
     $event_description = wp_kses_post($_POST['event_description']);
     $is_important = isset($_POST['is_important']) ? 'yes' : '';
+    $event_language = isset($_POST['event_language']) ? sanitize_text_field($_POST['event_language']) : '';
     
     // بررسی داده‌های الزامی
     if (!empty($event_title) && !empty($event_date)) {
@@ -32,6 +33,11 @@ if (isset($_POST['um_add_event_nonce']) && wp_verify_nonce($_POST['um_add_event_
             // ذخیره متادیتا
             update_post_meta($post_id, '_event_date', $event_date);
             update_post_meta($post_id, '_is_important', $is_important);
+            
+            // تنظیم زبان برای Polylang
+            if (!empty($event_language) && function_exists('pll_set_post_language')) {
+                pll_set_post_language($post_id, $event_language);
+            }
             
             // نمایش پیام موفقیت
             add_settings_error('um_calendar', 'um_event_added', __('رویداد با موفقیت اضافه شد.', 'university-management'), 'success');
@@ -56,6 +62,14 @@ $args = array(
     'meta_key'       => '_event_date',
     'order'          => 'ASC',
 );
+
+// فیلتر بر اساس زبان (اگر Polylang فعال باشد)
+if (function_exists('pll_current_language') && isset($_GET['lang_filter'])) {
+    $current_lang = sanitize_text_field($_GET['lang_filter']);
+    if (!empty($current_lang)) {
+        $args['lang'] = $current_lang;
+    }
+}
 
 $events = new WP_Query($args);
 ?>
@@ -93,6 +107,22 @@ $events = new WP_Query($args);
                     </label>
                 </div>
                 
+                <?php if (function_exists('pll_the_languages')) : ?>
+                <div class="um-form-row" style="margin-bottom: 15px;">
+                    <label for="event_language" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('زبان رویداد', 'university-management'); ?></label>
+                    <select id="event_language" name="event_language" class="regular-text" style="width: 100%;">
+                        <option value=""><?php _e('انتخاب زبان', 'university-management'); ?></option>
+                        <?php
+                        $languages = pll_the_languages(array('raw' => 1));
+                        foreach ($languages as $lang) {
+                            $selected = ($lang['current_lang'] ? 'selected' : '');
+                            echo '<option value="' . esc_attr($lang['slug']) . '" ' . $selected . '>' . esc_html($lang['name']) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                
                 <div class="um-form-row">
                     <input type="submit" class="button button-primary" value="<?php _e('افزودن رویداد', 'university-management'); ?>">
                 </div>
@@ -103,6 +133,26 @@ $events = new WP_Query($args);
         <div class="um-admin-list" style="background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: calc(60% - 20px); min-width: 300px; padding: 20px; box-sizing: border-box;">
             <h2><?php _e('رویدادهای موجود', 'university-management'); ?></h2>
             
+            <?php if (function_exists('pll_the_languages')) : ?>
+            <div class="um-language-filter" style="margin-bottom: 20px;">
+                <form method="get" action="">
+                    <input type="hidden" name="page" value="university-calendar">
+                    <label for="lang_filter" style="font-weight: bold; margin-right: 10px;"><?php _e('فیلتر بر اساس زبان:', 'university-management'); ?></label>
+                    <select id="lang_filter" name="lang_filter" onchange="this.form.submit()">
+                        <option value=""><?php _e('همه زبان‌ها', 'university-management'); ?></option>
+                        <?php
+                        $languages = pll_the_languages(array('raw' => 1));
+                        $current_filter = isset($_GET['lang_filter']) ? $_GET['lang_filter'] : '';
+                        foreach ($languages as $lang) {
+                            $selected = ($current_filter === $lang['slug']) ? 'selected' : '';
+                            echo '<option value="' . esc_attr($lang['slug']) . '" ' . $selected . '>' . esc_html($lang['name']) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </form>
+            </div>
+            <?php endif; ?>
+            
             <?php if ($events->have_posts()) : ?>
                 <table class="wp-list-table widefat fixed striped" style="width: 100%;">
                     <thead>
@@ -110,6 +160,9 @@ $events = new WP_Query($args);
                             <th><?php _e('عنوان', 'university-management'); ?></th>
                             <th><?php _e('تاریخ', 'university-management'); ?></th>
                             <th><?php _e('رویداد مهم', 'university-management'); ?></th>
+                            <?php if (function_exists('pll_get_post_language')) : ?>
+                            <th><?php _e('زبان', 'university-management'); ?></th>
+                            <?php endif; ?>
                             <th><?php _e('عملیات', 'university-management'); ?></th>
                         </tr>
                     </thead>
@@ -120,11 +173,24 @@ $events = new WP_Query($args);
                             
                             // تبدیل تاریخ به فرمت مناسب نمایش
                             $date_display = date_i18n(get_option('date_format'), strtotime($event_date));
+                            
+                            // دریافت زبان رویداد
+                            $event_language = '';
+                            if (function_exists('pll_get_post_language')) {
+                                $lang_slug = pll_get_post_language(get_the_ID());
+                                if ($lang_slug) {
+                                    $languages = pll_the_languages(array('raw' => 1));
+                                    $event_language = isset($languages[$lang_slug]) ? $languages[$lang_slug]['name'] : $lang_slug;
+                                }
+                            }
                         ?>
                             <tr>
                                 <td><?php the_title(); ?></td>
                                 <td><?php echo esc_html($date_display); ?></td>
                                 <td><?php echo $is_important === 'yes' ? __('بله', 'university-management') : __('خیر', 'university-management'); ?></td>
+                                <?php if (function_exists('pll_get_post_language')) : ?>
+                                <td><?php echo esc_html($event_language); ?></td>
+                                <?php endif; ?>
                                 <td>
                                     <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="button button-small"><?php _e('ویرایش', 'university-management'); ?></a>
                                     <a href="<?php echo get_delete_post_link(get_the_ID()); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این رویداد اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
