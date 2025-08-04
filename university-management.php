@@ -1037,32 +1037,6 @@ class University_Management {
      * ثبت پست‌تایپ‌ها
      */
     public function register_post_types() {
-        // ثبت پست تایپ تقویم دانشگاه
-        register_post_type('um_calendar_events', array(
-            'labels' => array(
-                'name'               => __('رویدادهای تقویم', 'university-management'),
-                'singular_name'      => __('رویداد تقویم', 'university-management'),
-                'add_new'            => __('افزودن رویداد جدید', 'university-management'),
-                'add_new_item'       => __('افزودن رویداد جدید', 'university-management'),
-                'edit_item'          => __('ویرایش رویداد', 'university-management'),
-                'new_item'           => __('رویداد جدید', 'university-management'),
-                'view_item'          => __('مشاهده رویداد', 'university-management'),
-                'search_items'       => __('جستجوی رویدادها', 'university-management'),
-                'not_found'          => __('رویدادی یافت نشد', 'university-management'),
-                'not_found_in_trash' => __('رویدادی در سطل زباله یافت نشد', 'university-management'),
-            ),
-            'public'              => true,
-            'has_archive'         => true,
-            'publicly_queryable'  => true,
-            'show_ui'             => true,
-            'show_in_menu'        => 'university-management',
-            'capability_type'     => 'post',
-            'hierarchical'        => false,
-            'supports'            => array('title', 'editor', 'thumbnail', 'custom-fields'),
-            'menu_icon'           => 'dashicons-calendar-alt',
-            'show_in_rest'        => true,
-        ));
-
         // ثبت پست تایپ کلاس‌ها
         register_post_type('um_classes', array(
             'labels' => array(
