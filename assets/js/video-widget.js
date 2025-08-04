@@ -1,14 +1,21 @@
 /* اسکریپت ویجت ویدیو */
 
 jQuery(document).ready(function($) {
+    console.log('=== VIDEO WIDGET JS DEBUG START ===');
+    
     // Find all video widget instances on the page
     $('.videoApp-container').each(function() {
         const container = $(this);
         const videos_json = container.attr('data-videos');
         const categories_json = container.attr('data-categories');
 
+        console.log('Video Widget Container Found:', container);
+        console.log('Videos JSON from data attribute:', videos_json);
+        console.log('Categories JSON from data attribute:', categories_json);
+
         // If there's no data, do nothing for this instance
         if (!videos_json) {
+            console.log('No videos JSON data found');
             container.html('<p style="padding: 10px; text-align: center;">داده‌های ویدیو یافت نشد.</p>');
             return;
         }
@@ -16,7 +23,10 @@ jQuery(document).ready(function($) {
         let videos = [];
         try {
             videos = JSON.parse(videos_json);
+            console.log('Successfully parsed videos JSON:', videos);
+            console.log('Number of videos:', videos.length);
         } catch (e) {
+            console.error('Error parsing videos JSON:', e);
             container.html('<p style="padding: 10px; text-align: center;">خطا در پردازش داده‌های ویدیو.</p>');
             return;
         }
@@ -40,9 +50,12 @@ jQuery(document).ready(function($) {
                 
         // If no videos are available, display a message and hide the player
         if (!videos || videos.length === 0) {
+            console.log('No videos available, showing empty message');
             container.find('.videoApp-wrapper').html('<p style="padding: 10px; text-align: center;">ویدیویی برای نمایش وجود ندارد.</p>');
             return;
         }
+        
+        console.log('Videos available, proceeding with rendering');
 
         const category_names = Object.values(all_categories);
 
