@@ -327,6 +327,59 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 'order' => 'ASC',
             );
             
+            // فیلتر بر اساس زبان فعلی (اگر Polylang فعال باشد)
+            if (function_exists('pll_current_language')) {
+                $current_lang = pll_current_language();
+                error_log('=== CALENDAR WIDGET LANGUAGE DEBUG ===');
+                error_log('Current Language: ' . $current_lang);
+                
+                if ($current_lang) {
+                    // ابتدا همه پست‌ها را دریافت کن
+                    $all_events = new WP_Query(array(
+                        'post_type' => 'um_calendar_events',
+                        'posts_per_page' => -1,
+                        'orderby' => 'meta_value',
+                        'meta_key' => '_event_date',
+                        'order' => 'ASC',
+                    ));
+                    
+                    // فیلتر بر اساس زبان
+                    $filtered_posts = array();
+                    if ($all_events->have_posts()) {
+                        while ($all_events->have_posts()) {
+                            $all_events->the_post();
+                            $post_lang = pll_get_post_language(get_the_ID());
+                            
+                            if ($post_lang === $current_lang) {
+                                $filtered_posts[] = get_the_ID();
+                            }
+                        }
+                        wp_reset_postdata();
+                    }
+                    
+                    // کوئری جدید با پست‌های فیلتر شده
+                    if (!empty($filtered_posts)) {
+                        $args = array(
+                            'post_type' => 'um_calendar_events',
+                            'posts_per_page' => $settings['events_count'],
+                            'orderby' => 'meta_value',
+                            'meta_key' => '_event_date',
+                            'order' => 'ASC',
+                            'post__in' => $filtered_posts,
+                        );
+                        error_log('Filtered Posts Found: ' . count($filtered_posts));
+                    } else {
+                        // اگر هیچ پستی با زبان فعلی نباشد، کوئری خالی
+                        $args = array(
+                            'post_type' => 'um_calendar_events',
+                            'posts_per_page' => $settings['events_count'],
+                            'post__in' => array(0), // هیچ پستی
+                        );
+                        error_log('No posts found for current language');
+                    }
+                }
+            }
+            
             $query = new \WP_Query($args);
             
             if ($query->have_posts()) {
