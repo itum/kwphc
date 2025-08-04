@@ -276,14 +276,15 @@ function initializeClassTimer(classData) {
                 const intervalFunction = () => {
                     const nowTime = moment();
                     const diff = startTime.diff(nowTime);
-                    if (!el()) return;
+                    const element = el();
+                    if (!element) return;
                     if (diff > 0) {
                         const duration = moment.duration(diff);
                         const hours = String(duration.hours()).padStart(2, '0');
                         const minutes = String(duration.minutes()).padStart(2, '0');
                         const seconds = String(duration.seconds()).padStart(2, '0');
 
-                        el().innerHTML = `
+                        element.innerHTML = `
                             <div class='timer-wrapper'>
                                 ${wrapDigit(hours)} : ${wrapDigit(minutes)} : ${wrapDigit(seconds)}<br> 
                             </div>
@@ -291,7 +292,7 @@ function initializeClassTimer(classData) {
                         `;
                     } else {
                         clearInterval(intervalId);
-                        el().outerHTML = getButtonHTML(cls.link);
+                        element.outerHTML = getButtonHTML(cls.link);
                     }
                 };
                 intervalFunction();
