@@ -339,23 +339,23 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         // تعیین منبع کلاس‌ها
         $classes = array();
         
-        // لاگ تنظیمات برای دیباگ
-        error_log('Widget Settings: ' . print_r($settings, true));
-        
         if ($settings['class_source'] === 'auto') {
             // دریافت کلاس‌ها از پست‌تایپ
             $args = array(
                 'post_type' => 'um_classes',
-                'posts_per_page' => $settings['classes_count'], // استفاده از تعداد تنظیم شده
+                'posts_per_page' => $settings['classes_count'],
                 'orderby' => 'meta_value',
                 'meta_key' => '_class_date',
                 'order' => 'ASC',
+                'post_status' => 'publish',
             );
             
             $query = new \WP_Query($args);
             
-            // لاگ تعداد کل کلاس‌ها
-            error_log('Total Classes Found (Auto): ' . $query->found_posts);
+            // دیباگ برای بررسی پست‌ها
+            error_log('Class Timer Widget Debug:');
+            error_log('Found posts: ' . $query->found_posts);
+            error_log('Post type exists: ' . (post_type_exists('um_classes') ? 'Yes' : 'No'));
             
             if ($query->have_posts()) {
                 while ($query->have_posts()) {
@@ -365,250 +365,186 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                     $class_duration = get_post_meta(get_the_ID(), '_class_duration', true);
                     $class_teacher = get_post_meta(get_the_ID(), '_class_teacher', true);
                     
-                    // اضافه کردن چاپ اطلاعات برای دیباگ
-                    error_log('Auto Class Details: ' . 
-                        'ID: ' . get_the_ID() . 
-                        ', Title: ' . get_the_title() . 
-                        ', Date: ' . $class_date . 
-                        ', Duration: ' . $class_duration . 
-                        ', Teacher: ' . $class_teacher
-                    );
+                    error_log('Class found - ID: ' . get_the_ID() . ', Title: ' . get_the_title() . ', Date: ' . $class_date);
                     
-                    // تبدیل تاریخ به فرمت استاندارد اگر نیاز باشد
+                    // تبدیل تاریخ به فرمت استاندارد
                     $formatted_date = date('Y-m-d H:i:s', strtotime($class_date));
                     
                     $classes[] = array(
                         'name' => get_the_title(),
-                        'date' => $formatted_date, // استفاده از تاریخ فرمت‌بندی شده
-                        'duration' => intval($class_duration), // تبدیل به عدد صحیح
+                        'date' => $formatted_date,
+                        'duration' => intval($class_duration),
                         'teacher' => $class_teacher,
-                        'image' => get_the_post_thumbnail_url(get_the_ID(), 'medium') ?: \Elementor\Utils::get_placeholder_image_src(),
+                        'image' => get_the_post_thumbnail_url(get_the_ID(), 'medium') ?: plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
                     );
                 }
                 
                 wp_reset_postdata();
             } else {
-                // اضافه کردن چاپ پیغام برای دیباگ
-                error_log('No classes found in the auto query');
+                error_log('No classes found in query');
             }
         } else {
             // استفاده از کلاس‌های دستی
-            error_log('Manual Classes Count: ' . count($settings['manual_classes']));
-            
-            foreach ($settings['manual_classes'] as $index => $class) {
-                error_log('Manual Class ' . $index . ' Details: ' . print_r($class, true));
-                
+            foreach ($settings['manual_classes'] as $class) {
                 $classes[] = array(
                     'name' => $class['class_name'],
                     'date' => $class['class_date'],
                     'duration' => intval($class['class_duration']),
                     'teacher' => $class['class_teacher'],
-                    'image' => $class['class_image']['url'] ?: \Elementor\Utils::get_placeholder_image_src(),
+                    'image' => $class['class_image']['url'] ?: plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
                 );
             }
         }
         
-        // لاگ نهایی کلاس‌ها
-        error_log('Final Classes Array: ' . print_r($classes, true));
-        error_log('Classes Count: ' . count($classes));
-        
-        // بررسی اینکه آیا کلاس‌ها وجود دارند
-        if (empty($classes)) {
-            error_log('WARNING: No classes found to render');
+        // تبدیل کلاس‌ها به فرمت مورد نیاز برای JavaScript
+        $classData = array();
+        foreach ($classes as $class) {
+            $date = date('Y-m-d', strtotime($class['date']));
+            $start_time = date('H:i', strtotime($class['date']));
+            $end_time = date('H:i', strtotime($class['date'] . ' + ' . $class['duration'] . ' minutes'));
+            
+            if (!isset($classData[$date])) {
+                $classData[$date] = array();
+            }
+            
+            $classData[$date][] = array(
+                'name' => $class['name'],
+                'teacher' => $class['teacher'],
+                'time' => $start_time . ' - ' . $end_time,
+                'image' => $class['image'],
+                'link' => '#',
+            );
         }
         
-        // اضافه کردن لاگ برای تشخیص مشکل
-        error_log('Current Date (Server): ' . date('Y-m-d H:i:s'));
-        error_log('Current Date (Moment.js): ' . date('Y-m-d'));
+        error_log('Final classData: ' . print_r($classData, true));
+        
+        // اگر هیچ کلاسی وجود ندارد، داده‌های نمونه اضافه کن
+        if (empty($classData)) {
+            $classData = array(
+                "2025-04-28" => array(
+                    array(
+                        'name' => "ریاضی پایه",
+                        'teacher' => "خانم احمدی",
+                        'time' => "10:00 - 11:00",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    ),
+                    array(
+                        'name' => "علوم تجربی",
+                        'teacher' => "آقای کریمی",
+                        'time' => "13:00 - 14:00",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    ),
+                    array(
+                        'name' => "ادبیات فارسی",
+                        'teacher' => "خانم حسینی",
+                        'time' => "15:00 - 16:00",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    )
+                ),
+                "2025-04-29" => array(
+                    array(
+                        'name' => "زبان انگلیسی",
+                        'teacher' => "آقای عباسی",
+                        'time' => "09:00 - 10:00",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    ),
+                    array(
+                        'name' => "فیزیک",
+                        'teacher' => "خانم مرادی",
+                        'time' => "11:00 - 12:00",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    )
+                ),
+                "2025-04-30" => array(
+                    array(
+                        'name' => "کامپیوتر مقدماتی",
+                        'teacher' => "آقای رضایی",
+                        'time' => "14:00 - 15:30",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    ),
+                    array(
+                        'name' => "زبان انگلیسی",
+                        'teacher' => "آقای عباسی",
+                        'time' => "16:00 - 17:00",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    )
+                ),
+                "2025-05-01" => array(
+                    array(
+                        'name' => "کامپیوتر مقدماتی",
+                        'teacher' => "آقای رضایی",
+                        'time' => "14:00 - 15:30",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    ),
+                    array(
+                        'name' => "زبان انگلیسی",
+                        'teacher' => "آقای عباسی",
+                        'time' => "12:30 - 13:30",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    )
+                ),
+                "2025-06-11" => array(
+                    array(
+                        'name' => "کامپیوتر مقدماتی",
+                        'teacher' => "آقای رضایی",
+                        'time' => "14:00 - 15:30",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    ),
+                    array(
+                        'name' => "زبان انگلیسی",
+                        'teacher' => "آقای عباسی",
+                        'time' => "12:30 - 13:30",
+                        'image' => plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'link' => "#"
+                    )
+                )
+            );
+        }
         
         // ایجاد کلاس‌های استایل
         $this->add_render_attribute('wrapper', 'class', 'calendar-container');
         
         // رندر HTML
         ?>
-        <script>
-            // لاگ کنسول برای بررسی دقیق کلاس‌ها
-            console.log('PHP Classes Count:', <?php echo count($classes); ?>);
-            console.log('PHP Classes:', <?php echo json_encode($classes); ?>);
-            
-            // تعریف داده‌های کلاس‌ها به صورت جهانی
-            window.classesData = <?php echo json_encode($classes); ?>;
-            
-            // لاگ کنسول برای تأیید انتقال داده‌ها
-            console.log('Window Classes Data:', window.classesData);
-        </script>
         <div <?php echo $this->get_render_attribute_string('wrapper'); ?>>
-            <div class="today-text">
-                <span id="currentDate"></span>
-                <div class="timer-wrapper">
-                    <span class="digit-box" id="hours">00</span>:
-                    <span class="digit-box" id="minutes">00</span>:
-                    <span class="digit-box" id="seconds">00</span>
-                </div>
+            <div class="calendar-details">
+                <div class="today-text" id="goToToday"></div>
+                <div id="liveClassInfo" style="font-size: 14px; color: #555;">دوره در حال برگزاری: 0 / 0</div>
             </div>
-            
             <div class="calendar-header">
                 <button id="prevWeek">
-                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 13L1 7L7 1" stroke="#212179" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14.43 18.8201C14.24 18.8201 14.05 18.7501 13.9 18.6001C13.61 18.3101 13.61 17.8301 13.9 17.5401L19.44 12.0001L13.9 6.46012C13.61 6.17012 13.61 5.69012 13.9 5.40012C14.19 5.11012 14.67 5.11012 14.96 5.40012L21.03 11.4701C21.32 11.7601 21.32 12.2401 21.03 12.5301L14.96 18.6001C14.81 18.7501 14.62 18.8201 14.43 18.8201Z" fill="#212179"/>
+                        <path d="M20.33 12.75H3.5C3.09 12.75 2.75 12.41 2.75 12C2.75 11.59 3.09 11.25 3.5 11.25H20.33C20.74 11.25 21.08 11.59 21.08 12C21.08 12.41 20.74 12.75 20.33 12.75Z" fill="#212179"/>
                     </svg>
                 </button>
-                
-                <div class="week-days" id="weekDays">
-                    <!-- روزهای هفته اینجا نمایش داده می‌شوند -->
-                </div>
-                
+                <div class="week-days" id="weekDays"></div>
                 <button id="nextWeek">
-                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 1L7 7L1 13" stroke="#212179" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.57 18.8201C9.76 18.8201 9.95 18.7501 10.1 18.6001C10.39 18.3101 10.39 17.8301 10.1 17.5401L4.56 12.0001L10.1 6.46012C10.39 6.17012 10.39 5.69012 10.1 5.40012C9.81 5.11012 9.33 5.11012 9.04 5.40012L2.97 11.4701C2.68 11.7601 2.68 12.2401 2.97 12.5301L9.04 18.6001C9.19 18.7501 9.38 18.8201 9.57 18.8201Z" fill="#212179"/>
+                        <path d="M3.67 12.75H20.5C20.91 12.75 21.25 12.41 21.25 12C21.25 11.59 20.91 11.25 20.5 11.25H3.67C3.26 11.25 2.92 11.59 2.92 12C2.92 12.41 3.26 12.75 3.67 12.75Z" fill="#212179"/>
                     </svg>
                 </button>
             </div>
-            
-            <div id="classList">
-                <!-- لیست کلاس‌ها اینجا نمایش داده می‌شوند -->
-            </div>
+            <div id="classList"></div>
         </div>
         
-        <?php
-    }
-}
-
-class KWPRC_Class_Timer_Widget extends \Elementor\Widget_Base {
-
-    public function get_name() {
-        return 'kwprc_class_timer';
-    }
-
-    public function get_title() {
-        return 'تقویم کلاسی KWPRC';
-    }
-
-    public function get_icon() {
-        return 'eicon-calendar';
-    }
-
-    public function get_categories() {
-        return ['general'];
-    }
-
-    /**
-     * ثبت رشته‌های ترجمه برای Polylang
-     */
-    protected function register_kwprc_polylang_strings() {
-        if (function_exists('pll_register_string')) {
-            pll_register_string('kwprc_class_timer_widget_title', 'تقویم کلاسی KWPRC', 'University Management');
-            pll_register_string('kwprc_class_timer_widget_settings', 'تنظیمات', 'University Management');
-            pll_register_string('kwprc_class_timer_widget_title_control', 'عنوان', 'University Management');
-            pll_register_string('kwprc_class_timer_widget_default_title', 'برنامه کلاسی', 'University Management');
-            pll_register_string('kwprc_class_timer_widget_live_class_info', 'دوره در حال برگزاری: 0 / 0', 'University Management');
-        }
-    }
-
-    protected function register_controls() {
-        $this->register_kwprc_polylang_strings();
-        $this->start_controls_section(
-            'content_section',
-            [
-                'label' => 'تنظیمات',
-                'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
-            ]
-        );
-
-        $this->add_control(
-            'title',
-            [
-                'label' => 'عنوان',
-                'type' => \Elementor\Controls_Manager::TEXT,
-                'default' => 'برنامه کلاسی',
-            ]
-        );
-
-        $this->end_controls_section();
-    }
-
-    protected function render() {
-        $settings = $this->get_settings_for_display();
-        ?>
-        <div class="kwprc-class-timer-widget">
-            <div class="calendar-container">
-                <div class="calendar-details">
-                    <div class="today-text" id="goToToday"></div>
-                    <div id="liveClassInfo" style="font-size: 14px; color: #555;">دوره در حال برگزاری: 0 / 0</div>
-                </div>
-                <div class="calendar-header">
-                    <button id="prevWeek">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M14.43 18.8201C14.24 18.8201 14.05 18.7501 13.9 18.6001C13.61 18.3101 13.61 17.8301 13.9 17.5401L19.44 12.0001L13.9 6.46012C13.61 6.17012 13.61 5.69012 13.9 5.40012C14.19 5.11012 14.67 5.11012 14.96 5.40012L21.03 11.4701C21.32 11.7601 21.32 12.2401 21.03 12.5301L14.96 18.6001C14.81 18.7501 14.62 18.8201 14.43 18.8201Z" fill="#212179"/>
-                            <path d="M20.33 12.75H3.5C3.09 12.75 2.75 12.41 2.75 12C2.75 11.59 3.09 11.25 3.5 11.25H20.33C20.74 11.25 21.08 11.59 21.08 12C21.08 12.41 20.74 12.75 20.33 12.75Z" fill="#212179"/>
-                        </svg>
-                    </button>
-                    <div class="week-days" id="weekDays"></div>
-                    <button id="nextWeek">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M9.57 18.8201C9.76 18.8201 9.95 18.7501 10.1 18.6001C10.39 18.3101 10.39 17.8301 10.1 17.5401L4.56 12.0001L10.1 6.46012C10.39 6.17012 10.39 5.69012 10.1 5.40012C9.81 5.11012 9.33 5.11012 9.04 5.40012L2.97 11.4701C2.68 11.7601 2.68 12.2401 2.97 12.5301L9.04 18.6001C9.19 18.7501 9.38 18.8201 9.57 18.8201Z" fill="#212179"/>
-                            <path d="M3.67 12.75H20.5C20.91 12.75 21.25 12.41 21.25 12C21.25 11.59 20.91 11.25 20.5 11.25H3.67C3.26 11.25 2.92 11.59 2.92 12C2.92 12.41 3.26 12.75 3.67 12.75Z" fill="#212179"/>
-                        </svg>
-                    </button>
-                </div>
-                <div id="classList"></div>
-            </div>
-        </div>
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const classData = <?php echo json_encode($this->get_class_data()); ?>;
-                initializeClassTimer(classData);
-            });
-
-            function initializeClassTimer(classData) {
-                moment.loadPersian({ usePersianDigits: false });
-
-                const weekDays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
-                const weekDaysEl = document.getElementById('weekDays');
-                const goToTodayText = document.getElementById('goToToday');
-                const liveInfo = document.getElementById("liveClassInfo");
-
-                const today = moment();
-                let current = moment();
-                let selectedDate = moment(today);
-
-                // Rest of the JavaScript code from the original implementation
-                // (Same as the previous implementation, but wrapped in a function)
-                // ... [rest of the script would be the same as in the original index.html] ...
-            }
+            // تعریف داده‌های کلاس‌ها به صورت جهانی
+            window.classesData = <?php echo json_encode($classData); ?>;
+            console.log('Classes Data:', window.classesData);
         </script>
-        <style>
-            /* CSS styles from the original implementation */
-            .calendar-container {
-                background: white;
-                border-radius: 10px;
-                padding: 15px;
-                max-width: 100%;
-                margin: 20px auto;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            }
-            /* ... [rest of the CSS would be the same as in the original index.html] ... */
-        </style>
         <?php
-    }
-
-    protected function get_class_data() {
-        // در اینجا می‌توانید داده‌های کلاس را از پایگاه داده یا تنظیمات وردپرس دریافت کنید
-        return [
-            "2025-04-28" => [
-                [
-                    "name" => um_translate('ریاضی پایه', __('ریاضی پایه', 'university-management')), 
-                    "teacher" => um_translate('خانم احمدی', __('خانم احمدی', 'university-management')), 
-                    "time" => "10:00 - 11:00", 
-                    "image" => plugin_dir_url(__FILE__) . "../../assets/images/Rectangle 5468.png", 
-                    "link" => "#"
-                ],
-                // سایر کلاس‌ها
-            ],
-            // سایر تاریخ‌ها
-        ];
     }
 }
 
-// ثبت ویجت در المنتور
-\Elementor\Plugin::instance()->widgets_manager->register_widget_type(new KWPRC_Class_Timer_Widget());

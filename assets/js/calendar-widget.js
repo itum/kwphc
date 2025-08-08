@@ -5,8 +5,47 @@
     'use strict';
     
     $(document).ready(function() {
-        // در صورت نیاز به افزودن کد جاوااسکریپت تعاملی برای ویجت تقویم
-        
+        const modal = document.getElementById('eventModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalTime = document.getElementById('modalTime');
+        const modalDescription = document.getElementById('modalDescription');
+
+        // کلیک روی رویدادها برای نمایش مودال
+        $('.event-cal').click(function() {
+            const title = $(this).data('title');
+            const time = $(this).data('time');
+            const description = $(this).data('description');
+            
+            modalTitle.textContent = title;
+            modalTime.textContent = `زمان: ${time}`;
+            modalDescription.textContent = description || "توضیحی موجود نیست.";
+            modal.style.display = 'flex';
+        });
+
+        // بستن مودال با کلیک روی دکمه بستن
+        $('.close-btn').click(function() {
+            closeModal();
+        });
+
+        // بستن مودال با کلیک روی overlay
+        $('.modal-overlay').click(function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // بستن مودال با کلید ESC
+        $(document).keydown(function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                closeModal();
+            }
+        });
+
+        // تابع بستن مودال
+        window.closeModal = function() {
+            modal.style.display = 'none';
+        };
+
         // افزودن کلاس هنگام هاور روی رویدادها
         $('.event-cal').hover(function() {
             // هنگام ورود ماوس
@@ -14,15 +53,6 @@
         }, function() {
             // هنگام خروج ماوس
             $(this).removeClass('hover');
-        });
-        
-        // کلیک روی رویدادها
-        $('.event-cal').click(function() {
-            // اگر لینکی وجود دارد به آن هدایت شود
-            var link = $(this).data('link');
-            if (link && link.length > 0) {
-                window.location.href = link;
-            }
         });
     });
 })(jQuery); 

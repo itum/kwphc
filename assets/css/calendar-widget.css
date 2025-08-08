@@ -25,6 +25,10 @@
     justify-content: flex-start;
     gap:10px;
     width:10%;
+    /* background-color: white;
+    border: #2121790f 1px solid; */
+    cursor: pointer;
+    transition: 300ms all ease-in-out;
 }
 
 .wrapper-cal::after{
@@ -56,6 +60,7 @@
 .event-cal:hover  {
     background: #212179;
     color: white !important;  
+    transform: translateY(-10px);
 }
 
 .event-cal .icon-cal .svg2 {
@@ -85,7 +90,14 @@
 .day-cal {
     font-size: 26px;
     font-weight: bold;
-    color: #BE0000;
+    color: #212179;
+    transition: 300ms all ease-in-out;
+}
+
+.event-cal:hover  .day-cal{
+    font-size: 26px;
+    font-weight: bold;
+    color: white;
 }
 
 .day-cal:nth-child(2){
@@ -108,29 +120,31 @@
 /* Mobile responsive */
 @media (max-width: 850px) {
     .timeline-cal {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
     }
 
     .wrapper-cal {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         position: relative;
         width: 100%;
-        justify-content: space-between;
+        justify-content:center;
+        gap: 10px;
     }
 
     .wrapper-cal::before {
-        content: '';
+        /* content: '';
         position: absolute;
         top: 0;
         bottom: 0;
         right: 50%;
         height: 90%;
         width: 2px;
-        background: rgba(33, 33, 121, 0.2); /* رنگ خط */
+        background: rgba(33, 33, 121, 0.2); 
         transform: translateX(50%);
-        z-index: 0;
+        z-index: 0; */
+        display: none;
     }
     
     .wrapper-cal::after{
@@ -138,16 +152,18 @@
     }
     
     .event-cal {
-        width: 60% !important;
+        width: 31% !important;
         height: 120px !important;
         justify-content: center;
         margin-bottom: 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Add shadow */
         background-color: #ffffff;
         gap: 5px;
+        flex-grow: 1;
     }
 
     .event-cal.blue {
+        width: 100% !important; 
         background-color: #212179;
         color: white;
     }
@@ -155,4 +171,39 @@
     .icon-cal svg {
         margin: auto;
     }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.434);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    direction: rtl;
+}
+
+.modal-content {
+    background-color: #212179;
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
 } 
