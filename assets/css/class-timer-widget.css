@@ -161,11 +161,18 @@
 
 #nextWeek, #prevWeek {
     background-color: #fff;
-    padding: 5px;
+    padding: 8px 12px;
     border-radius: 10px;
     margin: 0px 20px;
     cursor: pointer;
     transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#nextWeek svg, #prevWeek svg {
+    margin-top: 2px;
 }
 
 #nextWeek:hover, #prevWeek:hover {
@@ -312,8 +319,15 @@
         top: 50%;
         position: absolute;
         margin: 0px;
-        padding: 2px;
+        padding: 6px 8px;
         z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #nextWeek svg, #prevWeek svg {
+        margin-top: 1px;
     }
 
     #nextWeek {

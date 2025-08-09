@@ -11,12 +11,25 @@
             return;
         }
 
-        // بارگذاری تقویم فارسی
+        // بارگذاری تقویم فارسی و تنظیم شروع هفته از شنبه
         if (typeof moment.loadPersian === 'function') {
             moment.loadPersian({ usePersianDigits: false });
         }
+        if (typeof moment.updateLocale === 'function') {
+            moment.updateLocale('fa', { week: { dow: 6, doy: 12 } }); // شنبه = 0
+            moment.locale('fa');
+        }
 
-        const weekDays = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
+        // نگاشت نام روزها بر اساس اندیس day() در moment (0=یکشنبه ... 6=شنبه)
+        const weekDaysByMomentIndex = [
+            "یکشنبه",
+            "دوشنبه",
+            "سه‌شنبه",
+            "چهارشنبه",
+            "پنجشنبه",
+            "جمعه",
+            "شنبه"
+        ];
         const weekDaysEl = document.getElementById('weekDays');
         const goToTodayText = document.getElementById('goToToday');
         const liveInfo = document.getElementById("liveClassInfo");
@@ -26,9 +39,16 @@
             return;
         }
 
-        const today = moment();
-        let current = moment();
+        const today = moment().startOf('day');
+        let current = moment(today);
         let selectedDate = moment(today);
+        
+        // اطمینان از اینکه امروز همیشه انتخاب شده باشد
+        function ensureTodayIsSelected() {
+            selectedDate = moment(today);
+            current = moment(today);
+            console.log('Today is:', today.format('dddd YYYY-MM-DD'), 'Persian:', today.jDate(), today.format('jMMMM'));
+        }
 
         // دریافت داده‌های کلاس از PHP
         const classData = window.classesData || {};
@@ -140,7 +160,11 @@
 
         function renderWeek(centerDate) {
             weekDaysEl.innerHTML = "";
-            const startOfWeek = moment(centerDate).startOf('week').add(1, 'days');
+            // محاسبه دستی: از تاریخ ورودی به عقب می‌رویم تا به شنبه برسیم
+            const startOfWeek = moment(centerDate).clone().startOf('day');
+            while (startOfWeek.day() !== 6) {
+                startOfWeek.subtract(1, 'day');
+            }
             
             for (let i = 0; i < 7; i++) {
                 const m = moment(startOfWeek).add(i, 'days');
@@ -148,12 +172,19 @@
                 const isSelected = m.isSame(selectedDate, 'day');
 
                 const dayDiv = document.createElement('div');
-                dayDiv.className = 'day' + (isToday ? ' today' : '') + (isSelected ? ' active' : '');
-                const weekDay = weekDays[i];
+                // اگر امروز است، همیشه فعال باشد
+                const shouldBeActive = isToday || isSelected;
+                dayDiv.className = 'day' + (isToday ? ' today' : '') + (shouldBeActive ? ' active' : '');
+                const weekDay = weekDaysByMomentIndex[m.day()];
                 // تغییر فرمت ماه از امرداد به مرداد
                 const monthName = m.format('jMMMM').replace('امرداد', 'مرداد');
                 const jDateStr = `${weekDay}<br>${m.jDate()} ${monthName}`;
                 dayDiv.innerHTML = jDateStr;
+                
+                // دیباگ برای بررسی روزها
+                if (isToday) {
+                    console.log('Today found:', weekDay, m.jDate(), monthName, 'should be active:', shouldBeActive);
+                }
 
                 dayDiv.addEventListener('click', () => {
                     selectedDate = m;
@@ -185,7 +216,7 @@
         }
 
         // تنظیم متن امروز
-        const monthName = today.format("jMMMM").replace('امرداد', 'مرداد');
+            const monthName = moment(today).format("jMMMM").replace('امرداد', 'مرداد');
         goToTodayText.innerHTML = `
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 5.75C7.59 5.75 7.25 5.41 7.25 5V2C7.25 1.59 7.59 1.25 8 1.25C8.41 1.25 8.75 1.59 8.75 2V5C8.75 5.41 8.41 5.75 8 5.75Z" fill="#222222"/>
@@ -203,8 +234,10 @@
             renderClassesFor(today);
         });
 
-        // شروع رندر با انتخاب روز جاری
-        renderWeek(current);
-        renderClassesFor(selectedDate); // تغییر از today به selectedDate
+        // شروع رندر: امروز را انتخاب و نمایش بده
+        selectedDate = moment(today);
+        current = moment(today);
+        renderWeek(today);
+        renderClassesFor(today);
     });
 })(jQuery); 
