@@ -8,6 +8,64 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// حذف رویداد (ایمن با نانس و بدون اتکا به post.php)
+if (
+    isset($_GET['page']) && $_GET['page'] === 'university-calendar' &&
+    isset($_GET['action']) && $_GET['action'] === 'um_delete' &&
+    isset($_GET['event_id'])
+){
+    $event_id = absint($_GET['event_id']);
+    if ($event_id) {
+        // بررسی دسترسی
+        if (!current_user_can('delete_post', $event_id)) {
+            add_settings_error('um_calendar', 'um_event_delete_cap', __('اجازه حذف این رویداد را ندارید.', 'university-management'), 'error');
+        } elseif (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'um_delete_event_' . $event_id)) {
+            add_settings_error('um_calendar', 'um_event_delete_nonce', __('اعتبار لینک حذف به پایان رسیده است.', 'university-management'), 'error');
+        } else {
+            // انتقال به زباله‌دان؛ برای حذف دائمی از پارامتر دوم true استفاده کنید
+            $result = wp_trash_post($event_id);
+            if ($result) {
+                add_settings_error('um_calendar', 'um_event_deleted', __('رویداد با موفقیت حذف شد.', 'university-management'), 'success');
+            } else {
+                add_settings_error('um_calendar', 'um_event_delete_error', __('خطا در حذف رویداد.', 'university-management'), 'error');
+            }
+        }
+    }
+}
+
+// تعیین حالت ویرایش و بارگذاری اطلاعات رویداد برای فرم
+$editing_event = null;
+$editing_event_id = 0;
+$editing_title = '';
+$editing_description = '';
+$editing_date = '';
+$editing_is_important = '';
+$editing_lang = '';
+
+if (
+    isset($_GET['page']) && $_GET['page'] === 'university-calendar' &&
+    isset($_GET['action']) && $_GET['action'] === 'um_edit' &&
+    isset($_GET['event_id'])
+) {
+    $editing_event_id = absint($_GET['event_id']);
+    if ($editing_event_id) {
+        if (!current_user_can('edit_post', $editing_event_id)) {
+            add_settings_error('um_calendar', 'um_event_edit_cap', __('اجازه ویرایش این رویداد را ندارید.', 'university-management'), 'error');
+        } else {
+            $editing_event = get_post($editing_event_id);
+            if ($editing_event && $editing_event->post_type === 'um_calendar_events') {
+                $editing_title = $editing_event->post_title;
+                $editing_description = $editing_event->post_content;
+                $editing_date = get_post_meta($editing_event_id, '_event_date', true);
+                $editing_is_important = get_post_meta($editing_event_id, '_is_important', true);
+                if (function_exists('pll_get_post_language')) {
+                    $editing_lang = pll_get_post_language($editing_event_id);
+                }
+            }
+        }
+    }
+}
+
 // پردازش فرم ارسالی
 if (isset($_POST['um_add_event_nonce']) && wp_verify_nonce($_POST['um_add_event_nonce'], 'um_add_event')) {
     // دریافت مقادیر فرم
@@ -48,6 +106,42 @@ if (isset($_POST['um_add_event_nonce']) && wp_verify_nonce($_POST['um_add_event_
     } else {
         // نمایش پیام خطا برای فیلدهای الزامی
         add_settings_error('um_calendar', 'um_event_required', __('عنوان، تاریخ و زبان رویداد الزامی هستند.', 'university-management'), 'error');
+    }
+}
+
+// پردازش ویرایش رویداد
+if (isset($_POST['um_update_event_nonce']) && wp_verify_nonce($_POST['um_update_event_nonce'], 'um_update_event')) {
+    $event_id = isset($_POST['event_id']) ? absint($_POST['event_id']) : 0;
+    if ($event_id && current_user_can('edit_post', $event_id)) {
+        $event_title = sanitize_text_field($_POST['event_title']);
+        $event_date  = sanitize_text_field($_POST['event_date']);
+        $event_description = wp_kses_post($_POST['event_description']);
+        $is_important = isset($_POST['is_important']) ? 'yes' : '';
+        $event_language = isset($_POST['event_language']) ? sanitize_text_field($_POST['event_language']) : '';
+
+        if (!empty($event_title) && !empty($event_date)) {
+            wp_update_post(array(
+                'ID' => $event_id,
+                'post_title' => $event_title,
+                'post_content' => $event_description,
+            ));
+            update_post_meta($event_id, '_event_date', $event_date);
+            update_post_meta($event_id, '_is_important', $is_important);
+
+            if (!empty($event_language) && function_exists('pll_set_post_language')) {
+                pll_set_post_language($event_id, $event_language);
+            }
+
+            add_settings_error('um_calendar', 'um_event_updated', __('رویداد با موفقیت به‌روزرسانی شد.', 'university-management'), 'success');
+            // پس از ذخیره موفق، خروج از حالت ویرایش
+            $editing_event = null;
+            $editing_event_id = 0;
+            $editing_title = $editing_description = $editing_date = $editing_is_important = $editing_lang = '';
+        } else {
+            add_settings_error('um_calendar', 'um_event_update_required', __('عنوان و تاریخ الزامی هستند.', 'university-management'), 'error');
+        }
+    } else {
+        add_settings_error('um_calendar', 'um_event_update_cap', __('اجازه ویرایش این رویداد را ندارید.', 'university-management'), 'error');
     }
 }
 
@@ -129,29 +223,37 @@ error_log('Found Posts: ' . $events->found_posts);
     <div class="um-admin-container" style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
         <!-- فرم افزودن رویداد جدید -->
         <div class="um-admin-form" style="background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 40%; min-width: 300px; padding: 20px; box-sizing: border-box;">
-            <h2><?php _e('افزودن رویداد جدید', 'university-management'); ?></h2>
+            <h2><?php echo $editing_event ? __('ویرایش رویداد', 'university-management') : __('افزودن رویداد جدید', 'university-management'); ?></h2>
             
             <form method="post" action="">
-                <?php wp_nonce_field('um_add_event', 'um_add_event_nonce'); ?>
+                <?php if ($editing_event): ?>
+                    <input type="hidden" name="event_id" value="<?php echo esc_attr($editing_event_id); ?>">
+                    <?php wp_nonce_field('um_update_event', 'um_update_event_nonce'); ?>
+                <?php else: ?>
+                    <?php wp_nonce_field('um_add_event', 'um_add_event_nonce'); ?>
+                <?php endif; ?>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="event_title" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('عنوان رویداد', 'university-management'); ?> *</label>
-                    <input type="text" id="event_title" name="event_title" class="regular-text" required style="width: 100%;">
+                    <input type="text" id="event_title" name="event_title" class="regular-text" required style="width: 100%;" value="<?php echo esc_attr($editing_event ? $editing_title : ''); ?>">
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
-                    <label for="event_date" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ رویداد', 'university-management'); ?> *</label>
-                    <input type="date" id="event_date" name="event_date" class="regular-text" required style="width: 100%;">
+                    <label for="event_date_display" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ رویداد', 'university-management'); ?> *</label>
+                    <!-- فیلد نمایش جلالی -->
+                    <input type="text" id="event_date_display" class="regular-text" required style="width: 100%;" placeholder="مثال: ۱۴۰۴/۰۵/۲۰">
+                    <!-- فیلد مخفی برای ذخیره تاریخ میلادی (ISO: YYYY-MM-DD) -->
+                    <input type="hidden" id="event_date" name="event_date" value="<?php echo esc_attr($editing_event ? $editing_date : ''); ?>">
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="event_description" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('توضیحات رویداد', 'university-management'); ?></label>
-                    <textarea id="event_description" name="event_description" rows="5" class="regular-text" style="width: 100%;"></textarea>
+                    <textarea id="event_description" name="event_description" rows="5" class="regular-text" style="width: 100%;"><?php echo esc_textarea($editing_event ? $editing_description : ''); ?></textarea>
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label style="font-weight: bold;">
-                        <input type="checkbox" name="is_important" value="yes">
+                        <input type="checkbox" name="is_important" value="yes" <?php echo ($editing_event && $editing_is_important === 'yes') ? 'checked' : ''; ?>>
                         <?php _e('رویداد مهم (هایلایت)', 'university-management'); ?>
                     </label>
                 </div>
@@ -164,7 +266,12 @@ error_log('Found Posts: ' . $events->found_posts);
                         <?php
                         $languages = pll_the_languages(array('raw' => 1));
                         foreach ($languages as $lang) {
-                            $selected = ($lang['current_lang'] ? 'selected' : '');
+                            $selected = '';
+                            if ($editing_event) {
+                                $selected = ($editing_lang === $lang['slug']) ? 'selected' : '';
+                            } else {
+                                $selected = ($lang['current_lang'] ? 'selected' : '');
+                            }
                             echo '<option value="' . esc_attr($lang['slug']) . '" ' . $selected . '>' . esc_html($lang['name']) . '</option>';
                         }
                         ?>
@@ -173,7 +280,10 @@ error_log('Found Posts: ' . $events->found_posts);
                 <?php endif; ?>
                 
                 <div class="um-form-row">
-                    <input type="submit" class="button button-primary" value="<?php _e('افزودن رویداد', 'university-management'); ?>">
+                    <input type="submit" class="button button-primary" value="<?php echo $editing_event ? esc_attr__('به‌روزرسانی رویداد', 'university-management') : esc_attr__('افزودن رویداد', 'university-management'); ?>">
+                    <?php if ($editing_event): ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=university-calendar')); ?>" class="button" style="margin-right:10px;"><?php _e('لغو ویرایش', 'university-management'); ?></a>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -258,8 +368,31 @@ error_log('Found Posts: ' . $events->found_posts);
                                 <td><?php echo esc_html($event_language); ?></td>
                                 <?php endif; ?>
                                 <td>
-                                    <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="button button-small"><?php _e('ویرایش', 'university-management'); ?></a>
-                                    <a href="<?php echo get_delete_post_link(get_the_ID()); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این رویداد اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
+                                    <?php
+                                        $edit_url = add_query_arg(
+                                            array(
+                                                'page' => 'university-calendar',
+                                                'action' => 'um_edit',
+                                                'event_id' => get_the_ID(),
+                                            ),
+                                            admin_url('admin.php')
+                                        );
+                                    ?>
+                                    <a href="<?php echo esc_url($edit_url); ?>" class="button button-small"><?php _e('ویرایش', 'university-management'); ?></a>
+                                    <?php
+                                        $delete_url = wp_nonce_url(
+                                            add_query_arg(
+                                                array(
+                                                    'page' => 'university-calendar',
+                                                    'action' => 'um_delete',
+                                                    'event_id' => get_the_ID(),
+                                                ),
+                                                admin_url('admin.php')
+                                            ),
+                                            'um_delete_event_' . get_the_ID()
+                                        );
+                                    ?>
+                                    <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این رویداد اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -285,3 +418,72 @@ error_log('Found Posts: ' . $events->found_posts);
         </ul>
     </div>
 </div> 
+
+<script>
+(function(){
+  // اطمینان از بارگذاری moment و moment-jalaali
+  function ensureMoment(cb){
+    function loadScript(src, dep, onload){
+      var s=document.createElement('script');
+      s.src=src; s.async=true; if (dep) s.setAttribute('data-dep', dep);
+      s.onload=onload; document.head.appendChild(s);
+    }
+    if (typeof moment === 'undefined'){
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js', '', function(){
+        loadScript('https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', 'moment', cb);
+      });
+    } else if (typeof moment.loadPersian === 'undefined'){
+      loadScript('https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', 'moment', cb);
+    } else {
+      cb();
+    }
+  }
+
+  function initJDate(){
+    try {
+      if (typeof moment.loadPersian === 'function') {
+        moment.loadPersian({usePersianDigits:false});
+      }
+      var display = document.getElementById('event_date_display');
+      var hidden = document.getElementById('event_date');
+      if (!display || !hidden) return;
+
+      // اگر مقدار قبلی موجود است، تبدیل و نمایش بده
+      if (hidden.value){
+        var m = moment(hidden.value, 'YYYY-MM-DD');
+        if (m.isValid()) display.value = m.format('jYYYY/jMM/jDD');
+      }
+
+      // هنگام تغییر ورودی شمسی، مقدار میلادی را در فیلد مخفی ذخیره کن
+      display.addEventListener('input', function(){
+        var v = (display.value || '').replace(/[-.]/g,'/');
+        var m = moment(v, 'jYYYY/jMM/jDD', true);
+        if (m.isValid()){
+          hidden.value = m.format('YYYY-MM-DD');
+          display.setCustomValidity('');
+        } else {
+          display.setCustomValidity('تاریخ نامعتبر است. مثال: 1404/05/20');
+          hidden.value = '';
+        }
+      });
+
+      // اعتبارسنجی قبل از ارسال فرم
+      var form = display.form;
+      if (form){
+        form.addEventListener('submit', function(e){
+          if (!hidden.value){
+            e.preventDefault();
+            display.reportValidity();
+          }
+        });
+      }
+    } catch(e) { console.warn('JDate init error', e); }
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ ensureMoment(initJDate); });
+  } else {
+    ensureMoment(initJDate);
+  }
+})();
+</script>

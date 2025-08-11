@@ -13,6 +13,65 @@ if (!current_user_can('manage_options')) {
     wp_die(__('شما دسترسی به این صفحه را ندارید.', 'university-management'));
 }
 
+// حذف کلاس (ایمن با نانس)
+if (
+    isset($_GET['page']) && $_GET['page'] === 'university-class-timing' &&
+    isset($_GET['action']) && $_GET['action'] === 'um_delete_class' &&
+    isset($_GET['class_id'])
+) {
+    $class_id = absint($_GET['class_id']);
+    if ($class_id) {
+        if (!current_user_can('delete_post', $class_id)) {
+            add_settings_error('um_class_timing', 'um_class_delete_cap', __('اجازه حذف این کلاس را ندارید.', 'university-management'), 'error');
+        } elseif (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'um_delete_class_' . $class_id)) {
+            add_settings_error('um_class_timing', 'um_class_delete_nonce', __('اعتبار لینک حذف به پایان رسیده است.', 'university-management'), 'error');
+        } else {
+            $result = wp_trash_post($class_id);
+            if ($result) {
+                add_settings_error('um_class_timing', 'um_class_deleted', __('کلاس با موفقیت حذف شد.', 'university-management'), 'success');
+            } else {
+                add_settings_error('um_class_timing', 'um_class_delete_error', __('خطا در حذف کلاس.', 'university-management'), 'error');
+            }
+        }
+    }
+}
+
+// وضعیت ویرایش (لود داده‌های کلاس برای فرم)
+$editing_class = null;
+$editing_id = 0;
+$editing_name = '';
+$editing_date_greg = '';
+$editing_time = '';
+$editing_duration = 90;
+$editing_teacher = '';
+$editing_description = '';
+
+if (
+    isset($_GET['page']) && $_GET['page'] === 'university-class-timing' &&
+    isset($_GET['action']) && $_GET['action'] === 'um_edit_class' &&
+    isset($_GET['class_id'])
+) {
+    $editing_id = absint($_GET['class_id']);
+    if ($editing_id) {
+        if (!current_user_can('edit_post', $editing_id)) {
+            add_settings_error('um_class_timing', 'um_class_edit_cap', __('اجازه ویرایش این کلاس را ندارید.', 'university-management'), 'error');
+        } else {
+            $editing_class = get_post($editing_id);
+            if ($editing_class && $editing_class->post_type === 'um_classes') {
+                $editing_name = $editing_class->post_title;
+                $editing_description = $editing_class->post_content;
+                $full_dt = get_post_meta($editing_id, '_class_date', true); // YYYY-MM-DD HH:MM:SS
+                if ($full_dt) {
+                    $editing_date_greg = date('Y-m-d', strtotime($full_dt));
+                    $editing_time = date('H:i', strtotime($full_dt));
+                }
+                $editing_duration = get_post_meta($editing_id, '_class_duration', true);
+                $editing_teacher = get_post_meta($editing_id, '_class_teacher', true);
+            }
+        }
+    }
+}
+
 // پردازش فرم ارسالی
 if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_nonce'], 'um_add_class')) {
     
@@ -96,6 +155,63 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
     add_settings_error('um_class_timing', 'um_nonce_error', __('خطای امنیتی. لطفاً دوباره تلاش کنید.', 'university-management'), 'error');
 }
 
+// پردازش به‌روزرسانی کلاس
+if (isset($_POST['um_update_class_nonce']) && wp_verify_nonce($_POST['um_update_class_nonce'], 'um_update_class')) {
+    $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+    if ($class_id && current_user_can('edit_post', $class_id)) {
+        $class_name = sanitize_text_field($_POST['class_name']);
+        $class_date = sanitize_text_field($_POST['class_date']); // YYYY-MM-DD (از فیلد مخفی)
+        $class_time = sanitize_text_field($_POST['class_time']); // HH:MM
+        $class_duration = absint($_POST['class_duration']);
+        $class_teacher = sanitize_text_field($_POST['class_teacher']);
+        $class_description = wp_kses_post($_POST['class_description']);
+
+        if (!empty($class_name) && !empty($class_date) && !empty($class_time)) {
+            $class_datetime = $class_date . ' ' . $class_time . ':00';
+            $class_timestamp = strtotime($class_datetime);
+            if ($class_timestamp === false) {
+                add_settings_error('um_class_timing', 'um_date_error', __('تاریخ یا زمان وارد شده معتبر نیست.', 'university-management'), 'error');
+            } else {
+                // به‌روزرسانی پست
+                wp_update_post(array(
+                    'ID' => $class_id,
+                    'post_title' => $class_name,
+                    'post_content' => $class_description,
+                ));
+
+                update_post_meta($class_id, '_class_date', $class_datetime);
+                update_post_meta($class_id, '_class_timestamp', $class_timestamp);
+                update_post_meta($class_id, '_class_duration', $class_duration ?: 90);
+                update_post_meta($class_id, '_class_teacher', $class_teacher);
+
+                // تصویر (اختیاری)
+                if (isset($_FILES['class_image']) && !empty($_FILES['class_image']['name'])) {
+                    require_once(ABSPATH . 'wp-admin/includes/image.php');
+                    require_once(ABSPATH . 'wp-admin/includes/file.php');
+                    require_once(ABSPATH . 'wp-admin/includes/media.php');
+                    $attachment_id = media_handle_upload('class_image', $class_id);
+                    if (!is_wp_error($attachment_id)) {
+                        set_post_thumbnail($class_id, $attachment_id);
+                    }
+                }
+
+                add_settings_error('um_class_timing', 'um_class_updated', __('کلاس با موفقیت به‌روزرسانی شد.', 'university-management'), 'success');
+
+                // خروج از حالت ویرایش پس از موفقیت
+                $editing_class = null;
+                $editing_id = 0;
+                $editing_name = $editing_description = $editing_date_greg = $editing_time = '';
+                $editing_duration = 90;
+                $editing_teacher = '';
+            }
+        } else {
+            add_settings_error('um_class_timing', 'um_class_update_required', __('نام کلاس، تاریخ و زمان الزامی هستند.', 'university-management'), 'error');
+        }
+    } else {
+        add_settings_error('um_class_timing', 'um_class_update_cap', __('اجازه ویرایش این کلاس را ندارید.', 'university-management'), 'error');
+    }
+}
+
 // نمایش پیام‌های خطا/موفقیت
 settings_errors('um_class_timing');
 
@@ -147,41 +263,121 @@ $simple_classes = new WP_Query($simple_classes_args);
     <h1><?php _e('مدیریت زمان‌بندی کلاس‌ها', 'university-management'); ?></h1>
     
     <div class="um-admin-container" style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
-        <!-- فرم افزودن کلاس جدید -->
+        <!-- فرم افزودن/ویرایش کلاس -->
         <div class="um-admin-form" style="background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 40%; min-width: 300px; padding: 20px; box-sizing: border-box;">
-            <h2><?php _e('افزودن کلاس جدید', 'university-management'); ?></h2>
+            <h2><?php echo $editing_class ? __('ویرایش کلاس', 'university-management') : __('افزودن کلاس جدید', 'university-management'); ?></h2>
             
             <form method="post" action="" enctype="multipart/form-data">
-                <?php wp_nonce_field('um_add_class', 'um_add_class_nonce'); ?>
+                <?php if ($editing_class): ?>
+                    <input type="hidden" name="class_id" value="<?php echo esc_attr($editing_id); ?>">
+                    <?php wp_nonce_field('um_update_class', 'um_update_class_nonce'); ?>
+                <?php else: ?>
+                    <?php wp_nonce_field('um_add_class', 'um_add_class_nonce'); ?>
+                <?php endif; ?>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_name" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام کلاس', 'university-management'); ?> *</label>
-                    <input type="text" id="class_name" name="class_name" class="regular-text" required style="width: 100%;">
+                    <input type="text" id="class_name" name="class_name" class="regular-text" required style="width: 100%;" value="<?php echo esc_attr($editing_class ? $editing_name : ''); ?>">
                 </div>
                 
+<script>
+(function(){
+  // جلوگیری از رفتن به ویرایشگر پست‌تایپ؛ ویرایش باید در همین صفحه انجام شود
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a.um-edit-class');
+    if (a){
+      // اگر href به post.php باشد، مسیر را به edit داخلی تغییر بده
+      try {
+        var href = a.getAttribute('href') || '';
+        if (href.indexOf('post.php') !== -1){
+          e.preventDefault();
+          var id = a.getAttribute('data-class-id');
+          var url = new URL(window.location.href);
+          url.searchParams.set('page','university-class-timing');
+          url.searchParams.set('action','um_edit_class');
+          url.searchParams.set('class_id', id);
+          window.location.assign(url.toString());
+          return false;
+        }
+      } catch(err) {}
+    }
+  }, true);
+
+  function ensureMoment(cb){
+    function loadScript(src, onload){ var s=document.createElement('script'); s.src=src; s.async=true; s.onload=onload; document.head.appendChild(s); }
+    if (typeof moment === 'undefined'){
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js', function(){
+        loadScript('https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', cb);
+      });
+    } else if (typeof moment.loadPersian === 'undefined'){
+      loadScript('https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', cb);
+    } else { cb(); }
+  }
+
+  function initJDate(){
+    try {
+      if (typeof moment.loadPersian === 'function') moment.loadPersian({usePersianDigits:false});
+
+      var display = document.getElementById('class_date_display');
+      var hidden = document.getElementById('class_date');
+      if (!display || !hidden) return;
+
+      // اگر مقدار اولیه میلادی داریم، در ورودی شمسی نشان دهیم
+      if (hidden.value){
+        var m = moment(hidden.value, 'YYYY-MM-DD');
+        if (m.isValid()) display.value = m.format('jYYYY/jMM/jDD');
+      }
+
+      display.addEventListener('input', function(){
+        var v = (display.value || '').replace(/[-.]/g,'/');
+        var m = moment(v, 'jYYYY/jMM/jDD', true);
+        if (m.isValid()){
+          hidden.value = m.format('YYYY-MM-DD');
+          display.setCustomValidity('');
+        } else {
+          hidden.value = '';
+          display.setCustomValidity('تاریخ نامعتبر است. مثال: 1404/05/20');
+        }
+      });
+
+      var form = display.form; 
+      if (form){
+        form.addEventListener('submit', function(e){
+          if (!hidden.value){ e.preventDefault(); display.reportValidity(); }
+        });
+      }
+    } catch(e){ console.warn('Class timing JDate init error', e); }
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ ensureMoment(initJDate); });
+  } else { ensureMoment(initJDate); }
+})();
+</script>
                 <div class="um-form-row" style="margin-bottom: 15px;">
-                    <label for="class_date" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ کلاس', 'university-management'); ?> *</label>
-                    <input type="date" id="class_date" name="class_date" class="regular-text" required style="width: 100%;">
+                    <label for="class_date_display" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ کلاس', 'university-management'); ?> *</label>
+                    <input type="text" id="class_date_display" class="regular-text" required style="width: 100%;" placeholder="مثال: ۱۴۰۴/۰۵/۲۰">
+                    <input type="hidden" id="class_date" name="class_date" value="<?php echo esc_attr($editing_class ? $editing_date_greg : ''); ?>">
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_time" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('زمان شروع کلاس', 'university-management'); ?> *</label>
-                    <input type="time" id="class_time" name="class_time" class="regular-text" required style="width: 100%;">
+                    <input type="time" id="class_time" name="class_time" class="regular-text" required style="width: 100%;" value="<?php echo esc_attr($editing_class ? $editing_time : ''); ?>">
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_duration" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('مدت زمان کلاس (دقیقه)', 'university-management'); ?></label>
-                    <input type="number" id="class_duration" name="class_duration" class="regular-text" min="30" step="5" value="90" style="width: 100%;">
+                    <input type="number" id="class_duration" name="class_duration" class="regular-text" min="30" step="5" value="<?php echo esc_attr($editing_class ? ($editing_duration ?: 90) : 90); ?>" style="width: 100%;">
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_teacher" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام استاد', 'university-management'); ?></label>
-                    <input type="text" id="class_teacher" name="class_teacher" class="regular-text" style="width: 100%;">
+                    <input type="text" id="class_teacher" name="class_teacher" class="regular-text" style="width: 100%;" value="<?php echo esc_attr($editing_class ? $editing_teacher : ''); ?>">
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_description" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('توضیحات کلاس', 'university-management'); ?></label>
-                    <textarea id="class_description" name="class_description" rows="5" class="regular-text" style="width: 100%;"></textarea>
+                    <textarea id="class_description" name="class_description" rows="5" class="regular-text" style="width: 100%;"><?php echo esc_textarea($editing_class ? $editing_description : ''); ?></textarea>
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
@@ -190,7 +386,10 @@ $simple_classes = new WP_Query($simple_classes_args);
                 </div>
                 
                 <div class="um-form-row">
-                    <input type="submit" class="button button-primary" value="<?php _e('افزودن کلاس', 'university-management'); ?>">
+                    <input type="submit" class="button button-primary" value="<?php echo $editing_class ? esc_attr__('به‌روزرسانی کلاس', 'university-management') : esc_attr__('افزودن کلاس', 'university-management'); ?>">
+                    <?php if ($editing_class): ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=university-class-timing')); ?>" class="button" style="margin-right:10px;"><?php _e('لغو ویرایش', 'university-management'); ?></a>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -239,8 +438,29 @@ $simple_classes = new WP_Query($simple_classes_args);
                                 <td><?php echo esc_html($date_display); ?></td>
                                 <td><?php echo esc_html($class_duration ?: '90'); ?></td>
                                 <td>
-                                    <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="button button-small"><?php _e('ویرایش', 'university-management'); ?></a>
-                                    <a href="<?php echo get_delete_post_link(get_the_ID()); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این کلاس اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
+                                    <?php
+                                        $edit_url = add_query_arg(
+                                            array(
+                                                'page' => 'university-class-timing',
+                                                'action' => 'um_edit_class',
+                                                'class_id' => get_the_ID(),
+                                            ),
+                                            admin_url('admin.php')
+                                        );
+                                        $delete_url = wp_nonce_url(
+                                            add_query_arg(
+                                                array(
+                                                    'page' => 'university-class-timing',
+                                                    'action' => 'um_delete_class',
+                                                    'class_id' => get_the_ID(),
+                                                ),
+                                                admin_url('admin.php')
+                                            ),
+                                            'um_delete_class_' . get_the_ID()
+                                        );
+                                    ?>
+                                    <a href="<?php echo esc_url($edit_url); ?>" class="button button-small um-edit-class" data-class-id="<?php echo get_the_ID(); ?>"><?php _e('ویرایش', 'university-management'); ?></a>
+                                    <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این کلاس اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -278,8 +498,29 @@ $simple_classes = new WP_Query($simple_classes_args);
                                 <td><?php echo esc_html($date_display); ?></td>
                                 <td><?php echo esc_html($class_duration ?: '90'); ?></td>
                                 <td>
-                                    <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="button button-small"><?php _e('ویرایش', 'university-management'); ?></a>
-                                    <a href="<?php echo get_delete_post_link(get_the_ID()); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این کلاس اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
+                                    <?php
+                                        $edit_url = add_query_arg(
+                                            array(
+                                                'page' => 'university-class-timing',
+                                                'action' => 'um_edit_class',
+                                                'class_id' => get_the_ID(),
+                                            ),
+                                            admin_url('admin.php')
+                                        );
+                                        $delete_url = wp_nonce_url(
+                                            add_query_arg(
+                                                array(
+                                                    'page' => 'university-class-timing',
+                                                    'action' => 'um_delete_class',
+                                                    'class_id' => get_the_ID(),
+                                                ),
+                                                admin_url('admin.php')
+                                            ),
+                                            'um_delete_class_' . get_the_ID()
+                                        );
+                                    ?>
+                                    <a href="<?php echo esc_url($edit_url); ?>" class="button button-small um-edit-class" data-class-id="<?php echo get_the_ID(); ?>"><?php _e('ویرایش', 'university-management'); ?></a>
+                                    <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این کلاس اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -315,8 +556,29 @@ $simple_classes = new WP_Query($simple_classes_args);
                                 <td><?php echo esc_html($date_display); ?></td>
                                 <td><?php echo esc_html($class_duration ?: '90'); ?></td>
                                 <td>
-                                    <a href="<?php echo get_edit_post_link(get_the_ID()); ?>" class="button button-small"><?php _e('ویرایش', 'university-management'); ?></a>
-                                    <a href="<?php echo get_delete_post_link(get_the_ID()); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این کلاس اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
+                                    <?php
+                                        $edit_url = add_query_arg(
+                                            array(
+                                                'page' => 'university-class-timing',
+                                                'action' => 'um_edit_class',
+                                                'class_id' => get_the_ID(),
+                                            ),
+                                            admin_url('admin.php')
+                                        );
+                                        $delete_url = wp_nonce_url(
+                                            add_query_arg(
+                                                array(
+                                                    'page' => 'university-class-timing',
+                                                    'action' => 'um_delete_class',
+                                                    'class_id' => get_the_ID(),
+                                                ),
+                                                admin_url('admin.php')
+                                            ),
+                                            'um_delete_class_' . get_the_ID()
+                                        );
+                                    ?>
+                                    <a href="<?php echo esc_url($edit_url); ?>" class="button button-small um-edit-class" data-class-id="<?php echo get_the_ID(); ?>"><?php _e('ویرایش', 'university-management'); ?></a>
+                                    <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" style="color: #a00;" onclick="return confirm('<?php _e('آیا از حذف این کلاس اطمینان دارید؟', 'university-management'); ?>')"><?php _e('حذف', 'university-management'); ?></a>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
