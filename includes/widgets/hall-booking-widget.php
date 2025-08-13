@@ -190,10 +190,6 @@ class UM_Hall_Booking_Widget extends \Elementor\Widget_Base {
 					<?php endforeach; ?>
 				</select>
 			</div><?php endif; ?>
-            <div class="row">
-                <button type="submit" class="btn-primary">پرداخت و نهایی‌سازی</button>
-                <span class="total" id="um-hall-total"></span>
-            </div>
 			<?php if((!empty($terms_text) || $terms_required) && (!isset($s['enable_terms']) || $s['enable_terms']==='yes')): ?>
 			<div class="row">
 				<div style="background:#f7f7f7;padding:10px;border-radius:6px">
@@ -202,6 +198,10 @@ class UM_Hall_Booking_Widget extends \Elementor\Widget_Base {
 				</div>
 			</div>
 			<?php endif; ?>
+			<div class="row">
+				<button type="submit" class="btn-primary">پرداخت و نهایی‌سازی</button>
+				<span class="total" id="um-hall-total"></span>
+			</div>
             <div class="row"><div class="um-hall-msg" id="um-hall-msg"></div></div>
         </form>
         <?php

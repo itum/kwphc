@@ -55,6 +55,12 @@
     submit: function(e){
       e.preventDefault();
       var $form = $(e.target);
+      // اگر قوانین وجود دارد، باید تیک خورده باشد
+      var $terms = $form.find('input[name="accept_terms"]');
+      if ($terms.length && !$terms.is(':checked')) {
+        $('#um-hall-msg').addClass('error').text('لطفاً قوانین را بپذیرید.');
+        return false;
+      }
       UM_Hall_Form.calcTotal($form);
       var data = $form.serializeArray().reduce(function(acc, cur){ acc[cur.name] = acc[cur.name] ? ([]).concat(acc[cur.name], cur.value) : cur.value; return acc; }, {});
       $('#um-hall-msg').removeClass('error success').text('');
@@ -82,6 +88,23 @@
   $(document).on('change input', '.um-hall-form input, .um-hall-form textarea, .um-hall-form select', function(){
     var $form = $(this).closest('form');
     UM_Hall_Form.calcTotal($form);
+    // نمایش/پنهان کردن دکمه پرداخت بر اساس تیک قوانین
+    var $terms = $form.find('input[name="accept_terms"]');
+    if ($terms.length) {
+      var ok = $terms.is(':checked');
+      $form.find('button[type="submit"]').prop('disabled', !ok).toggleClass('disabled', !ok);
+    }
+  });
+  // در بارگذاری اولیه فرم نیز وضعیت دکمه بررسی شود
+  $(function(){
+    var $form = $('.um-hall-form');
+    if ($form.length) {
+      var $terms = $form.find('input[name="accept_terms"]');
+      if ($terms.length) {
+        var ok = $terms.is(':checked');
+        $form.find('button[type="submit"]').prop('disabled', !ok).toggleClass('disabled', !ok);
+      }
+    }
   });
 })(jQuery);
 

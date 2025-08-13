@@ -243,11 +243,16 @@ class UM_Hall_Gateway {
             return $response;
         }
         $body = json_decode(wp_remote_retrieve_body($response), true);
-        if (!empty($body['data']['code']) && intval($body['data']['code']) === 100) {
-            return array(
-                'ref_id' => $body['data']['ref_id'] ?? '',
-                'card_hash' => $body['data']['card_hash'] ?? '',
-            );
+        if (!empty($body['data']['code'])) {
+            $code = intval($body['data']['code']);
+            // 100: موفق | 101: قبلاً تایید شده (موفق تلقی شود)
+            if ($code === 100 || $code === 101) {
+                return array(
+                    'ref_id' => $body['data']['ref_id'] ?? '',
+                    'card_hash' => $body['data']['card_hash'] ?? '',
+                    'code' => $code,
+                );
+            }
         }
         $message = $body['errors']['message'] ?? __('تایید پرداخت ناموفق بود', 'university-management');
         return new WP_Error('zarinpal_verify_failed', $message);
