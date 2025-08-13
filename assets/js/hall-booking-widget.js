@@ -32,6 +32,21 @@
             }
           });
         }
+        // پذیرایی (در صورت فعال بودن)
+        if (um_hall_widget_vars.caterings && Array.isArray(um_hall_widget_vars.caterings)) {
+          var selectedCat = ($form.serializeArray().filter(function(it){return it.name === 'catering[]';}).map(function(it){return it.value;}));
+          (um_hall_widget_vars.caterings || []).forEach(function(ct){
+            if (selectedCat.indexOf(ct.id) !== -1) {
+              var p = parseFloat(ct.price || 0) || 0;
+              if ((ct.unit||'fixed') === 'per_hour') {
+                var h = 0; if (start && end) { var s = start.split(':'), e = end.split(':'); var sd = new Date(); sd.setHours(parseInt(s[0]||0,10), parseInt(s[1]||0,10), 0, 0); var ed = new Date(); ed.setHours(parseInt(e[0]||0,10), parseInt(e[1]||0,10), 0, 0); h = Math.max(1, Math.ceil((ed - sd) / 3600000)); }
+                total += p * h;
+              } else {
+                total += p;
+              }
+            }
+          });
+        }
         $('#um-hall-total').text(total > 0 ? ('مبلغ قابل پرداخت: ' + total.toLocaleString('fa-IR') + ' تومان') : '');
       } catch(e) {
         // noop

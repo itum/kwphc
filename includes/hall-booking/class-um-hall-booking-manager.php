@@ -75,6 +75,14 @@ class UM_Hall_Booking_Manager {
             '_um_hall_payment_status' => 'string',
             '_um_hall_created_at' => 'string',
             '_um_hall_authority' => 'string',
+            // فیلدهای جدید
+            '_um_hall_usage_type' => 'string',
+            '_um_hall_layout' => 'string',
+            '_um_hall_catering' => 'array',
+            '_um_hall_need_operator' => 'string',
+            '_um_hall_org_unit' => 'string',
+            '_um_hall_position' => 'string',
+            '_um_hall_payment_method' => 'string',
         );
         foreach ($meta_keys as $key => $type) {
             register_post_meta(self::POST_TYPE, $key, array(
@@ -96,6 +104,18 @@ class UM_Hall_Booking_Manager {
         register_setting('um_hall_settings_group', 'um_hall_payment_callback_url');
         register_setting('um_hall_settings_group', 'um_hall_admin_email');
         register_setting('um_hall_settings_group', 'um_hall_zarinpal_sandbox');
+        // تنظیمات جدید
+        register_setting('um_hall_settings_group', 'um_hall_terms_text');
+        register_setting('um_hall_settings_group', 'um_hall_require_terms'); // on/off
+        register_setting('um_hall_settings_group', 'um_hall_payment_methods'); // JSON: [{id:"online", label:"پرداخت آنلاین"}, ...]
+        register_setting('um_hall_settings_group', 'um_hall_enable_payment_method'); // on/off
+        register_setting('um_hall_settings_group', 'um_hall_usage_types'); // JSON: ["جلسه","کنفرانس",...]
+        register_setting('um_hall_settings_group', 'um_hall_enable_usage_type'); // on/off
+        register_setting('um_hall_settings_group', 'um_hall_layouts'); // JSON: ["U شکل","کلاس درس",...]
+        register_setting('um_hall_settings_group', 'um_hall_enable_layouts'); // on/off
+        register_setting('um_hall_settings_group', 'um_hall_catering'); // JSON: [{id,label,price,unit}]
+        register_setting('um_hall_settings_group', 'um_hall_enable_catering'); // on/off
+        register_setting('um_hall_settings_group', 'um_hall_date_picker'); // gregorian|jalali
     }
 
     public function add_meta_boxes() {
@@ -125,6 +145,14 @@ class UM_Hall_Booking_Manager {
             'description' => get_post_meta($post->ID, '_um_hall_description', true),
             'total_amount' => get_post_meta($post->ID, '_um_hall_total_amount', true),
             'payment_status' => get_post_meta($post->ID, '_um_hall_payment_status', true),
+            // جدید
+            'usage_type' => get_post_meta($post->ID, '_um_hall_usage_type', true),
+            'layout' => get_post_meta($post->ID, '_um_hall_layout', true),
+            'catering' => json_decode((string) get_post_meta($post->ID, '_um_hall_catering', true), true) ?: array(),
+            'need_operator' => get_post_meta($post->ID, '_um_hall_need_operator', true),
+            'org_unit' => get_post_meta($post->ID, '_um_hall_org_unit', true),
+            'position' => get_post_meta($post->ID, '_um_hall_position', true),
+            'payment_method' => get_post_meta($post->ID, '_um_hall_payment_method', true),
         );
 
         ?>
@@ -149,6 +177,16 @@ class UM_Hall_Booking_Manager {
                 <input type="text" name="um_hall_end_time" value="<?php echo esc_attr($fields['end_time']); ?>" placeholder="11:00" />
             </div>
             <div>
+                <label><?php _e('نوع استفاده', 'university-management'); ?></label>
+                <?php $usage_types = json_decode((string) get_option('um_hall_usage_types', '[]'), true); if (!is_array($usage_types)) { $usage_types = array(); } ?>
+                <select name="um_hall_usage_type">
+                    <option value="">—</option>
+                    <?php foreach ($usage_types as $ut) : $ut = (string) $ut; ?>
+                        <option value="<?php echo esc_attr($ut); ?>" <?php selected($fields['usage_type'], $ut); ?>><?php echo esc_html($ut); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
                 <label><?php _e('نام رزروکننده', 'university-management'); ?></label>
                 <input type="text" name="um_hall_reserver_name" value="<?php echo esc_attr($fields['reserver_name']); ?>" />
             </div>
@@ -163,6 +201,42 @@ class UM_Hall_Booking_Manager {
             <div>
                 <label><?php _e('کد/شناسه ملی', 'university-management'); ?></label>
                 <input type="text" name="um_hall_national_code" value="<?php echo esc_attr($fields['national_code']); ?>" />
+            </div>
+            <div>
+                <label><?php _e('واحد/سازمان', 'university-management'); ?></label>
+                <input type="text" name="um_hall_org_unit" value="<?php echo esc_attr($fields['org_unit']); ?>" />
+            </div>
+            <div>
+                <label><?php _e('سمت', 'university-management'); ?></label>
+                <input type="text" name="um_hall_position" value="<?php echo esc_attr($fields['position']); ?>" />
+            </div>
+            <div>
+                <label><?php _e('چیدمان سالن', 'university-management'); ?></label>
+                <?php $layouts = json_decode((string) get_option('um_hall_layouts', '[]'), true); if (!is_array($layouts)) { $layouts = array(); } ?>
+                <select name="um_hall_layout">
+                    <option value="">—</option>
+                    <?php foreach ($layouts as $lt) : $lt = (string) $lt; ?>
+                        <option value="<?php echo esc_attr($lt); ?>" <?php selected($fields['layout'], $lt); ?>><?php echo esc_html($lt); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label><?php _e('پذیرایی', 'university-management'); ?></label>
+                <?php $catering = json_decode((string) get_option('um_hall_catering', '[]'), true); if (!is_array($catering)) { $catering = array(); } $selected_cats = array_fill_keys(array_map('strval', $fields['catering']), true); ?>
+                <div>
+                    <?php foreach ($catering as $ct) : $cid = esc_attr($ct['id'] ?? ''); if (!$cid) continue; ?>
+                        <label style="display:inline-block;margin-<?php echo is_rtl() ? 'left' : 'right'; ?>:12px">
+                            <input type="checkbox" name="um_hall_catering[]" value="<?php echo $cid; ?>" <?php checked(isset($selected_cats[$cid])); ?> />
+                            <span><?php echo esc_html($ct['label'] ?? $cid); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" name="um_hall_need_operator" value="1" <?php checked(!empty($fields['need_operator'])); ?> />
+                    <?php _e('نیاز به اپراتور فنی', 'university-management'); ?>
+                </label>
             </div>
             <div style="grid-column:1/3">
                 <label><?php _e('توضیحات', 'university-management'); ?></label>
@@ -179,6 +253,16 @@ class UM_Hall_Booking_Manager {
                     <option value="pending" <?php selected($status, 'pending'); ?>><?php _e('در انتظار', 'university-management'); ?></option>
                     <option value="success" <?php selected($status, 'success'); ?>><?php _e('موفق', 'university-management'); ?></option>
                     <option value="failed" <?php selected($status, 'failed'); ?>><?php _e('ناموفق', 'university-management'); ?></option>
+                </select>
+            </div>
+            <div>
+                <label><?php _e('روش پرداخت', 'university-management'); ?></label>
+                <?php $pmethods = json_decode((string) get_option('um_hall_payment_methods', '[{"id":"online","label":"پرداخت آنلاین"}]'), true); if (!is_array($pmethods)) { $pmethods = array(); } ?>
+                <select name="um_hall_payment_method">
+                    <option value="">—</option>
+                    <?php foreach ($pmethods as $pm) : $pid = (string) ($pm['id'] ?? ''); if (!$pid) continue; $plabel = (string) ($pm['label'] ?? $pid); ?>
+                        <option value="<?php echo esc_attr($pid); ?>" <?php selected($fields['payment_method'], $pid); ?>><?php echo esc_html($plabel); ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
         </div>
@@ -207,6 +291,12 @@ class UM_Hall_Booking_Manager {
             '_um_hall_description' => 'um_hall_description',
             '_um_hall_total_amount' => 'um_hall_total_amount',
             '_um_hall_payment_status' => 'um_hall_payment_status',
+            // جدید
+            '_um_hall_usage_type' => 'um_hall_usage_type',
+            '_um_hall_layout' => 'um_hall_layout',
+            '_um_hall_payment_method' => 'um_hall_payment_method',
+            '_um_hall_org_unit' => 'um_hall_org_unit',
+            '_um_hall_position' => 'um_hall_position',
         );
         foreach ($map as $meta_key => $field_key) {
             if (isset($_POST[$field_key])) {
@@ -217,6 +307,19 @@ class UM_Hall_Booking_Manager {
                     $value = is_string($value) ? sanitize_text_field($value) : $value;
                 }
                 update_post_meta($post_id, $meta_key, $value);
+            }
+        }
+        // ذخیره آرایه‌ها
+        $array_fields = array(
+            '_um_hall_catering' => 'um_hall_catering',
+        );
+        foreach ($array_fields as $meta_key => $field_key) {
+            if (isset($_POST[$field_key]) && is_array($_POST[$field_key])) {
+                $arr = array_map('sanitize_text_field', (array) $_POST[$field_key]);
+                update_post_meta($post_id, $meta_key, wp_json_encode(array_values($arr)));
+            } elseif (isset($_POST[$field_key])) {
+                // اگر خالی ارسال شد
+                update_post_meta($post_id, $meta_key, wp_json_encode(array()));
             }
         }
         // عنوان پست = عنوان رویداد + تاریخ

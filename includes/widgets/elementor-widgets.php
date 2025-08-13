@@ -165,12 +165,15 @@ class UM_Elementor_Widgets {
             $equipments = json_decode((string) get_option('um_hall_equipment', '[]'), true);
             if (!is_array($equipments)) { $equipments = array(); }
             $equipments_enabled = get_option('um_hall_enable_equipment', '1') === '1';
+            $caterings = json_decode((string) get_option('um_hall_catering', '[]'), true);
+            if (!is_array($caterings)) { $caterings = array(); }
             wp_localize_script('um-hall-booking-widget', 'um_hall_widget_vars', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('university-management-nonce'),
                 'hourly_rate' => (float) get_option('um_hall_hourly_rate', 0),
                 'equipments' => $equipments,
                 'equipments_enabled' => $equipments_enabled,
+                'caterings' => $caterings,
             ));
         }
     }
