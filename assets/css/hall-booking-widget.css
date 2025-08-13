@@ -1,0 +1,14 @@
+.um-hall-form{direction:rtl;text-align:right;display:grid;gap:12px}
+.um-hall-form .row{display:block}
+.um-hall-form .row.two{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.um-hall-form label{display:block;margin-bottom:6px;font-weight:600}
+.um-hall-form input[type=text],.um-hall-form input[type=email],.um-hall-form input[type=tel],.um-hall-form input[type=time],.um-hall-form input[type=date],.um-hall-form textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:6px}
+.um-hall-form .equipments{display:flex;flex-wrap:wrap;gap:10px}
+.um-hall-form .equipment-item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px 10px}
+.um-hall-form .btn-primary{background:#2563eb;color:#fff;border:none;border-radius:6px;padding:10px 16px;cursor:pointer}
+.um-hall-form .btn-primary:hover{background:#1d4ed8}
+.um-hall-form .um-hall-msg{margin-top:8px;color:#b91c1c}
+.um-hall-form .um-hall-msg.success{color:#065f46}
+.um-hall-form #um-hall-total{margin-right:12px;font-weight:700}
+
+

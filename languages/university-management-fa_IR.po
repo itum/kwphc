@@ -12,6 +12,22 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: university-management.php
+msgid "سالن جلسات"
+msgstr "سالن جلسات"
+
+#: university-management.php
+msgid "مدیریت رزروها"
+msgstr "مدیریت رزروها"
+
+#: university-management.php
+msgid "گزارش‌گیری"
+msgstr "گزارش‌گیری"
+
+#: university-management.php
+msgid "تنظیمات"
+msgstr "تنظیمات"
+
 #: university-management.php:121
 msgid "مدیریت دانشگاه"
 msgstr "مدیریت دانشگاه"

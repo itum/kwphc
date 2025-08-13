@@ -63,6 +63,7 @@ class University_Management {
         
         // افزودن منوی مدیریت
         add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_menu', array($this, 'ensure_hall_settings_group'), 20);
         
         // اضافه کردن CSS و JS
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
@@ -70,6 +71,14 @@ class University_Management {
         
         // ثبت پست‌تایپ‌ها
         add_action('init', array($this, 'register_post_types'));
+
+        // بارگذاری ماژول سالن جلسات (CPT + درگاه)
+        add_action('plugins_loaded', function() {
+            $mgr = UM_PLUGIN_DIR . 'includes/hall-booking/class-um-hall-booking-manager.php';
+            $gw  = UM_PLUGIN_DIR . 'includes/hall-booking/class-um-hall-gateway.php';
+            if (file_exists($mgr)) { require_once $mgr; new UM_Hall_Booking_Manager(); }
+            if (file_exists($gw))  { require_once $gw;  new UM_Hall_Gateway(); }
+        });
         
         // افزودن متاباکس‌ها
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
@@ -471,6 +480,68 @@ class University_Management {
             'university-employment-exams',
             array($this, 'employment_exams_admin_page')
         );
+
+        // منوی مستقل: سالن جلسات
+        add_menu_page(
+            __('سالن جلسات', 'university-management'),
+            __('سالن جلسات', 'university-management'),
+            'manage_options',
+            'university-hall-root',
+            array($this, 'hall_bookings_admin_page'),
+            'dashicons-groups',
+            26
+        );
+        add_submenu_page(
+            'university-hall-root',
+            __('مدیریت رزروها', 'university-management'),
+            __('مدیریت رزروها', 'university-management'),
+            'manage_options',
+            'university-hall-bookings',
+            array($this, 'hall_bookings_admin_page')
+        );
+        add_submenu_page(
+            'university-hall-root',
+            __('گزارش‌گیری', 'university-management'),
+            __('گزارش‌گیری', 'university-management'),
+            'manage_options',
+            'university-hall-reports',
+            array($this, 'hall_reports_admin_page')
+        );
+        add_submenu_page(
+            'university-hall-root',
+            __('تنظیمات', 'university-management'),
+            __('تنظیمات', 'university-management'),
+            'manage_options',
+            'university-hall-settings',
+            array($this, 'hall_settings_admin_page')
+        );
+    }
+
+    /**
+     * اطمینان از ثبت گروه تنظیمات سالن برای نمایش فرم
+     */
+    public function ensure_hall_settings_group() {
+        if (!has_action('admin_init', array($this, 'register_hall_settings_fallback'))) {
+            add_action('admin_init', array($this, 'register_hall_settings_fallback'));
+        }
+    }
+
+    /**
+     * اگر به هر دلیل کلاس مدیر سالن هنوز بارگذاری نشده بود، حداقل گزینه‌ها را ثبت کن
+     */
+    public function register_hall_settings_fallback() {
+        // اگر قبلا کلاس مدیر سالن آمده، نیازی نیست
+        if (class_exists('UM_Hall_Booking_Manager')) {
+            return;
+        }
+        // ثبت حداقلی برای نمایش فرم
+        register_setting('um_hall_settings_group', 'um_hall_capacity');
+        register_setting('um_hall_settings_group', 'um_hall_hourly_rate');
+        register_setting('um_hall_settings_group', 'um_hall_equipment');
+        register_setting('um_hall_settings_group', 'um_hall_gateway');
+        register_setting('um_hall_settings_group', 'um_hall_zarinpal_merchant_id');
+        register_setting('um_hall_settings_group', 'um_hall_admin_email');
+        register_setting('um_hall_settings_group', 'um_hall_zarinpal_sandbox');
     }
 
     /**
@@ -567,6 +638,70 @@ class University_Management {
         } else {
             echo '<div class="wrap"><h1>خطا</h1><p>فایل employment-exams-page.php یافت نشد.</p></div>';
         }
+    }
+
+    /**
+     * سالن جلسات: مدیریت رزروها
+     */
+    public function hall_bookings_admin_page() {
+        $file = UM_PLUGIN_DIR . 'admin/hall-booking-list-page.php';
+        if (file_exists($file)) { require_once $file; }
+        else { echo '<div class="wrap"><h1>خطا</h1><p>فایل hall-booking-list-page.php یافت نشد.</p></div>'; }
+    }
+
+    /**
+     * سالن جلسات: گزارش‌گیری
+     */
+    public function hall_reports_admin_page() {
+        $file = UM_PLUGIN_DIR . 'admin/hall-booking-reports-page.php';
+        if (file_exists($file)) { require_once $file; }
+        else { echo '<div class="wrap"><h1>خطا</h1><p>فایل hall-booking-reports-page.php یافت نشد.</p></div>'; }
+    }
+
+    /**
+     * سالن جلسات: تنظیمات
+     */
+    public function hall_settings_admin_page() {
+        $file = UM_PLUGIN_DIR . 'admin/hall-booking-settings-page.php';
+        ob_start();
+        try {
+            if (file_exists($file)) {
+                require $file; // خروجی در بافر جمع می‌شود
+            }
+        } catch (\Throwable $e) {
+            // بافر را خالی نکن؛ پیام خطا را در ادامه چاپ می‌کنیم
+        }
+        $html = ob_get_clean();
+
+        if (!empty($html)) {
+            echo $html; // محتوای فایل تنظیمات
+            return;
+        }
+
+        // فال‌بک: اگر به هر دلیل خروجی خالی بود
+        echo '<div class="wrap university-management-admin" style="direction:rtl;text-align:right">'
+            . '<h1>تنظیمات سالن جلسات</h1>'
+            . '<form method="post" action="options.php">'
+            . '<table class="form-table" role="presentation">'
+            . '<tr><th scope="row"><label for="um_hall_capacity">ظرفیت سالن</label></th>'
+            . '<td><input name="um_hall_capacity" id="um_hall_capacity" type="number" value="' . esc_attr(get_option('um_hall_capacity', 50)) . '" class="regular-text" /></td></tr>'
+            . '<tr><th scope="row"><label for="um_hall_hourly_rate">هزینه ساعتی (تومان)</label></th>'
+            . '<td><input name="um_hall_hourly_rate" id="um_hall_hourly_rate" type="number" value="' . esc_attr(get_option('um_hall_hourly_rate', 0)) . '" class="regular-text" /></td></tr>'
+            . '<tr><th scope="row"><label for="um_hall_equipment">تجهیزات پیش‌فرض (JSON)</label></th>'
+            . '<td><textarea name="um_hall_equipment" id="um_hall_equipment" rows="5" class="large-text code">' . esc_textarea(get_option('um_hall_equipment', '[]')) . '</textarea></td></tr>'
+            . '<tr><th scope="row">درگاه پرداخت</th><td><select name="um_hall_gateway">'
+            . (function(){ $gw = get_option('um_hall_gateway', 'zarinpal'); return '<option value="zarinpal" ' . selected($gw, 'zarinpal', false) . '>زرین‌پال</option>'; })()
+            . '</select></td></tr>'
+            . '<tr><th scope="row"><label for="um_hall_zarinpal_merchant_id">مرچنت آیدی زرین‌پال</label></th>'
+            . '<td><input name="um_hall_zarinpal_merchant_id" id="um_hall_zarinpal_merchant_id" type="text" value="' . esc_attr(get_option('um_hall_zarinpal_merchant_id', '')) . '" class="regular-text" /></td></tr>'
+            . '<tr><th scope="row">Sandbox زرین‌پال</th>'
+            . '<td><label><input type="checkbox" name="um_hall_zarinpal_sandbox" value="1" ' . checked(get_option('um_hall_zarinpal_sandbox', '0'), '1', false) . ' /> فعال‌سازی حالت تست (Sandbox)</label></td></tr>'
+            . '<tr><th scope="row"><label for="um_hall_admin_email">ایمیل مدیر</label></th>'
+            . '<td><input name="um_hall_admin_email" id="um_hall_admin_email" type="email" value="' . esc_attr(get_option('um_hall_admin_email', get_option('admin_email'))) . '" class="regular-text" /></td></tr>'
+            . '</table>'
+            . '<p class="submit"><input type="submit" class="button button-primary" value="ذخیره تغییرات" /></p>'
+            . '</form>'
+            . '</div>';
     }
     
     /**
