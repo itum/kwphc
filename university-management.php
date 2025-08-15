@@ -454,6 +454,16 @@ class University_Management {
             'manage_options',
             'edit.php?post_type=um_slides'
         );
+
+        // زیرمنوی همگام‌سازی اسلایدها از المنتور
+        add_submenu_page(
+            'university-management',
+            __('همگام‌سازی اسلایدها', 'university-management'),
+            __('همگام‌سازی اسلایدها', 'university-management'),
+            'manage_options',
+            'university-slides-sync',
+            array($this, 'slides_sync_admin_page')
+        );
         
         add_submenu_page(
             'university-management',
@@ -712,6 +722,150 @@ class University_Management {
             . '<p class="submit"><input type="submit" class="button button-primary" value="ذخیره تغییرات" /></p>'
             . '</form>'
             . '</div>';
+    }
+
+    /**
+     * صفحه همگام‌سازی اسلایدها از ویجت‌های المنتور
+     */
+    public function slides_sync_admin_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('دسترسی ندارید.', 'university-management'));
+        }
+
+        // اکشن همگام‌سازی
+        if (isset($_POST['um_sync_slides_nonce']) && wp_verify_nonce($_POST['um_sync_slides_nonce'], 'um_sync_slides')) {
+            $page_id = isset($_POST['um_elementor_page_id']) ? absint($_POST['um_elementor_page_id']) : 0;
+            $synced = 0;
+            $errors = [];
+            if ($page_id) {
+                list($synced, $errors) = $this->import_slides_from_elementor_page($page_id);
+            }
+            echo '<div class="notice notice-success"><p>' . sprintf(__('تعداد %d اسلاید همگام شد.', 'university-management'), intval($synced)) . '</p></div>';
+            if (!empty($errors)) {
+                echo '<div class="notice notice-warning"><p>' . implode('<br>', array_map('esc_html', $errors)) . '</p></div>';
+            }
+        }
+
+        echo '<div class="wrap"><h1>' . esc_html__('همگام‌سازی اسلایدها از المنتور', 'university-management') . '</h1>';
+        echo '<form method="post">';
+        wp_nonce_field('um_sync_slides', 'um_sync_slides_nonce');
+        echo '<p><label for="um_elementor_page_id">' . esc_html__('شناسه صفحه حاوی ویجت اسلایدها (Elementor)', 'university-management') . '</label> ';
+        echo '<input type="number" class="small-text" id="um_elementor_page_id" name="um_elementor_page_id" min="1" required></p>';
+        echo '<p class="description">' . esc_html__('به صفحه موردنظر در پیشخوان بروید، شناسه آن را از URL بردارید و وارد کنید. اسلایدهای ویجت Slides خوانده و به پست‌تایپ um_slides تبدیل می‌شوند.', 'university-management') . '</p>';
+        echo '<p><button type="submit" class="button button-primary">' . esc_html__('همگام‌سازی', 'university-management') . '</button></p>';
+        echo '</form></div>';
+    }
+
+    /**
+     * استخراج اسلایدها از داده‌های المنتور یک صفحه و تبدیل به um_slides
+     * بازگشت: [تعداد موفق، آرایه خطاها]
+     */
+    private function import_slides_from_elementor_page($page_id) {
+        $synced = 0; $errors = [];
+        $data = get_post_meta($page_id, '_elementor_data', true);
+        if (empty($data)) { $errors[] = __('هیچ داده المنتوری یافت نشد.', 'university-management'); return [0, $errors]; }
+
+        // داده المنتور ممکن است JSON یا آرایه باشد
+        if (is_string($data)) {
+            $decoded = json_decode($data, true);
+        } else {
+            $decoded = $data;
+        }
+        if (!is_array($decoded)) { $errors[] = __('ساختار داده المنتور نامعتبر است.', 'university-management'); return [0, $errors]; }
+
+        // جستجوی ویجت Slides یا هر سکشن دارای background
+        $slides = $this->extract_slides_from_elementor_tree($decoded);
+        if (empty($slides)) { $errors[] = __('اسلایدی در صفحه یافت نشد.', 'university-management'); return [0, $errors]; }
+
+        // زبان فعلی برای نسبت دادن (درصورت وجود Polylang)
+        $lang = function_exists('pll_current_language') ? pll_current_language() : null;
+
+        foreach ($slides as $slide) {
+            $post_id = wp_insert_post(array(
+                'post_type' => 'um_slides',
+                'post_status' => 'publish',
+                'post_title' => $slide['title'] ?: __('اسلاید', 'university-management'),
+                'post_excerpt' => $slide['description'] ?? '',
+                'menu_order' => isset($slide['order']) ? intval($slide['order']) : 0,
+            ));
+            if (is_wp_error($post_id) || !$post_id) { $errors[] = __('خطا در ایجاد اسلاید', 'university-management'); continue; }
+
+            // تصویر شاخص
+            if (!empty($slide['image'])) {
+                $attachment_id = $this->sideload_image_to_media($slide['image'], $post_id);
+                if ($attachment_id) { set_post_thumbnail($post_id, $attachment_id); }
+            }
+            // لینک و دکمه
+            if (!empty($slide['button_text'])) update_post_meta($post_id, '_slide_button_text', sanitize_text_field($slide['button_text']));
+            if (!empty($slide['link'])) update_post_meta($post_id, '_slide_link_url', esc_url_raw($slide['link']));
+            if (!empty($slide['open_new'])) update_post_meta($post_id, '_slide_open_new', $slide['open_new'] ? 1 : 0);
+
+            // نسبت‌دادن زبان
+            if ($lang && function_exists('pll_set_post_language')) { pll_set_post_language($post_id, $lang); }
+            $synced++;
+        }
+        return [$synced, $errors];
+    }
+
+    /**
+     * پیمایش درخت المنتور و استخراج اسلایدها از ویجت Slides
+     */
+    private function extract_slides_from_elementor_tree(array $tree) {
+        $found = [];
+        $walk = function($nodes) use (&$walk, &$found) {
+            foreach ((array)$nodes as $node) {
+                if (!is_array($node)) { continue; }
+                if (isset($node['widgetType']) && $node['widgetType'] === 'slides') {
+                    $settings = isset($node['settings']) ? $node['settings'] : [];
+                    if (!empty($settings['slides'])) {
+                        $order = 0;
+                        foreach ($settings['slides'] as $s) {
+                            $bg = '';
+                            if (!empty($s['background_image']['url'])) { $bg = $s['background_image']['url']; }
+                            elseif (!empty($s['image']['url'])) { $bg = $s['image']['url']; }
+                            $found[] = array(
+                                'order' => $order++,
+                                'title' => isset($s['title']) ? wp_strip_all_tags($s['title']) : '',
+                                'description' => isset($s['description']) ? wp_strip_all_tags($s['description']) : '',
+                                'image' => $bg,
+                                'button_text' => isset($s['button_text']) ? $s['button_text'] : '',
+                                'link' => isset($s['link']['url']) ? $s['link']['url'] : '',
+                                'open_new' => !empty($s['link']['is_external']),
+                            );
+                        }
+                    }
+                }
+                if (!empty($node['elements'])) { $walk($node['elements']); }
+            }
+        };
+        $walk($tree);
+        return $found;
+    }
+
+    /**
+     * دانلود/سایدلود تصویر به کتابخانه و برگرداندن ID پیوست
+     */
+    private function sideload_image_to_media($url, $parent_post_id = 0) {
+        if (empty($url)) return 0;
+        // اگر فایل داخلی وردپرس باشد
+        if (strpos($url, home_url()) === 0) {
+            // تلاش برای یافتن پیوست از روی URL
+            $attachment_id = attachment_url_to_postid($url);
+            return $attachment_id ?: 0;
+        }
+        // فایل خارجی را سایدلود کن
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        $tmp = download_url($url);
+        if (is_wp_error($tmp)) { return 0; }
+        $file_array = array(
+            'name' => basename(parse_url($url, PHP_URL_PATH)),
+            'tmp_name' => $tmp,
+        );
+        $id = media_handle_sideload($file_array, $parent_post_id);
+        if (is_wp_error($id)) { @unlink($tmp); return 0; }
+        return (int)$id;
     }
     
     /**
