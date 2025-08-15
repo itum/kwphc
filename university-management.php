@@ -90,6 +90,7 @@ class University_Management {
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         add_action('save_post_um_staff', array($this, 'save_staff_meta'));
         add_action('save_post_um_slides', array($this, 'save_slide_meta'));
+        add_action('delete_post', array($this, 'maybe_resync_slides_on_delete'), 10, 1);
         
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
@@ -755,6 +756,43 @@ class University_Management {
         echo '<label><input type="radio" name="um_sync_mode" value="export"> ' . esc_html__('نوشتن از «اسلایدها» روی صفحه (Export)', 'university-management') . '</label>';
         echo '</p>';
         echo '<p><button type="submit" class="button button-primary">' . esc_html__('اجرای عملیات', 'university-management') . '</button></p>';
+        echo '</form>';
+
+        // فرم تنظیم صفحه‌های هدف همگام‌سازی خودکار
+        echo '<hr><h2>' . esc_html__('تنظیم صفحه هدف برای همگام‌سازی خودکار', 'university-management') . '</h2>';
+        if (isset($_POST['um_slides_targets_nonce']) && wp_verify_nonce($_POST['um_slides_targets_nonce'], 'um_slides_targets')) {
+            // ذخیره تنظیمات
+            $default = isset($_POST['um_slides_target_page_default']) ? absint($_POST['um_slides_target_page_default']) : 0;
+            update_option('um_slides_target_page_default', $default);
+            if (function_exists('pll_languages_list')) {
+                $langs = pll_languages_list(array('fields' => 'slug'));
+                foreach ($langs as $slug) {
+                    $key = 'um_slides_target_page_' . $slug;
+                    $val = isset($_POST[$key]) ? absint($_POST[$key]) : 0;
+                    update_option($key, $val);
+                }
+            }
+            echo '<div class="notice notice-success"><p>' . esc_html__('تنظیمات ذخیره شد.', 'university-management') . '</p></div>';
+        }
+
+        echo '<form method="post" style="max-width:720px;">';
+        wp_nonce_field('um_slides_targets', 'um_slides_targets_nonce');
+        echo '<table class="form-table">';
+        echo '<tr><th>' . esc_html__('پیش‌فرض (درصورت نبودن زبان)', 'university-management') . '</th><td>';
+        echo '<input type="number" name="um_slides_target_page_default" value="' . esc_attr(get_option('um_slides_target_page_default', 0)) . '" class="small-text">';
+        echo '<p class="description">' . esc_html__('شناسه صفحه‌ای که باید همیشه با اسلایدهای مدیریت به‌روزرسانی شود.', 'university-management') . '</p>';
+        echo '</td></tr>';
+        if (function_exists('pll_languages_list')) {
+            $langs = pll_languages_list(array('fields' => 'slug'));
+            foreach ($langs as $slug) {
+                $opt = 'um_slides_target_page_' . $slug;
+                echo '<tr><th>' . sprintf(esc_html__('صفحه هدف زبان %s', 'university-management'), esc_html($slug)) . '</th><td>';
+                echo '<input type="number" name="' . esc_attr($opt) . '" value="' . esc_attr(get_option($opt, 0)) . '" class="small-text">';
+                echo '</td></tr>';
+            }
+        }
+        echo '</table>';
+        echo '<p><button type="submit" class="button button-primary">' . esc_html__('ذخیره تنظیمات', 'university-management') . '</button></p>';
         echo '</form></div>';
     }
 
@@ -918,6 +956,20 @@ class University_Management {
             update_post_meta($page_id, '_elementor_data', $json);
         }
         return [$updated, $errors];
+    }
+
+    /**
+     * در صورت حذف/زباله‌دان اسلاید، صفحه هدف را مجدد باقیمانده اسلایدها به‌روز کن
+     */
+    public function maybe_resync_slides_on_delete($post_id) {
+        if (get_post_type($post_id) !== 'um_slides') { return; }
+        $target_page = 0;
+        if (function_exists('pll_get_post_language')) {
+            $lang = pll_get_post_language($post_id);
+            if ($lang) { $target_page = intval(get_option('um_slides_target_page_' . $lang, 0)); }
+        }
+        if (!$target_page) { $target_page = intval(get_option('um_slides_target_page_default', 0)); }
+        if ($target_page) { $this->export_slides_to_elementor_page($target_page); }
     }
 
     /**
@@ -5379,6 +5431,21 @@ class University_Management {
             update_post_meta($post_id, '_slide_link_url', esc_url_raw($_POST['um_slide_link_url']));
         }
         update_post_meta($post_id, '_slide_open_new', isset($_POST['um_slide_open_new']) ? 1 : 0);
+
+        // همگام‌سازی خودکار با صفحه هدف همان زبان
+        $target_page = 0;
+        if (function_exists('pll_get_post_language')) {
+            $lang = pll_get_post_language($post_id);
+            if ($lang) {
+                $target_page = intval(get_option('um_slides_target_page_' . $lang, 0));
+            }
+        }
+        if (!$target_page) {
+            $target_page = intval(get_option('um_slides_target_page_default', 0));
+        }
+        if ($target_page) {
+            list($updated,) = $this->export_slides_to_elementor_page($target_page);
+        }
     }
 
     /**
