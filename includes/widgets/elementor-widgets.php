@@ -79,6 +79,10 @@ class UM_Elementor_Widgets {
         require_once UM_PLUGIN_DIR . 'includes/widgets/seminar-slider-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/azmoon-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/employment-exams-widget.php';
+        // ویجت اسلایدها
+        if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/slides-widget.php')) {
+            require_once UM_PLUGIN_DIR . 'includes/widgets/slides-widget.php';
+        }
         // فرم رزرو سالن
         if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/hall-booking-widget.php')) {
             require_once UM_PLUGIN_DIR . 'includes/widgets/hall-booking-widget.php';
@@ -93,6 +97,9 @@ class UM_Elementor_Widgets {
         \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Employment_Exams_Widget());
         if (class_exists('UM_Hall_Booking_Widget')) {
             \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Hall_Booking_Widget());
+        }
+        if (class_exists('UM_Slides_Widget')) {
+            \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Slides_Widget());
         }
     }
 
@@ -110,6 +117,9 @@ class UM_Elementor_Widgets {
         wp_enqueue_style('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/css/seminar-slider-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/css/employment-exams-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-azmoon-widget', UM_PLUGIN_URL . 'assets/css/azmoon-widget.css', array(), UM_VERSION);
+        if (file_exists(UM_PLUGIN_DIR . 'assets/css/elementor-slides-widget.css')) {
+            wp_enqueue_style('um-slides-widget', UM_PLUGIN_URL . 'assets/css/elementor-slides-widget.css', array(), UM_VERSION);
+        }
         if (file_exists(UM_PLUGIN_DIR . 'assets/css/hall-booking-widget.css')) {
             wp_enqueue_style('um-hall-booking-widget', UM_PLUGIN_URL . 'assets/css/hall-booking-widget.css', array(), UM_VERSION);
         }
@@ -139,6 +149,9 @@ class UM_Elementor_Widgets {
         wp_register_script('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/js/employment-exams-widget.js', array('jquery'), UM_VERSION, true);
         if (file_exists(UM_PLUGIN_DIR . 'assets/js/hall-booking-widget.js')) {
             wp_register_script('um-hall-booking-widget', UM_PLUGIN_URL . 'assets/js/hall-booking-widget.js', array('jquery'), UM_VERSION, true);
+        }
+        if (file_exists(UM_PLUGIN_DIR . 'assets/js/slides-widget.js')) {
+            wp_register_script('um-slides-widget', UM_PLUGIN_URL . 'assets/js/slides-widget.js', array('jquery','swiper'), UM_VERSION, true);
         }
 
         // لوکالایز اسکریپت‌ها

@@ -1,0 +1,6 @@
+.um-slides-widget { position: relative; width: 100%; }
+.um-slides-widget .um-slide-item { background-size: cover; background-position: center; min-height: 380px; display: flex; align-items: center; }
+.um-slides-widget .um-slide-content { background: rgba(0,0,0,0.35); color: #fff; padding: 24px; margin: 24px; border-radius: 12px; max-width: 720px; }
+.um-slides-widget .um-slide-btn { display: inline-block; margin-top: 12px; background: #1e40af; color: #fff; padding: 10px 16px; border-radius: 8px; text-decoration: none; }
+.um-slides-empty { padding: 16px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; }
+

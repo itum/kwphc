@@ -89,6 +89,7 @@ class University_Management {
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         add_action('save_post_um_staff', array($this, 'save_staff_meta'));
+        add_action('save_post_um_slides', array($this, 'save_slide_meta'));
         
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
@@ -445,6 +446,15 @@ class University_Management {
             array($this, 'videos_admin_page')
         );
         
+        // زیرمنوی مدیریت اسلایدها (پست‌تایپ um_slides)
+        add_submenu_page(
+            'university-management',
+            __('اسلایدها', 'university-management'),
+            __('اسلایدها', 'university-management'),
+            'manage_options',
+            'edit.php?post_type=um_slides'
+        );
+        
         add_submenu_page(
             'university-management',
             __('ورود اطلاعات پایگاه داده', 'university-management'),
@@ -741,6 +751,34 @@ class University_Management {
             'high'
         );
 
+        // متاباکس‌های اسلاید
+        add_meta_box(
+            'um_slide_details',
+            __('جزئیات اسلاید', 'university-management'),
+            array($this, 'slide_details_meta_box'),
+            'um_slides',
+            'normal',
+            'high'
+        );
+
+    }
+
+    /**
+     * متاباکس اسلایدها
+     */
+    public function slide_details_meta_box($post) {
+        $btn = get_post_meta($post->ID, '_slide_button_text', true);
+        $url = get_post_meta($post->ID, '_slide_link_url', true);
+        $new = (bool)get_post_meta($post->ID, '_slide_open_new', true);
+        wp_nonce_field('um_slide_meta_nonce', 'um_slide_meta_nonce_field');
+        echo '<table class="form-table"><tbody>';
+        echo '<tr><th><label for="um_slide_button_text">' . esc_html__('متن دکمه', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="um_slide_button_text" name="um_slide_button_text" value="' . esc_attr($btn) . '" class="regular-text"></td></tr>';
+        echo '<tr><th><label for="um_slide_link_url">' . esc_html__('لینک', 'university-management') . '</label></th>';
+        echo '<td><input type="url" id="um_slide_link_url" name="um_slide_link_url" value="' . esc_attr($url) . '" class="regular-text" placeholder="https://"></td></tr>';
+        echo '<tr><th>' . esc_html__('باز شدن در تب جدید', 'university-management') . '</th>';
+        echo '<td><label><input type="checkbox" name="um_slide_open_new" value="1"' . checked(true, $new, false) . '> ' . esc_html__('بله', 'university-management') . '</label></td></tr>';
+        echo '</tbody></table>';
     }
     
     /**
@@ -1400,6 +1438,75 @@ class University_Management {
             'show_in_rest'      => true,
         );
         register_taxonomy( 'um_seminar_category', array( 'um_seminars' ), $seminar_cat_args );
+
+        // ثبت پست تایپ اسلایدها
+        $slides_labels = array(
+            'name'                  => _x( 'اسلایدها', 'Post Type General Name', 'university-management' ),
+            'singular_name'         => _x( 'اسلاید', 'Post Type Singular Name', 'university-management' ),
+            'menu_name'             => __( 'اسلایدها', 'university-management' ),
+            'name_admin_bar'        => __( 'اسلاید', 'university-management' ),
+            'archives'              => __( 'آرشیو اسلایدها', 'university-management' ),
+            'attributes'            => __( 'ویژگی‌های اسلاید', 'university-management' ),
+            'parent_item_colon'     => __( 'والد:', 'university-management' ),
+            'all_items'             => __( 'همه اسلایدها', 'university-management' ),
+            'add_new_item'          => __( 'افزودن اسلاید جدید', 'university-management' ),
+            'add_new'               => __( 'افزودن جدید', 'university-management' ),
+            'new_item'              => __( 'اسلاید جدید', 'university-management' ),
+            'edit_item'             => __( 'ویرایش اسلاید', 'university-management' ),
+            'update_item'           => __( 'به‌روزرسانی اسلاید', 'university-management' ),
+            'view_item'             => __( 'مشاهده اسلاید', 'university-management' ),
+            'view_items'            => __( 'مشاهده اسلایدها', 'university-management' ),
+            'search_items'          => __( 'جستجوی اسلاید', 'university-management' ),
+            'not_found'             => __( 'یافت نشد', 'university-management' ),
+            'not_found_in_trash'    => __( 'در زباله‌دان یافت نشد', 'university-management' ),
+            'featured_image'        => __( 'تصویر پس‌زمینه', 'university-management' ),
+            'set_featured_image'    => __( 'تنظیم تصویر پس‌زمینه', 'university-management' ),
+            'remove_featured_image' => __( 'حذف تصویر پس‌زمینه', 'university-management' ),
+            'use_featured_image'    => __( 'استفاده به عنوان تصویر پس‌زمینه', 'university-management' ),
+            'items_list'            => __( 'لیست اسلایدها', 'university-management' ),
+            'items_list_navigation' => __( 'ناوبری لیست اسلایدها', 'university-management' ),
+            'filter_items_list'     => __( 'فیلتر لیست اسلایدها', 'university-management' ),
+        );
+        $slides_args = array(
+            'label'                 => __( 'اسلاید', 'university-management' ),
+            'description'           => __( 'مدیریت اسلایدهای صفحه اصلی', 'university-management' ),
+            'labels'                => $slides_labels,
+            'supports'              => array( 'title', 'editor', 'thumbnail', 'excerpt', 'page-attributes' ),
+            'hierarchical'          => false,
+            'public'                => true,
+            'show_ui'               => true,
+            'show_in_menu'          => 'university-management',
+            'menu_position'         => 5,
+            'show_in_admin_bar'     => true,
+            'show_in_nav_menus'     => false,
+            'can_export'            => true,
+            'has_archive'           => false,
+            'exclude_from_search'   => true,
+            'publicly_queryable'    => true,
+            'capability_type'       => 'post',
+            'menu_icon'             => 'dashicons-images-alt2',
+            'show_in_rest'          => true,
+        );
+        register_post_type( 'um_slides', $slides_args );
+
+        // فیلدهای متا برای اسلایدها (REST هم فعال شود)
+        register_post_meta('um_slides', '_slide_button_text', array(
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+        ));
+        register_post_meta('um_slides', '_slide_link_url', array(
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'sanitize_callback' => 'esc_url_raw',
+        ));
+        register_post_meta('um_slides', '_slide_open_new', array(
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'boolean',
+        ));
 
         // ثبت پست تایپ آزمون‌های استخدامی
         $args = array(
@@ -5018,6 +5125,31 @@ class University_Management {
     }
 
     /**
+     * ذخیره متای اسلاید
+     */
+    public function save_slide_meta($post_id) {
+        if (!isset($_POST['um_slide_meta_nonce_field']) || !wp_verify_nonce($_POST['um_slide_meta_nonce_field'], 'um_slide_meta_nonce')) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+        if (get_post_type($post_id) !== 'um_slides') {
+            return;
+        }
+        if (isset($_POST['um_slide_button_text'])) {
+            update_post_meta($post_id, '_slide_button_text', sanitize_text_field($_POST['um_slide_button_text']));
+        }
+        if (isset($_POST['um_slide_link_url'])) {
+            update_post_meta($post_id, '_slide_link_url', esc_url_raw($_POST['um_slide_link_url']));
+        }
+        update_post_meta($post_id, '_slide_open_new', isset($_POST['um_slide_open_new']) ? 1 : 0);
+    }
+
+    /**
      * نمایش متاباکس جزئیات پرسنل
      */
     public function staff_details_meta_box($post) {
@@ -5085,6 +5217,7 @@ class University_Management {
             pll_register_post_type('um_seminars');
             pll_register_post_type('um_employment_exams');
             pll_register_post_type('um_staff');
+            pll_register_post_type('um_slides');
             
             // ثبت تاکسونومی‌ها در Polylang
             if (function_exists('pll_register_taxonomy')) {
