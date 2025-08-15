@@ -730,14 +730,17 @@ class University_Management {
         // اکشن همگام‌سازی
         if (isset($_POST['um_sync_slides_nonce']) && wp_verify_nonce($_POST['um_sync_slides_nonce'], 'um_sync_slides')) {
             $page_id = isset($_POST['um_elementor_page_id']) ? absint($_POST['um_elementor_page_id']) : 0;
-            $synced = 0;
-            $errors = [];
-            if ($page_id) {
-                list($synced, $errors) = $this->import_slides_from_elementor_page($page_id);
-            }
-            echo '<div class="notice notice-success"><p>' . sprintf(__('تعداد %d اسلاید همگام شد.', 'university-management'), intval($synced)) . '</p></div>';
-            if (!empty($errors)) {
-                echo '<div class="notice notice-warning"><p>' . implode('<br>', array_map('esc_html', $errors)) . '</p></div>';
+            $mode = isset($_POST['um_sync_mode']) ? sanitize_text_field($_POST['um_sync_mode']) : 'import';
+            if ($mode === 'import') {
+                $synced = 0; $errors = [];
+                if ($page_id) { list($synced, $errors) = $this->import_slides_from_elementor_page($page_id); }
+                echo '<div class="notice notice-success"><p>' . sprintf(__('تعداد %d اسلاید از صفحه خوانده و به مدیریت افزوده شد.', 'university-management'), intval($synced)) . '</p></div>';
+                if (!empty($errors)) { echo '<div class="notice notice-warning"><p>' . implode('<br>', array_map('esc_html', $errors)) . '</p></div>'; }
+            } else {
+                $updated = 0; $msg = '';$errors=[];
+                if ($page_id) { list($updated, $errors) = $this->export_slides_to_elementor_page($page_id); }
+                echo '<div class="notice notice-success"><p>' . sprintf(__('محتوای ویجت Slides صفحه به‌روزرسانی شد (%d اسلاید).', 'university-management'), intval($updated)) . '</p></div>';
+                if (!empty($errors)) { echo '<div class="notice notice-warning"><p>' . implode('<br>', array_map('esc_html', $errors)) . '</p></div>'; }
             }
         }
 
@@ -747,7 +750,11 @@ class University_Management {
         echo '<p><label for="um_elementor_page_id">' . esc_html__('شناسه صفحه‌ای که می‌خواهید اسلایدهایش را اضافه/همگام کنید (مثل صفحه اصلی/Home Page)', 'university-management') . '</label> ';
         echo '<input type="number" class="small-text" id="um_elementor_page_id" name="um_elementor_page_id" min="1" required></p>';
         echo '<p class="description">' . esc_html__('به صفحه موردنظر در پیشخوان بروید (برگه‌ها/صفحات)، شناسه را از URL کپی کنید. اسلایدهای ویجت Slides خوانده و به اسلایدهای مدیریت (um_slides) تبدیل می‌شوند.', 'university-management') . '</p>';
-        echo '<p><button type="submit" class="button button-primary">' . esc_html__('همگام‌سازی', 'university-management') . '</button></p>';
+        echo '<p>';
+        echo '<label><input type="radio" name="um_sync_mode" value="import" checked> ' . esc_html__('خواندن از صفحه به «اسلایدها» (Import)', 'university-management') . '</label><br>';
+        echo '<label><input type="radio" name="um_sync_mode" value="export"> ' . esc_html__('نوشتن از «اسلایدها» روی صفحه (Export)', 'university-management') . '</label>';
+        echo '</p>';
+        echo '<p><button type="submit" class="button button-primary">' . esc_html__('اجرای عملیات', 'university-management') . '</button></p>';
         echo '</form></div>';
     }
 
@@ -844,6 +851,73 @@ class University_Management {
         };
         $walk($tree);
         return $found;
+    }
+
+    /**
+     * ساخت آرایه اسلایدهای المنتور از روی پست‌تایپ um_slides بر اساس زبان صفحه
+     */
+    private function build_elementor_slides_from_cpt($page_id) {
+        $lang = null;
+        if (function_exists('pll_get_post_language')) { $lang = pll_get_post_language($page_id); }
+        $args = array(
+            'post_type' => 'um_slides',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => array('menu_order' => 'ASC', 'date' => 'DESC'),
+        );
+        if ($lang) { $args['lang'] = $lang; }
+        $q = new WP_Query($args);
+        $items = [];
+        $order = 0;
+        while ($q->have_posts()) { $q->the_post();
+            $img = get_the_post_thumbnail_url(get_the_ID(), 'full');
+            $btn = get_post_meta(get_the_ID(), '_slide_button_text', true);
+            $url = get_post_meta(get_the_ID(), '_slide_link_url', true);
+            $ext = (bool)get_post_meta(get_the_ID(), '_slide_open_new', true);
+            $items[] = array(
+                'id' => 'slide_' . (++$order),
+                'title' => get_the_title(),
+                'description' => get_the_excerpt(),
+                'button_text' => $btn,
+                'link' => array('url' => $url, 'is_external' => $ext),
+                'background_image' => array('url' => $img),
+            );
+        }
+        wp_reset_postdata();
+        return $items;
+    }
+
+    /**
+     * جایگزینی محتوای ویجت Slides صفحه با داده‌های um_slides
+     */
+    private function export_slides_to_elementor_page($page_id) {
+        $errors = [];
+        $data = get_post_meta($page_id, '_elementor_data', true);
+        if (empty($data)) { $errors[] = __('داده المنتور برای صفحه یافت نشد.', 'university-management'); return [0, $errors]; }
+        $decoded = is_string($data) ? json_decode($data, true) : $data;
+        if (!is_array($decoded)) { $errors[] = __('ساختار داده المنتور نامعتبر است.', 'university-management'); return [0, $errors]; }
+
+        $newSlides = $this->build_elementor_slides_from_cpt($page_id);
+        if (empty($newSlides)) { $errors[] = __('اسلایدی در مدیریت یافت نشد.', 'university-management'); return [0, $errors]; }
+
+        $updated = 0;
+        $walk = function(&$nodes) use (&$walk, &$updated, $newSlides) {
+            foreach ($nodes as &$node) {
+                if (isset($node['widgetType']) && $node['widgetType'] === 'slides') {
+                    if (!isset($node['settings'])) { $node['settings'] = []; }
+                    $node['settings']['slides'] = $newSlides;
+                    $updated = count($newSlides);
+                }
+                if (!empty($node['elements']) && is_array($node['elements'])) { $walk($node['elements']); }
+            }
+        };
+        $walk($decoded);
+
+        if ($updated > 0) {
+            $json = wp_json_encode($decoded);
+            update_post_meta($page_id, '_elementor_data', $json);
+        }
+        return [$updated, $errors];
     }
 
     /**
