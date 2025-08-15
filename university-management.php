@@ -963,12 +963,14 @@ class University_Management {
      */
     public function maybe_resync_slides_on_delete($post_id) {
         if (get_post_type($post_id) !== 'um_slides') { return; }
-        $target_page = 0;
-        if (function_exists('pll_get_post_language')) {
-            $lang = pll_get_post_language($post_id);
-            if ($lang) { $target_page = intval(get_option('um_slides_target_page_' . $lang, 0)); }
+        $target_page = intval(get_post_meta($post_id, '_slide_target_page_id', true));
+        if (!$target_page) {
+            if (function_exists('pll_get_post_language')) {
+                $lang = pll_get_post_language($post_id);
+                if ($lang) { $target_page = intval(get_option('um_slides_target_page_' . $lang, 0)); }
+            }
+            if (!$target_page) { $target_page = intval(get_option('um_slides_target_page_default', 0)); }
         }
-        if (!$target_page) { $target_page = intval(get_option('um_slides_target_page_default', 0)); }
         if ($target_page) { $this->export_slides_to_elementor_page($target_page); }
     }
 
@@ -1054,6 +1056,7 @@ class University_Management {
         $btn = get_post_meta($post->ID, '_slide_button_text', true);
         $url = get_post_meta($post->ID, '_slide_link_url', true);
         $new = (bool)get_post_meta($post->ID, '_slide_open_new', true);
+        $target = intval(get_post_meta($post->ID, '_slide_target_page_id', true));
         wp_nonce_field('um_slide_meta_nonce', 'um_slide_meta_nonce_field');
         echo '<table class="form-table"><tbody>';
         echo '<tr><th><label for="um_slide_button_text">' . esc_html__('متن دکمه', 'university-management') . '</label></th>';
@@ -1062,6 +1065,18 @@ class University_Management {
         echo '<td><input type="url" id="um_slide_link_url" name="um_slide_link_url" value="' . esc_attr($url) . '" class="regular-text" placeholder="https://"></td></tr>';
         echo '<tr><th>' . esc_html__('باز شدن در تب جدید', 'university-management') . '</th>';
         echo '<td><label><input type="checkbox" name="um_slide_open_new" value="1"' . checked(true, $new, false) . '> ' . esc_html__('بله', 'university-management') . '</label></td></tr>';
+        echo '<tr><th><label for="um_slide_target_page_id">' . esc_html__('برگه هدف (Home Page و ...)', 'university-management') . '</label></th>';
+        echo '<td>';
+        $dropdown = wp_dropdown_pages(array(
+            'name' => 'um_slide_target_page_id',
+            'echo' => 0,
+            'show_option_none' => __('— انتخاب صفحه —', 'university-management'),
+            'option_none_value' => '0',
+            'selected' => $target,
+        ));
+        echo $dropdown;
+        echo '<p class="description">' . esc_html__('صفحه‌ای که باید این اسلاید روی ویجت Slides آن نمایش داده شود.', 'university-management') . '</p>';
+        echo '</td></tr>';
         echo '</tbody></table>';
     }
     
@@ -5431,17 +5446,19 @@ class University_Management {
             update_post_meta($post_id, '_slide_link_url', esc_url_raw($_POST['um_slide_link_url']));
         }
         update_post_meta($post_id, '_slide_open_new', isset($_POST['um_slide_open_new']) ? 1 : 0);
+        if (isset($_POST['um_slide_target_page_id'])) {
+            update_post_meta($post_id, '_slide_target_page_id', absint($_POST['um_slide_target_page_id']));
+        }
 
         // همگام‌سازی خودکار با صفحه هدف همان زبان
-        $target_page = 0;
-        if (function_exists('pll_get_post_language')) {
-            $lang = pll_get_post_language($post_id);
-            if ($lang) {
-                $target_page = intval(get_option('um_slides_target_page_' . $lang, 0));
-            }
-        }
+        $target_page = intval(get_post_meta($post_id, '_slide_target_page_id', true));
+        // اگر برای خود اسلاید صفحه هدف تعیین نشده بود، از تنظیمات عمومی استفاده کن
         if (!$target_page) {
-            $target_page = intval(get_option('um_slides_target_page_default', 0));
+            if (function_exists('pll_get_post_language')) {
+                $lang = pll_get_post_language($post_id);
+                if ($lang) { $target_page = intval(get_option('um_slides_target_page_' . $lang, 0)); }
+            }
+            if (!$target_page) { $target_page = intval(get_option('um_slides_target_page_default', 0)); }
         }
         if ($target_page) {
             list($updated,) = $this->export_slides_to_elementor_page($target_page);
