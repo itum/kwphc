@@ -909,16 +909,21 @@ class University_Management {
         $order = 0;
         while ($q->have_posts()) { $q->the_post();
             $img = get_the_post_thumbnail_url(get_the_ID(), 'full');
+            $img_id = $img ? attachment_url_to_postid($img) : 0;
             $btn = get_post_meta(get_the_ID(), '_slide_button_text', true);
             $url = get_post_meta(get_the_ID(), '_slide_link_url', true);
             $ext = (bool)get_post_meta(get_the_ID(), '_slide_open_new', true);
+            // Elementor repeater expects a unique _id for each slide
             $items[] = array(
-                'id' => 'slide_' . (++$order),
+                '_id' => 'um_' . wp_generate_password(7, false, false),
                 'title' => get_the_title(),
+                'heading' => get_the_title(),
                 'description' => get_the_excerpt(),
                 'button_text' => $btn,
                 'link' => array('url' => $url, 'is_external' => $ext),
-                'background_image' => array('url' => $img),
+                // Use both keys to be compatible with various versions
+                'background_image' => array('url' => $img, 'id' => $img_id),
+                'image' => array('url' => $img, 'id' => $img_id),
             );
         }
         wp_reset_postdata();
@@ -942,8 +947,11 @@ class University_Management {
         $walk = function(&$nodes) use (&$walk, &$updated, $newSlides) {
             foreach ($nodes as &$node) {
                 if (isset($node['widgetType']) && $node['widgetType'] === 'slides') {
-                    if (!isset($node['settings'])) { $node['settings'] = []; }
+                    if (!isset($node['settings']) || !is_array($node['settings'])) { $node['settings'] = []; }
+                    // فقط فیلد slides را جایگزین کن، ساختار دیگر را دست نزن
                     $node['settings']['slides'] = $newSlides;
+                    // اطمینان از وجود کلیدهای حیاتی
+                    if (!isset($node['settings']['skin'])) { $node['settings']['skin'] = 'classic'; }
                     $updated = count($newSlides);
                 }
                 if (!empty($node['elements']) && is_array($node['elements'])) { $walk($node['elements']); }
@@ -952,8 +960,10 @@ class University_Management {
         $walk($decoded);
 
         if ($updated > 0) {
-            $json = wp_json_encode($decoded);
+            $json = wp_slash(wp_json_encode($decoded));
             update_post_meta($page_id, '_elementor_data', $json);
+            // this meta is a hash Elementor uses to detect changes
+            update_post_meta($page_id, '_elementor_data_version', ELEMENTOR_VERSION);
         }
         return [$updated, $errors];
     }
