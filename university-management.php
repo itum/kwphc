@@ -916,9 +916,9 @@ class University_Management {
             // Elementor repeater expects a unique _id for each slide
             $items[] = array(
                 '_id' => 'um_' . wp_generate_password(7, false, false),
-                'title' => get_the_title(),
-                'heading' => get_the_title(),
-                'description' => get_the_excerpt(),
+                'title' => get_post_meta(get_the_ID(), '_slide_caption', true),
+                'heading' => get_post_meta(get_the_ID(), '_slide_caption', true),
+                'description' => get_post_meta(get_the_ID(), '_slide_caption', true),
                 'button_text' => $btn,
                 'link' => array('url' => $url, 'is_external' => $ext),
                 // Use both keys to be compatible with various versions
@@ -1067,6 +1067,7 @@ class University_Management {
         $url = get_post_meta($post->ID, '_slide_link_url', true);
         $new = (bool)get_post_meta($post->ID, '_slide_open_new', true);
         $target = intval(get_post_meta($post->ID, '_slide_target_page_id', true));
+        $caption = get_post_meta($post->ID, '_slide_caption', true);
         wp_nonce_field('um_slide_meta_nonce', 'um_slide_meta_nonce_field');
         echo '<table class="form-table"><tbody>';
         echo '<tr><th><label for="um_slide_button_text">' . esc_html__('متن دکمه', 'university-management') . '</label></th>';
@@ -1075,6 +1076,8 @@ class University_Management {
         echo '<td><input type="url" id="um_slide_link_url" name="um_slide_link_url" value="' . esc_attr($url) . '" class="regular-text" placeholder="https://"></td></tr>';
         echo '<tr><th>' . esc_html__('باز شدن در تب جدید', 'university-management') . '</th>';
         echo '<td><label><input type="checkbox" name="um_slide_open_new" value="1"' . checked(true, $new, false) . '> ' . esc_html__('بله', 'university-management') . '</label></td></tr>';
+        echo '<tr><th><label for="um_slide_caption">' . esc_html__('کپشن (اختیاری)', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="um_slide_caption" name="um_slide_caption" value="' . esc_attr($caption) . '" class="regular-text"></td></tr>';
         echo '<tr><th><label for="um_slide_target_page_id">' . esc_html__('برگه هدف (Home Page و ...)', 'university-management') . '</label></th>';
         echo '<td>';
         $dropdown = wp_dropdown_pages(array(
@@ -1800,6 +1803,12 @@ class University_Management {
 
         // فیلدهای متا برای اسلایدها (REST هم فعال شود)
         register_post_meta('um_slides', '_slide_button_text', array(
+            'show_in_rest' => true,
+            'single' => true,
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+        ));
+        register_post_meta('um_slides', '_slide_caption', array(
             'show_in_rest' => true,
             'single' => true,
             'type' => 'string',
@@ -5458,6 +5467,9 @@ class University_Management {
         update_post_meta($post_id, '_slide_open_new', isset($_POST['um_slide_open_new']) ? 1 : 0);
         if (isset($_POST['um_slide_target_page_id'])) {
             update_post_meta($post_id, '_slide_target_page_id', absint($_POST['um_slide_target_page_id']));
+        }
+        if (isset($_POST['um_slide_caption'])) {
+            update_post_meta($post_id, '_slide_caption', sanitize_text_field($_POST['um_slide_caption']));
         }
 
         // همگام‌سازی خودکار با صفحه هدف همان زبان

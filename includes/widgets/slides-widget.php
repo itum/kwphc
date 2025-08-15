@@ -111,8 +111,8 @@ class UM_Slides_Widget extends \Elementor\Widget_Base {
             $image = get_the_post_thumbnail_url(get_the_ID(), 'full');
             $items[] = [
                 'image' => $image,
-                'title' => get_the_title(),
-                'description' => get_the_excerpt(),
+                'title' => get_post_meta(get_the_ID(), '_slide_caption', true),
+                'description' => get_post_meta(get_the_ID(), '_slide_caption', true),
                 'button_text' => get_post_meta(get_the_ID(), '_slide_button_text', true),
                 'link' => [ 'url' => get_post_meta(get_the_ID(), '_slide_link_url', true), 'is_external' => (bool)get_post_meta(get_the_ID(), '_slide_open_new', true) ],
             ];
