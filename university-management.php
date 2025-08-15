@@ -446,18 +446,12 @@ class University_Management {
             array($this, 'videos_admin_page')
         );
         
-        // زیرمنوی مدیریت اسلایدها (پست‌تایپ um_slides)
-        add_submenu_page(
-            'university-management',
-            __('اسلایدها', 'university-management'),
-            __('اسلایدها', 'university-management'),
-            'manage_options',
-            'edit.php?post_type=um_slides'
-        );
+        // توجه: خود پست‌تایپ um_slides با show_in_menu => university-management به‌صورت خودکار یک آیتم
+        // «اسلایدها» زیر منوی مدیریت ایجاد می‌کند. بنابراین نیازی به افزودن دستی آیتم تکراری نیست.
 
-        // زیرمنوی همگام‌سازی اسلایدها از المنتور
+        // زیرمنوی همگام‌سازی اسلایدها، مستقیماً زیر مورد «اسلایدها» (پست‌تایپ) قرار گیرد
         add_submenu_page(
-            'university-management',
+            'edit.php?post_type=um_slides',
             __('همگام‌سازی اسلایدها', 'university-management'),
             __('همگام‌سازی اسلایدها', 'university-management'),
             'manage_options',
@@ -781,6 +775,15 @@ class University_Management {
         $lang = function_exists('pll_current_language') ? pll_current_language() : null;
 
         foreach ($slides as $slide) {
+            // جلوگیری از ایجاد آیتم تکراری: اگر اسلایدی با همین عنوان و تصویر وجود دارد، رد کن
+            $existing = get_posts(array(
+                'post_type' => 'um_slides',
+                'title' => $slide['title'],
+                'posts_per_page' => 1,
+                'fields' => 'ids',
+            ));
+            if (!empty($existing)) { continue; }
+
             $post_id = wp_insert_post(array(
                 'post_type' => 'um_slides',
                 'post_status' => 'publish',
