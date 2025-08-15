@@ -449,9 +449,10 @@ class University_Management {
         // توجه: خود پست‌تایپ um_slides با show_in_menu => university-management به‌صورت خودکار یک آیتم
         // «اسلایدها» زیر منوی مدیریت ایجاد می‌کند. بنابراین نیازی به افزودن دستی آیتم تکراری نیست.
 
-        // زیرمنوی همگام‌سازی اسلایدها، مستقیماً زیر مورد «اسلایدها» (پست‌تایپ) قرار گیرد
+        // زیرمنوی همگام‌سازی اسلایدها (نمایش در منوی «مدیریت دانشگاه» تا همیشه دیده شود)
+        // توجه: به‌دلیل قرار گرفتن پست‌تایپ زیر همین منو، درج این آیتم با parent همان منو، قابل اطمینان‌تر است.
         add_submenu_page(
-            'edit.php?post_type=um_slides',
+            'university-management',
             __('همگام‌سازی اسلایدها', 'university-management'),
             __('همگام‌سازی اسلایدها', 'university-management'),
             'manage_options',
@@ -741,11 +742,11 @@ class University_Management {
         }
 
         echo '<div class="wrap"><h1>' . esc_html__('همگام‌سازی اسلایدها از المنتور', 'university-management') . '</h1>';
-        echo '<form method="post">';
+        echo '<form method="post" style="max-width:720px;">';
         wp_nonce_field('um_sync_slides', 'um_sync_slides_nonce');
-        echo '<p><label for="um_elementor_page_id">' . esc_html__('شناسه صفحه حاوی ویجت اسلایدها (Elementor)', 'university-management') . '</label> ';
+        echo '<p><label for="um_elementor_page_id">' . esc_html__('شناسه صفحه‌ای که می‌خواهید اسلایدهایش را اضافه/همگام کنید (مثل صفحه اصلی/Home Page)', 'university-management') . '</label> ';
         echo '<input type="number" class="small-text" id="um_elementor_page_id" name="um_elementor_page_id" min="1" required></p>';
-        echo '<p class="description">' . esc_html__('به صفحه موردنظر در پیشخوان بروید، شناسه آن را از URL بردارید و وارد کنید. اسلایدهای ویجت Slides خوانده و به پست‌تایپ um_slides تبدیل می‌شوند.', 'university-management') . '</p>';
+        echo '<p class="description">' . esc_html__('به صفحه موردنظر در پیشخوان بروید (برگه‌ها/صفحات)، شناسه را از URL کپی کنید. اسلایدهای ویجت Slides خوانده و به اسلایدهای مدیریت (um_slides) تبدیل می‌شوند.', 'university-management') . '</p>';
         echo '<p><button type="submit" class="button button-primary">' . esc_html__('همگام‌سازی', 'university-management') . '</button></p>';
         echo '</form></div>';
     }
