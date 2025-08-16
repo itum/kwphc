@@ -187,6 +187,48 @@
                 }
             });
 
+            // نمایش تدریجی آیتم‌ها: ابتدا ۳ مورد، سپس «نمایش کلاس‌های بیشتر» با انیمیشن
+            (function addLoadMoreUI() {
+                const MAX_INITIAL = 3;
+                const CHUNK = 3;
+                const cards = container.querySelectorAll('.class-card');
+                if (cards.length <= MAX_INITIAL) return;
+
+                for (let i = MAX_INITIAL; i < cards.length; i++) {
+                    cards[i].classList.add('is-hidden');
+                }
+
+                const loadMoreContainer = document.createElement('div');
+                loadMoreContainer.className = 'load-more-container';
+                const btn = document.createElement('button');
+                btn.className = 'load-more-btn';
+                const setBtnText = (remain) => { btn.innerHTML = `نمایش کلاس‌های بیشتر (${remain})`; };
+                let shown = MAX_INITIAL;
+                setBtnText(cards.length - shown);
+                loadMoreContainer.appendChild(btn);
+                container.appendChild(loadMoreContainer);
+
+                btn.addEventListener('click', () => {
+                    if (shown >= cards.length) return;
+                    btn.classList.add('loading');
+                    btn.innerHTML = `<span class="spinner"></span><span>در حال بارگذاری...</span>`;
+                    setTimeout(() => {
+                        const next = Math.min(shown + CHUNK, cards.length);
+                        for (let i = shown; i < next; i++) {
+                            cards[i].classList.remove('is-hidden');
+                            cards[i].classList.add('fade-in-up');
+                        }
+                        shown = next;
+                        if (shown < cards.length) {
+                            btn.classList.remove('loading');
+                            setBtnText(cards.length - shown);
+                        } else {
+                            loadMoreContainer.remove();
+                        }
+                    }, 450);
+                });
+            })();
+
             liveInfo.textContent = `دوره‌های در حال برگزاری: ${liveCount} / ${classes.length}`;
         }
 
