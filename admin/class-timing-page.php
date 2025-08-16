@@ -45,6 +45,7 @@ $editing_time = '';
 $editing_duration = 90;
 $editing_teacher = '';
 $editing_description = '';
+$editing_status = 'scheduled';
 
 if (
     isset($_GET['page']) && $_GET['page'] === 'university-class-timing' &&
@@ -67,6 +68,7 @@ if (
                 }
                 $editing_duration = get_post_meta($editing_id, '_class_duration', true);
                 $editing_teacher = get_post_meta($editing_id, '_class_teacher', true);
+                $editing_status = get_post_meta($editing_id, '_class_status', true) ?: 'scheduled';
             }
         }
     }
@@ -86,6 +88,7 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
         $class_duration = absint($_POST['class_duration']);
         $class_teacher = sanitize_text_field($_POST['class_teacher']);
         $class_description = wp_kses_post($_POST['class_description']);
+        $class_status = isset($_POST['class_status']) ? sanitize_text_field($_POST['class_status']) : 'scheduled';
         
         // بررسی داده‌های الزامی
         if (!empty($class_name) && !empty($class_date) && !empty($class_time)) {
@@ -119,6 +122,7 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
                     $meta_saved[] = update_post_meta($post_id, '_class_timestamp', $class_timestamp);
                     $meta_saved[] = update_post_meta($post_id, '_class_duration', $class_duration ?: 90);
                     $meta_saved[] = update_post_meta($post_id, '_class_teacher', $class_teacher);
+                    $meta_saved[] = update_post_meta($post_id, '_class_status', in_array($class_status, array('scheduled','canceled','postponed','finished'), true) ? $class_status : 'scheduled');
                     
                     // اضافه کردن تصویر شاخص (اگر آپلود شده باشد)
                     if (isset($_FILES['class_image']) && !empty($_FILES['class_image']['name'])) {
@@ -134,7 +138,7 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
                     }
                     
                     // نمایش پیام موفقیت
-                    add_settings_error('um_class_timing', 'um_class_added', sprintf(__('کلاس "%s" با موفقیت اضافه شد. شناسه پست: %d', 'university-management'), $class_name, $post_id), 'success');
+                    add_settings_error('um_class_timing', 'um_class_added', sprintf(__('کلاس "%s" با موفقیت اضافه شد. شناسه پست: %d (وضعیت: %s)', 'university-management'), $class_name, $post_id, esc_html($class_status)), 'success');
                     
                     // بازنشانی فرم برای جلوگیری از ارسال مجدد
                     // wp_redirect(add_query_arg(array('page' => 'university-class-timing', 'added' => '1'), admin_url('admin.php')));
@@ -165,6 +169,7 @@ if (isset($_POST['um_update_class_nonce']) && wp_verify_nonce($_POST['um_update_
         $class_duration = absint($_POST['class_duration']);
         $class_teacher = sanitize_text_field($_POST['class_teacher']);
         $class_description = wp_kses_post($_POST['class_description']);
+        $class_status = isset($_POST['class_status']) ? sanitize_text_field($_POST['class_status']) : 'scheduled';
 
         if (!empty($class_name) && !empty($class_date) && !empty($class_time)) {
             $class_datetime = $class_date . ' ' . $class_time . ':00';
@@ -183,6 +188,7 @@ if (isset($_POST['um_update_class_nonce']) && wp_verify_nonce($_POST['um_update_
                 update_post_meta($class_id, '_class_timestamp', $class_timestamp);
                 update_post_meta($class_id, '_class_duration', $class_duration ?: 90);
                 update_post_meta($class_id, '_class_teacher', $class_teacher);
+                update_post_meta($class_id, '_class_status', in_array($class_status, array('scheduled','canceled','postponed','finished'), true) ? $class_status : 'scheduled');
 
                 // تصویر (اختیاری)
                 if (isset($_FILES['class_image']) && !empty($_FILES['class_image']['name'])) {
@@ -195,7 +201,7 @@ if (isset($_POST['um_update_class_nonce']) && wp_verify_nonce($_POST['um_update_
                     }
                 }
 
-                add_settings_error('um_class_timing', 'um_class_updated', __('کلاس با موفقیت به‌روزرسانی شد.', 'university-management'), 'success');
+                add_settings_error('um_class_timing', 'um_class_updated', sprintf(__('کلاس با موفقیت به‌روزرسانی شد. (وضعیت: %s)', 'university-management'), esc_html($class_status)), 'success');
 
                 // خروج از حالت ویرایش پس از موفقیت
                 $editing_class = null;
@@ -203,6 +209,7 @@ if (isset($_POST['um_update_class_nonce']) && wp_verify_nonce($_POST['um_update_
                 $editing_name = $editing_description = $editing_date_greg = $editing_time = '';
                 $editing_duration = 90;
                 $editing_teacher = '';
+                $editing_status = 'scheduled';
             }
         } else {
             add_settings_error('um_class_timing', 'um_class_update_required', __('نام کلاس، تاریخ و زمان الزامی هستند.', 'university-management'), 'error');
@@ -374,6 +381,17 @@ $simple_classes = new WP_Query($simple_classes_args);
                     <label for="class_teacher" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام استاد', 'university-management'); ?></label>
                     <input type="text" id="class_teacher" name="class_teacher" class="regular-text" style="width: 100%;" value="<?php echo esc_attr($editing_class ? $editing_teacher : ''); ?>">
                 </div>
+
+                <div class="um-form-row" style="margin-bottom: 15px;">
+                    <label for="class_status" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('وضعیت کلاس', 'university-management'); ?></label>
+                    <select id="class_status" name="class_status" style="width: 100%;">
+                        <?php $status_current = $editing_class ? $editing_status : 'scheduled'; ?>
+                        <option value="scheduled" <?php selected($status_current, 'scheduled'); ?>><?php _e('زمان‌بندی‌شده', 'university-management'); ?></option>
+                        <option value="canceled" <?php selected($status_current, 'canceled'); ?>><?php _e('لغو شد', 'university-management'); ?></option>
+                        <option value="postponed" <?php selected($status_current, 'postponed'); ?>><?php _e('به زمان دیگری موکول شد', 'university-management'); ?></option>
+                        <option value="finished" <?php selected($status_current, 'finished'); ?>><?php _e('برگزار شد', 'university-management'); ?></option>
+                    </select>
+                </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_description" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('توضیحات کلاس', 'university-management'); ?></label>
@@ -418,6 +436,7 @@ $simple_classes = new WP_Query($simple_classes_args);
                             <th><?php _e('نام کلاس', 'university-management'); ?></th>
                             <th><?php _e('استاد', 'university-management'); ?></th>
                             <th><?php _e('تاریخ و زمان', 'university-management'); ?></th>
+                            <th><?php _e('وضعیت', 'university-management'); ?></th>
                             <th><?php _e('مدت (دقیقه)', 'university-management'); ?></th>
                             <th><?php _e('عملیات', 'university-management'); ?></th>
                         </tr>
@@ -436,6 +455,17 @@ $simple_classes = new WP_Query($simple_classes_args);
                                 <td><?php the_title(); ?></td>
                                 <td><?php echo esc_html($class_teacher); ?></td>
                                 <td><?php echo esc_html($date_display); ?></td>
+                                <td><?php 
+                                    $status = get_post_meta(get_the_ID(), '_class_status', true);
+                                    $status_text = '';
+                                    switch($status) {
+                                        case 'canceled': $status_text = 'لغو شد'; break;
+                                        case 'postponed': $status_text = 'موکول شد'; break;
+                                        case 'finished': $status_text = 'برگزار شد'; break;
+                                        default: $status_text = 'زمان‌بندی‌شده'; break;
+                                    }
+                                    echo esc_html($status_text) . ' (' . esc_html($status ?: 'scheduled') . ')';
+                                ?></td>
                                 <td><?php echo esc_html($class_duration ?: '90'); ?></td>
                                 <td>
                                     <?php
@@ -478,6 +508,7 @@ $simple_classes = new WP_Query($simple_classes_args);
                             <th><?php _e('نام کلاس', 'university-management'); ?></th>
                             <th><?php _e('استاد', 'university-management'); ?></th>
                             <th><?php _e('تاریخ و زمان', 'university-management'); ?></th>
+                            <th><?php _e('وضعیت', 'university-management'); ?></th>
                             <th><?php _e('مدت (دقیقه)', 'university-management'); ?></th>
                             <th><?php _e('عملیات', 'university-management'); ?></th>
                         </tr>
@@ -496,6 +527,17 @@ $simple_classes = new WP_Query($simple_classes_args);
                                 <td><?php the_title(); ?></td>
                                 <td><?php echo esc_html($class_teacher); ?></td>
                                 <td><?php echo esc_html($date_display); ?></td>
+                                <td><?php 
+                                    $status = get_post_meta(get_the_ID(), '_class_status', true);
+                                    $status_text = '';
+                                    switch($status) {
+                                        case 'canceled': $status_text = 'لغو شد'; break;
+                                        case 'postponed': $status_text = 'موکول شد'; break;
+                                        case 'finished': $status_text = 'برگزار شد'; break;
+                                        default: $status_text = 'زمان‌بندی‌شده'; break;
+                                    }
+                                    echo esc_html($status_text) . ' (' . esc_html($status ?: 'scheduled') . ')';
+                                ?></td>
                                 <td><?php echo esc_html($class_duration ?: '90'); ?></td>
                                 <td>
                                     <?php
@@ -537,6 +579,7 @@ $simple_classes = new WP_Query($simple_classes_args);
                             <th><?php _e('نام کلاس', 'university-management'); ?></th>
                             <th><?php _e('استاد', 'university-management'); ?></th>
                             <th><?php _e('تاریخ و زمان', 'university-management'); ?></th>
+                            <th><?php _e('وضعیت', 'university-management'); ?></th>
                             <th><?php _e('مدت (دقیقه)', 'university-management'); ?></th>
                             <th><?php _e('عملیات', 'university-management'); ?></th>
                         </tr>
@@ -554,6 +597,17 @@ $simple_classes = new WP_Query($simple_classes_args);
                                 <td><?php the_title(); ?></td>
                                 <td><?php echo esc_html($class_teacher); ?></td>
                                 <td><?php echo esc_html($date_display); ?></td>
+                                <td><?php 
+                                    $status = get_post_meta(get_the_ID(), '_class_status', true);
+                                    $status_text = '';
+                                    switch($status) {
+                                        case 'canceled': $status_text = 'لغو شد'; break;
+                                        case 'postponed': $status_text = 'موکول شد'; break;
+                                        case 'finished': $status_text = 'برگزار شد'; break;
+                                        default: $status_text = 'زمان‌بندی‌شده'; break;
+                                    }
+                                    echo esc_html($status_text) . ' (' . esc_html($status ?: 'scheduled') . ')';
+                                ?></td>
                                 <td><?php echo esc_html($class_duration ?: '90'); ?></td>
                                 <td>
                                     <?php

@@ -80,6 +80,7 @@
                 card.className = "class-card";
 
                 let contentHTML = "";
+                let stateId = "state-" + Math.random().toString(36).substr(2, 9);
                 let timerId = "";
 
                 const [start, end] = cls.time.split(" - ");
@@ -92,14 +93,28 @@
                 const isToday = dateMoment.isSame(today, 'day');
                 const nowTime = moment();
 
-                if (isToday && nowTime.isBefore(startTime)) {
+                // وضعیت صریح از بک‌اند (canceled, postponed, finished, scheduled)
+                const explicitStatus = cls.status || 'scheduled';
+
+                if (explicitStatus === 'canceled') {
+                    contentHTML = getStatusPill('لغو شد', 'canceled');
+                } else if (explicitStatus === 'postponed') {
+                    contentHTML = getStatusPill('به زمان دیگری موکول شد', 'postponed');
+                } else if (explicitStatus === 'finished') {
+                    contentHTML = getStatusPill('برگزار شد', 'finished');
+                } else if (isToday && nowTime.isBefore(startTime)) {
                     timerId = "timer-" + Math.random().toString(36).substr(2, 9);
                     contentHTML = `<p id="${timerId}" style="color: black; font-size: 12px;">در حال بارگذاری تایمر...</p>`;
                 } else if (isToday && nowTime.isBetween(startTime, endTime)) {
                     liveCount++;
                     contentHTML = getButtonHTML(cls.link);
                 } else {
-                    contentHTML = getButtonHTML(cls.link);
+                    // بعد از پایان زمان کلاس در روز انتخاب‌شده یا روزهای گذشته
+                    if (nowTime.isAfter(endTime) || dateMoment.isBefore(today, 'day')) {
+                        contentHTML = getStatusPill('برگزار شد', 'finished');
+                    } else {
+                        contentHTML = getButtonHTML(cls.link);
+                    }
                 }
 
                 card.innerHTML = `
@@ -112,11 +127,24 @@
                                 <p>زمان برگزاری: ${cls.time}</p>
                             </div>
                         </div>
-                        ${contentHTML}
+                        <div id="${stateId}" class="state-box">${contentHTML}</div>
                     </div>
                 `;
 
                 container.appendChild(card);
+
+                // زمان‌بندی تغییر وضعیت‌ها برای امروز - فقط اگر وضعیت دستی نباشد
+                const scheduleFinishSwap = () => {
+                    if (!isToday || explicitStatus !== 'scheduled') return false;
+                    const nowTime2 = moment();
+                    if (nowTime2.isAfter(endTime)) {
+                        const box = document.getElementById(stateId);
+                        // اگر وضعیت سرور برای این پست هنوز "scheduled" است، تبدیل کن؛ در غیر اینصورت به تصمیم دستی احترام بگذار
+                        if (box) box.innerHTML = getStatusPill('برگزار شد', 'finished');
+                        return true;
+                    }
+                    return false;
+                };
 
                 if (timerId) {
                     const el = () => document.getElementById(timerId);
@@ -137,11 +165,25 @@
                                 <div>تا شروع کلاس</div>`;
                         } else {
                             clearInterval(intervalId);
+                            // کلاس شروع شد → دکمه نمایش داده شود
                             el().outerHTML = getButtonHTML(cls.link);
+                            // و انتظار تا پایان کلاس برای نمایش «برگزار شد» - فقط اگر وضعیت دستی نباشد
+                            if (explicitStatus === 'scheduled') {
+                                const endWatcher = setInterval(() => {
+                                    if (scheduleFinishSwap()) clearInterval(endWatcher);
+                                }, 1000);
+                            }
                         }
                     };
                     intervalFunction();
                     const intervalId = setInterval(intervalFunction, 1000);
+                } else if (isToday && nowTime.isBetween(startTime, endTime) && explicitStatus === 'scheduled') {
+                    const endWatcher = setInterval(() => {
+                        if (scheduleFinishSwap()) clearInterval(endWatcher);
+                    }, 1000);
+                } else if (isToday && explicitStatus === 'scheduled') {
+                    // امروز و قبل از پایان نیست → اگر لازم شد بعدا به «برگزار شد» تبدیل شود
+                    scheduleFinishSwap();
                 }
             });
 
@@ -156,6 +198,15 @@
                     <path d="M25 10.75H13.5M13.5 10.75L18 6.25M13.5 10.75L18 15.75" stroke="black" stroke-linecap="round"/>
                 </svg>
             </button></a>`;
+        }
+
+        function getStatusPill(text, type) {
+            const icon = type === 'canceled'
+                ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6L18 18M18 6L6 18" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`
+                : type === 'postponed'
+                ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8V12L15 15" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/></svg>`
+                : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17L4 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            return `<div class="status-pill ${type}"><span class="icon">${icon}</span><span class="text">${text}</span></div>`;
         }
 
         function renderWeek(centerDate) {

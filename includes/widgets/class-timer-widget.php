@@ -364,6 +364,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                     $class_date = get_post_meta(get_the_ID(), '_class_date', true);
                     $class_duration = get_post_meta(get_the_ID(), '_class_duration', true);
                     $class_teacher = get_post_meta(get_the_ID(), '_class_teacher', true);
+                    $class_status = get_post_meta(get_the_ID(), '_class_status', true) ?: 'scheduled';
                     
                     error_log('Class found - ID: ' . get_the_ID() . ', Title: ' . get_the_title() . ', Date: ' . $class_date);
                     
@@ -371,11 +372,13 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                     $formatted_date = date('Y-m-d H:i:s', strtotime($class_date));
                     
                     $classes[] = array(
+                        'id' => get_the_ID(),
                         'name' => get_the_title(),
                         'date' => $formatted_date,
                         'duration' => intval($class_duration),
                         'teacher' => $class_teacher,
                         'image' => get_the_post_thumbnail_url(get_the_ID(), 'medium') ?: plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                        'status' => $class_status,
                     );
                 }
                 
@@ -387,11 +390,13 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
             // استفاده از کلاس‌های دستی
             foreach ($settings['manual_classes'] as $class) {
                 $classes[] = array(
+                    'id' => 0,
                     'name' => $class['class_name'],
                     'date' => $class['class_date'],
                     'duration' => intval($class['class_duration']),
                     'teacher' => $class['class_teacher'],
                     'image' => $class['class_image']['url'] ?: plugin_dir_url(__FILE__) . '../../assets/images/class-timer-default.png',
+                    'status' => isset($class['class_status']) ? $class['class_status'] : 'scheduled',
                 );
             }
         }
@@ -408,11 +413,13 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
             }
             
             $classData[$date][] = array(
+                'id' => isset($class['id']) ? $class['id'] : 0,
                 'name' => $class['name'],
                 'teacher' => $class['teacher'],
                 'time' => $start_time . ' - ' . $end_time,
                 'image' => $class['image'],
                 'link' => '#',
+                'status' => isset($class['status']) ? $class['status'] : 'scheduled',
             );
         }
         
