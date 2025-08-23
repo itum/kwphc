@@ -113,13 +113,35 @@
      * راه‌اندازی loading handlers
      */
     function initLoadingHandlers() {
-        // نمایش loading برای AJAX requests
-        $(document).ajaxStart(function() {
-            showLoading();
+        // نمایش loading فقط برای درخواست‌های AJAX مربوط به افزونه (UM.ajax_url)
+        var umAjaxRequestCount = 0;
+
+        // هنگام ارسال یک درخواست AJAX بررسی می‌کنیم آیا به آدرس ajax افزونه می‌رود
+        $(document).on('ajaxSend', function(event, jqXHR, ajaxOptions) {
+            try {
+                var requestUrl = ajaxOptions && ajaxOptions.url ? ajaxOptions.url : '';
+                if (requestUrl.indexOf(UM.ajax_url) !== -1) {
+                    umAjaxRequestCount++;
+                    showLoading();
+                }
+            } catch (e) {
+                // بی‌صدا خطا را رد می‌کنیم تا جلوی بقیه اسکریپت‌ها را نگیریم
+            }
         });
 
-        $(document).ajaxStop(function() {
-            hideLoading();
+        // هنگام اتمام یا خطا در درخواست، شمارش را کاهش داده و در صورت صفر بودن پنهان می‌کنیم
+        $(document).on('ajaxComplete ajaxError', function(event, jqXHR, ajaxOptions) {
+            try {
+                var requestUrl = ajaxOptions && ajaxOptions.url ? ajaxOptions.url : '';
+                if (requestUrl.indexOf(UM.ajax_url) !== -1) {
+                    umAjaxRequestCount = Math.max(0, umAjaxRequestCount - 1);
+                    if (umAjaxRequestCount === 0) {
+                        hideLoading();
+                    }
+                }
+            } catch (e) {
+                // رد خطا
+            }
         });
     }
 
@@ -220,18 +242,25 @@
      * نمایش loading
      */
     function showLoading() {
-        if ($('.um-loading-overlay').length === 0) {
-            var overlay = '<div class="um-loading-overlay"><div class="um-loading"></div></div>';
-            $('body').append(overlay);
-        }
-        $('.um-loading-overlay').show();
+        // No-op: جلوگیری از ایجاد overlay لودینگ در سطح صفحه
+        // قبلاً این تابع یک المان overlay به body اضافه می‌کرد که باعث نمایش لودینگ در صفحه‌بارگذاری می‌شد.
+        // برای حذف کامل لودینگِ عمومی، این تابع اکنون کار نمی‌کند.
+        return;
     }
 
     /**
      * مخفی کردن loading
      */
     function hideLoading() {
-        $('.um-loading-overlay').hide();
+        // پاک کردن هر overlay باقیمانده (اگر به هر دلیلی قبلاً افزوده شده باشد)
+        try {
+            var $overlay = $('.um-loading-overlay');
+            if ($overlay.length) {
+                $overlay.remove();
+            }
+        } catch (e) {
+            // بی‌صدا خطا را نادیده می‌گیریم
+        }
     }
 
     /**

@@ -343,11 +343,14 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
             // دریافت کلاس‌ها از پست‌تایپ
             $args = array(
                 'post_type' => 'um_classes',
-                'posts_per_page' => $settings['classes_count'],
+                // همه کلاس‌ها را بگیر تا در هفته‌های بعد/قبل نیز نمایش داده شوند
+                // محدود کردن به 10 مورد باعث می‌شد کلاس‌های جدید در ویجت دیده نشوند
+                'posts_per_page' => -1,
                 'orderby' => 'meta_value',
                 'meta_key' => '_class_date',
                 'order' => 'ASC',
                 'post_status' => 'publish',
+                'meta_type' => 'DATETIME',
             );
             
             $query = new \WP_Query($args);
