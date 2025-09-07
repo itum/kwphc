@@ -1,0 +1,7 @@
+/* سبک‌های صفحه مدیریت پیشنهادات */
+#um-suggestions-table .um-sugg-row { cursor: pointer; }
+#um-suggestions-table .um-sugg-row:hover { background:#f9f9f9; }
+.um-sugg-message td { background: #fff; border-top:1px solid #eee; }
+.um-sugg-message div { white-space:pre-wrap; }
+
+

@@ -79,6 +79,10 @@ class UM_Elementor_Widgets {
         require_once UM_PLUGIN_DIR . 'includes/widgets/seminar-slider-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/azmoon-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/employment-exams-widget.php';
+        // ویجت پیشنهادات و انتقادات
+        if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/suggestion-widget.php')) {
+            require_once UM_PLUGIN_DIR . 'includes/widgets/suggestion-widget.php';
+        }
         // ویجت اسلایدها
         if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/slides-widget.php')) {
             require_once UM_PLUGIN_DIR . 'includes/widgets/slides-widget.php';
@@ -100,6 +104,9 @@ class UM_Elementor_Widgets {
         }
         if (class_exists('UM_Slides_Widget')) {
             \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Slides_Widget());
+        }
+        if (class_exists('UM_Suggestion_Widget')) {
+            \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Suggestion_Widget());
         }
     }
 
@@ -149,6 +156,14 @@ class UM_Elementor_Widgets {
         wp_register_script('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/js/employment-exams-widget.js', array('jquery'), UM_VERSION, true);
         if (file_exists(UM_PLUGIN_DIR . 'assets/js/hall-booking-widget.js')) {
             wp_register_script('um-hall-booking-widget', UM_PLUGIN_URL . 'assets/js/hall-booking-widget.js', array('jquery'), UM_VERSION, true);
+        }
+        // ثبت اسکریپت ویجت پیشنهادات
+        if (file_exists(UM_PLUGIN_DIR . 'assets/js/suggestion-widget.js')) {
+            wp_register_script('um-suggestion-widget', UM_PLUGIN_URL . 'assets/js/suggestion-widget.js', array('jquery'), UM_VERSION, true);
+            wp_localize_script('um-suggestion-widget', 'um_suggestion_vars', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('university-management-nonce')
+            ));
         }
         if (file_exists(UM_PLUGIN_DIR . 'assets/js/slides-widget.js')) {
             wp_register_script('um-slides-widget', UM_PLUGIN_URL . 'assets/js/slides-widget.js', array('jquery','swiper'), UM_VERSION, true);

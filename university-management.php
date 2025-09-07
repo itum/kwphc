@@ -125,6 +125,9 @@ class University_Management {
         add_action('wp_ajax_um_delete_azmoon', array($this, 'ajax_delete_azmoon'));
         add_action('wp_ajax_um_get_azmoons_widget', array($this, 'ajax_get_azmoons_widget'));
         add_action('wp_ajax_um_load_and_insert_azmoons_from_api', array($this, 'ajax_load_and_insert_azmoons_from_api'));
+        // بارگذاری هندلرهای AJAX اختصاصی
+        $ajax_handlers = UM_PLUGIN_DIR . 'includes/ajax-handlers.php';
+        if (file_exists($ajax_handlers)) { require_once $ajax_handlers; }
         
         // اکشن برای به‌روزرسانی دسته‌ای زمینه‌های دلخواه ویدیو
         add_action('wp_ajax_um_update_all_video_custom_fields', array($this, 'ajax_update_all_video_custom_fields'));
@@ -497,6 +500,16 @@ class University_Management {
             array($this, 'employment_exams_admin_page')
         );
 
+        // زیرمنوی انتقادات و پیشنهادات
+        add_submenu_page(
+            'university-management',
+            __('انتقادات و پیشنهادات', 'university-management'),
+            __('انتقادات و پیشنهادات', 'university-management'),
+            'manage_options',
+            'university-suggestions',
+            array($this, 'suggestions_admin_page')
+        );
+
         // منوی مستقل: سالن جلسات
         add_menu_page(
             __('سالن جلسات', 'university-management'),
@@ -531,6 +544,8 @@ class University_Management {
             'university-hall-settings',
             array($this, 'hall_settings_admin_page')
         );
+        
+        // دیگر منوها در admin/admin-page.php مدیریت می‌شوند؛ نیاز به تغییر در آن فایل نیست.
     }
 
     /**
@@ -569,6 +584,18 @@ class University_Management {
             require_once $admin_file;
         } else {
             echo '<div class="wrap"><h1>خطا</h1><p>فایل admin-page.php یافت نشد.</p></div>';
+        }
+    }
+
+    /**
+     * صفحه نمایش پیشنهادات و انتقادات در مدیریت
+     */
+    public function suggestions_admin_page() {
+        $file = UM_PLUGIN_DIR . 'admin/suggestions-page.php';
+        if (file_exists($file)) {
+            require_once $file;
+        } else {
+            echo '<div class="wrap"><h1>پیشنهادات و انتقادات</h1><p>فایل مدیریتی یافت نشد.</p></div>';
         }
     }
 
@@ -1530,6 +1557,18 @@ class University_Management {
                 );
             }
         }
+
+        // منابع صفحه پیشنهادات و انتقادات
+        if (strpos($hook, 'university-suggestions') !== false) {
+            $css = UM_PLUGIN_DIR . 'assets/css/suggestions-admin.css';
+            if (file_exists($css)) {
+                wp_enqueue_style('um-suggestions-admin', UM_PLUGIN_URL . 'assets/css/suggestions-admin.css', array(), UM_VERSION);
+            }
+            $js = UM_PLUGIN_DIR . 'assets/js/suggestions-admin.js';
+            if (file_exists($js)) {
+                wp_enqueue_script('um-suggestions-admin', UM_PLUGIN_URL . 'assets/js/suggestions-admin.js', array('jquery'), UM_VERSION, true);
+            }
+        }
     }
 
     /**
@@ -1636,6 +1675,33 @@ class University_Management {
             'rewrite'           => array( 'slug' => 'video-category' ),
             'show_in_rest'      => true,
         ));
+
+        // ثبت پست‌تایپ انتقادات و پیشنهادات
+        $suggestion_labels = array(
+            'name'                  => _x( 'انتقادات و پیشنهادات', 'Post Type General Name', 'university-management' ),
+            'singular_name'         => _x( 'پیشنهاد / انتقاد', 'Post Type Singular Name', 'university-management' ),
+            'menu_name'             => __( 'انتقادات و پیشنهادات', 'university-management' ),
+            'name_admin_bar'        => __( 'پیشنهادات', 'university-management' ),
+            'add_new_item'          => __( 'افزودن پیشنهاد/انتقاد جدید', 'university-management' ),
+            'new_item'              => __( 'پیشنهاد/انتقاد جدید', 'university-management' ),
+            'edit_item'             => __( 'ویرایش پیشنهاد/انتقاد', 'university-management' ),
+            'view_item'             => __( 'مشاهده پیشنهاد/انتقاد', 'university-management' ),
+            'all_items'             => __( 'همه پیشنهادات و انتقادات', 'university-management' ),
+        );
+        $suggestion_args = array(
+            'label'                 => __( 'پیشنهادات', 'university-management' ),
+            'description'           => __( 'ذخیره‌ی پیشنهادات و انتقادات کاربران', 'university-management' ),
+            'labels'                => $suggestion_labels,
+            'supports'              => array( 'title', 'editor', 'custom-fields' ),
+            'hierarchical'          => false,
+            'public'                => false,
+            'show_ui'               => true,
+            'show_in_menu'          => 'university-management',
+            'menu_icon'             => 'dashicons-format-chat',
+            'capability_type'       => 'post',
+            'has_archive'           => false,
+        );
+        register_post_type( 'um_suggestions', $suggestion_args );
 
         // ثبت فیلد لینک در REST API
         register_post_meta('um_videos', '_video_link', array(
