@@ -18,6 +18,12 @@ class UM_Seminar_Registration {
     private $zarinpal_gateway;
     
     public function __construct() {
+        // بررسی وجود کلاس درگاه پرداخت
+        if (!class_exists('UM_Zarinpal_Gateway')) {
+            error_log('UM_Zarinpal_Gateway class not found');
+            return;
+        }
+        
         $this->zarinpal_gateway = new UM_Zarinpal_Gateway();
         
         // اضافه کردن اکشن‌های AJAX
@@ -41,13 +47,21 @@ class UM_Seminar_Registration {
         
         // بررسی فعال بودن ثبت نام
         if ($registration_active !== '1') {
-            return array('can_register' => false, 'message' => 'ثبت نام برای این سمینار فعال نیست.');
+            // اگر تیک زده نشده، بررسی کن که آیا تاریخ فعال رسیده است یا نه
+            if (!empty($active_date)) {
+                $active_timestamp = strtotime($active_date);
+                $current_timestamp = time();
+                
+                // اگر تاریخ فعال در آینده است، ثبت نام غیرفعال است
+                if ($active_timestamp > $current_timestamp) {
+                    return array('can_register' => false, 'message' => 'زمان ثبت نام هنوز فرا نرسیده است.');
+                }
+            } else {
+                // اگر تیک زده نشده و تاریخ فعال هم تنظیم نشده، ثبت نام غیرفعال است
+                return array('can_register' => false, 'message' => 'ثبت نام برای این سمینار فعال نیست.');
+            }
         }
-        
-        // بررسی تاریخ فعال
-        if ($active_date && strtotime($active_date) > time()) {
-            return array('can_register' => false, 'message' => 'زمان ثبت نام هنوز فرا نرسیده است.');
-        }
+        // اگر تیک زده شده باشد، ثبت نام فعال است (تاریخ فعال را نادیده بگیر)
         
         // بررسی ظرفیت
         if ($capacity > 0) {

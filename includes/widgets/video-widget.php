@@ -412,6 +412,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             // لاگ آرگومان‌های کوئری
             error_log('Video Widget Query Args: ' . print_r($args, true));
 
+            // کش کردن کوئری ویدیو (غیرفعال موقت برای تست)
             $query = new \WP_Query($args);
 
             // لاگ نتایج کوئری
@@ -463,6 +464,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                     'post_status' => 'publish',
                 ];
                 
+                // کش کردن کوئری fallback (غیرفعال موقت برای تست)
                 $fallback_query = new \WP_Query($fallback_args);
                 error_log('Fallback Query Found Posts: ' . $fallback_query->found_posts);
                 

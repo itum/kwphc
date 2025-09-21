@@ -362,13 +362,21 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                         </div>
                                     </div>
                                     <?php
-                                    <?php
                                     // بررسی امکان ثبت نام
                                     $seminar_id = 0;
                                     if ($settings['seminar_source'] === 'auto') {
                                         $seminar_id = get_the_ID();
+                                    } else {
+                                        // برای سمینارهای دستی، از عنوان سمینار برای پیدا کردن ID استفاده کن
+                                        if (!empty($item['seminar_title'])) {
+                                            $seminar_post = get_page_by_title($item['seminar_title'], OBJECT, 'um_seminars');
+                                            if ($seminar_post) {
+                                                $seminar_id = $seminar_post->ID;
+                                            }
+                                        }
                                     }
                                     
+                                    // بررسی امکان ثبت نام
                                     if ($seminar_id && function_exists('UM_Seminar_Registration')) {
                                         $registration_manager = new UM_Seminar_Registration();
                                         $can_register = $registration_manager->can_register($seminar_id);
@@ -383,36 +391,38 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                             </a>
                                             <?php
                                         } else {
-                                            // استفاده از ترجمه برای دکمه
-                                            if (function_exists('pll__')) {
-                                                $button_text = pll__('شروع یادگیری') ?: 'شروع یادگیری';
-                                            } else {
-                                                $button_text = 'شروع یادگیری';
+                                            // نمایش دکمه شروع یادگیری عادی
+                                            $button_text = 'شروع یادگیری';
+                                            $link_url = get_post_meta($seminar_id, '_seminar_button_link', true);
+                                            if (empty($link_url) || $link_url === '#') {
+                                                $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
                                             }
                                             
-                                            $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
-                                            $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
-                                            $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';
-                                            ?>
-                                            <a href="<?php echo $link_url; ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
-                                                <span><?php echo esc_html($button_text); ?></span>
-                                                <i data-lucide="arrow-left"></i>
-                                            </a>
-                                            <?php
+                                            if (empty($link_url) || $link_url === '#') {
+                                                // اگر لینک خالی است، دکمه را غیرفعال کن
+                                                $button_text = 'به زودی';
+                                                ?>
+                                                <span class="btn-start" style="background: #ccc; cursor: not-allowed;">
+                                                    <span><?php echo esc_html($button_text); ?></span>
+                                                    <i data-lucide="arrow-left"></i>
+                                                </span>
+                                                <?php
+                                            } else {
+                                                $target = ' target="_blank"';
+                                                $nofollow = ' rel="nofollow"';
+                                                ?>
+                                                <a href="<?php echo esc_url($link_url); ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
+                                                    <span><?php echo esc_html($button_text); ?></span>
+                                                    <i data-lucide="arrow-left"></i>
+                                                </a>
+                                                <?php
+                                            }
                                         }
                                     } else {
-                                        // استفاده از ترجمه برای دکمه
-                                        if (function_exists('pll__')) {
-                                            $button_text = pll__('شروع یادگیری') ?: 'شروع یادگیری';
-                                        } else {
-                                            $button_text = 'شروع یادگیری';
-                                        }
-                                        
-                                        $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
-                                        $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
-                                        $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';
+                                        // برای سمینارهای دستی، همیشه دکمه ثبت نام رایگان نمایش بده
+                                        $button_text = 'ثبت نام رایگان';
                                         ?>
-                                        <a href="<?php echo $link_url; ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
+                                        <a href="#" class="btn-start um-seminar-register-btn" data-seminar-title="<?php echo esc_attr($item['seminar_title']); ?>">
                                             <span><?php echo esc_html($button_text); ?></span>
                                             <i data-lucide="arrow-left"></i>
                                         </a>

@@ -81,12 +81,7 @@ class University_Management {
         });
         
         // بارگذاری ماژول ثبت نام سمینارها
-        add_action('plugins_loaded', function() {
-            $reg = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-seminar-registration.php';
-            $gw  = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-zarinpal-gateway.php';
-            if (file_exists($reg)) { require_once $reg; new UM_Seminar_Registration(); }
-            if (file_exists($gw))  { require_once $gw; }
-        });
+        $this->load_seminar_registration();
         
         // افزودن متاباکس‌ها
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
@@ -114,6 +109,8 @@ class University_Management {
         // اکشن‌های AJAX برای ثبت نام سمینار
         add_action('wp_ajax_um_get_registration_form', array($this, 'ajax_get_registration_form'));
         add_action('wp_ajax_nopriv_um_get_registration_form', array($this, 'ajax_get_registration_form'));
+        add_action('wp_ajax_um_find_or_create_seminar', array($this, 'ajax_find_or_create_seminar'));
+        add_action('wp_ajax_nopriv_um_find_or_create_seminar', array($this, 'ajax_find_or_create_seminar'));
         
         // اکشن‌های AJAX برای تنظیمات درگاه پرداخت
         add_action('wp_ajax_um_save_payment_settings', array($this, 'ajax_save_payment_settings'));
@@ -3668,6 +3665,56 @@ class University_Management {
     }
 
     /**
+     * AJAX: پیدا کردن یا ایجاد سمینار
+     */
+    public function ajax_find_or_create_seminar() {
+        check_ajax_referer('um_seminar_registration', 'nonce');
+        
+        $seminar_title = sanitize_text_field($_POST['seminar_title'] ?? '');
+        
+        if (empty($seminar_title)) {
+            wp_send_json_error('عنوان سمینار الزامی است.');
+        }
+        
+        // جستجو برای پیدا کردن سمینار با همین عنوان
+        $seminar_posts = get_posts(array(
+            'post_type' => 'um_seminars',
+            'title' => $seminar_title,
+            'posts_per_page' => 1,
+            'post_status' => 'publish'
+        ));
+        
+        if (!empty($seminar_posts)) {
+            $seminar_id = $seminar_posts[0]->ID;
+        } else {
+            // اگر سمینار پیدا نشد، سمینار جدید ایجاد کن
+            $new_seminar = array(
+                'post_title' => $seminar_title,
+                'post_content' => 'سمینار ' . $seminar_title,
+                'post_status' => 'publish',
+                'post_type' => 'um_seminars',
+                'post_author' => 1
+            );
+            
+            $seminar_id = wp_insert_post($new_seminar);
+            
+            if ($seminar_id && !is_wp_error($seminar_id)) {
+                // تنظیم فیلدهای پیش‌فرض برای ثبت نام
+                update_post_meta($seminar_id, '_seminar_registration_active', '1');
+                update_post_meta($seminar_id, '_seminar_price', '0'); // رایگان
+                update_post_meta($seminar_id, '_seminar_duration', '8');
+                update_post_meta($seminar_id, '_seminar_capacity', '30');
+                // تاریخ فعال را خالی بگذار تا همیشه فعال باشد
+                update_post_meta($seminar_id, '_seminar_active_date', '');
+            } else {
+                wp_send_json_error('خطا در ایجاد سمینار.');
+            }
+        }
+        
+        wp_send_json_success(array('seminar_id' => $seminar_id));
+    }
+
+    /**
      * AJAX: ذخیره تنظیمات درگاه پرداخت
      */
     public function ajax_save_payment_settings() {
@@ -3688,6 +3735,25 @@ class University_Management {
         update_option('um_zarinpal_sandbox', $sandbox);
         
         wp_send_json_success('تنظیمات درگاه پرداخت با موفقیت ذخیره شد.');
+    }
+
+    /**
+     * بارگذاری ماژول ثبت نام سمینارها
+     */
+    public function load_seminar_registration() {
+        $gw  = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-zarinpal-gateway.php';
+        $reg = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-seminar-registration.php';
+        
+        // ابتدا درگاه پرداخت را بارگذاری کن
+        if (file_exists($gw)) { 
+            require_once $gw; 
+        }
+        
+        // سپس کلاس ثبت نام را بارگذاری کن
+        if (file_exists($reg)) { 
+            require_once $reg; 
+            new UM_Seminar_Registration(); 
+        }
     }
 
     /**

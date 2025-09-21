@@ -348,10 +348,10 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 error_log('Current Language: ' . $current_lang);
                 
                 if ($current_lang) {
-                    // ابتدا همه پست‌ها را دریافت کن
+                    // دریافت رویدادها با محدودیت (کش غیرفعال موقت)
                     $all_events = new WP_Query(array(
                         'post_type' => 'um_calendar_events',
-                        'posts_per_page' => -1,
+                        'posts_per_page' => 100, // محدود کردن به 100 رویداد
                         'orderby' => 'meta_value',
                         'meta_key' => '_event_date',
                         'order' => 'ASC',
@@ -394,6 +394,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                 }
             }
             
+            // کش کردن کوئری نهایی (غیرفعال موقت برای تست)
             $query = new \WP_Query($args);
             
             if ($query->have_posts()) {
@@ -463,25 +464,11 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         ?>
         <div <?php echo $this->get_render_attribute_string('wrapper'); ?>>
             <?php 
-            // رویداد اول را به صورت هایلایت نمایش می‌دهیم
+            // همه رویدادها را در یک wrapper نمایش می‌دهیم
             if (!empty($converted_events)) {
-                $first_event = array_shift($converted_events);
                 ?>
-                <div class="event-cal blue" data-title="<?php echo esc_attr($first_event['title']); ?>" data-time="<?php echo esc_attr($first_event['day'] . ' ' . $first_event['month'] . ' - ' . $first_event['year']); ?>" data-description="<?php echo esc_attr($first_event['description']); ?>">
-                    <div class="icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8.46446 3.53554C10.4171 1.58291 13.5829 1.58291 15.5355 3.53553L20.4645 8.46446C22.4171 10.4171 22.4171 13.5829 20.4645 15.5355L15.5355 20.4645C13.5829 22.4171 10.4171 22.4171 8.46447 20.4645L3.53554 15.5355C1.58291 13.5829 1.58291 10.4171 3.53553 8.46447L8.46446 3.53554Z" fill="white"/>
-                            <path d="M9.87868 8.12132C11.0503 6.94975 12.9497 6.94975 14.1213 8.12132L15.8787 9.87868C17.0503 11.0503 17.0503 12.9497 15.8787 14.1213L14.1213 15.8787C12.9497 17.0503 11.0503 17.0503 9.87868 15.8787L8.12132 14.1213C6.94975 12.9497 6.94975 11.0503 8.12132 9.87868L9.87868 8.12132Z" fill="#212179"/>
-                        </svg>
-                    </div>
-                    <div class="day-cal"><?php echo esc_html($first_event['day']); ?></div>
-                    <div class="month-year"><?php echo esc_html($first_event['month'] . ' - ' . $first_event['year']); ?></div>
-                    <div class="label-cal"><?php echo esc_html($first_event['title']); ?></div>
-                </div>
-                
-                <?php if (!empty($converted_events)) { ?>
-                    <div class="wrapper-cal">
-                        <?php foreach ($converted_events as $event) { ?>
+                <div class="wrapper-cal">
+                    <?php foreach ($converted_events as $event) { ?>
                             <div class="event-cal<?php echo (isset($event['important']) && $event['important'] === 'yes') ? ' blue' : ''; ?>" data-title="<?php echo esc_attr($event['title']); ?>" data-time="<?php echo esc_attr($event['day'] . ' ' . $event['month'] . ' - ' . $event['year']); ?>" data-description="<?php echo esc_attr($event['description']); ?>">
                                 <div class="day-cal"><?php echo esc_html($event['day']); ?></div>
                                 <div class="month-year"><?php echo esc_html($event['month'] . ' - ' . $event['year']); ?></div>
@@ -506,9 +493,8 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                                 </div>
                                 <div class="label-cal"><?php echo esc_html($event['title']); ?></div>
                             </div>
-                        <?php } ?>
-                    </div>
-                <?php } ?>
+                    <?php } ?>
+                </div>
             <?php } else { ?>
                 <div class="um-no-events">
                     <?php echo esc_html(um_translate('هیچ رویدادی یافت نشد.', __('هیچ رویدادی یافت نشد.', 'university-management'))); ?>

@@ -9,14 +9,51 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var seminarId = $(this).data('seminar-id');
-        if (!seminarId) {
-            alert('شناسه سمینار نامعتبر است.');
+        var seminarTitle = $(this).data('seminar-title');
+        
+        if (!seminarId && !seminarTitle) {
+            alert('اطلاعات سمینار نامعتبر است.');
             return;
         }
         
-        // نمایش مودال ثبت نام
-        showRegistrationModal(seminarId);
+        // اگر فقط عنوان سمینار داریم، ابتدا سمینار را پیدا یا ایجاد کن
+        if (!seminarId && seminarTitle) {
+            findOrCreateSeminar(seminarTitle);
+        } else {
+            // نمایش مودال ثبت نام
+            showRegistrationModal(seminarId);
+        }
     });
+    
+    // پیدا کردن یا ایجاد سمینار بر اساس عنوان
+    function findOrCreateSeminar(seminarTitle) {
+        $.ajax({
+            url: um_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'um_find_or_create_seminar',
+                seminar_title: seminarTitle,
+                nonce: um_ajax.nonce
+            },
+            beforeSend: function() {
+                // نمایش لودینگ
+                $('.um-seminar-register-btn').prop('disabled', true).text('در حال پردازش...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    showRegistrationModal(response.data.seminar_id);
+                } else {
+                    alert('خطا: ' + response.data);
+                }
+            },
+            error: function() {
+                alert('خطا در ارتباط با سرور');
+            },
+            complete: function() {
+                $('.um-seminar-register-btn').prop('disabled', false).text('ثبت نام رایگان');
+            }
+        });
+    }
     
     // نمایش مودال ثبت نام
     function showRegistrationModal(seminarId) {
