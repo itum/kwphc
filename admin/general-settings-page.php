@@ -134,6 +134,50 @@ $is_authenticated = ($auth_status === 'authenticated' && !empty($auth_username) 
             </div>
         </div>
         
+        <!-- بخش تنظیمات درگاه پرداخت -->
+        <div class="um-payment-settings-section">
+            <div class="card">
+                <h2><?php _e('تنظیمات درگاه پرداخت زرین‌پال', 'university-management'); ?></h2>
+                
+                <form id="um-payment-settings-form">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="um-zarinpal-merchant-id"><?php _e('کلید درگاه', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" id="um-zarinpal-merchant-id" name="merchant_id" class="regular-text" 
+                                       value="<?php echo esc_attr(get_option('um_zarinpal_merchant_id', '')); ?>" />
+                                <p class="description">
+                                    <?php _e('کلید درگاه زرین‌پال خود را وارد کنید', 'university-management'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="um-zarinpal-sandbox"><?php _e('حالت تست', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <input type="checkbox" id="um-zarinpal-sandbox" name="sandbox" value="1" 
+                                       <?php checked(get_option('um_zarinpal_sandbox', '1'), '1'); ?> />
+                                <label for="um-zarinpal-sandbox"><?php _e('استفاده از درگاه تست (Sandbox)', 'university-management'); ?></label>
+                                <p class="description">
+                                    <?php _e('برای تست پرداخت‌ها این گزینه را فعال نگه دارید', 'university-management'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p class="submit">
+                        <button type="submit" class="button button-primary">
+                            <?php _e('ذخیره تنظیمات درگاه', 'university-management'); ?>
+                        </button>
+                        <span id="um-payment-loading" class="spinner" style="display: none;"></span>
+                    </p>
+                </form>
+            </div>
+        </div>
+        
 
         
         <!-- بخش مدیریت سمینارها -->

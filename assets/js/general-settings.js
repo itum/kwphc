@@ -20,6 +20,9 @@
             // تنظیمات API
             $('#um-api-settings-form').on('submit', this.handleApiSettings.bind(this));
             
+            // تنظیمات درگاه پرداخت
+            $('#um-payment-settings-form').on('submit', this.handlePaymentSettings.bind(this));
+            
             // مدیریت سمینارها
             $('#um-load-seminars-btn').on('click', this.loadSeminars.bind(this));
             
@@ -136,6 +139,48 @@
                 success: function(response) {
                     if (response.success) {
                         this.showMessage('تنظیمات با موفقیت ذخیره شد', 'success');
+                    } else {
+                        this.showMessage('خطا: ' + response.data, 'error');
+                    }
+                }.bind(this),
+                error: function(xhr, status, error) {
+                    this.showMessage('خطا در اتصال به سرور: ' + error, 'error');
+                }.bind(this),
+                complete: function() {
+                    this.setLoading($button, $loading, false);
+                }.bind(this)
+            });
+        },
+
+        handlePaymentSettings: function(e) {
+            e.preventDefault();
+            
+            var $form = $(e.target);
+            var $button = $form.find('button[type="submit"]');
+            var $loading = $('#um-payment-loading');
+            var merchantId = $('#um-zarinpal-merchant-id').val();
+            var sandbox = $('#um-zarinpal-sandbox').is(':checked') ? '1' : '0';
+            
+            // اعتبارسنجی
+            if (!merchantId.trim()) {
+                this.showMessage('کلید درگاه الزامی است', 'error');
+                return;
+            }
+            
+            this.setLoading($button, $loading, true);
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'um_save_payment_settings',
+                    merchant_id: merchantId,
+                    sandbox: sandbox,
+                    nonce: umGeneralSettings.paymentSettingsNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        this.showMessage('تنظیمات درگاه پرداخت با موفقیت ذخیره شد', 'success');
                     } else {
                         this.showMessage('خطا: ' + response.data, 'error');
                     }

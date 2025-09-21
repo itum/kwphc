@@ -265,8 +265,8 @@
                 const isSelected = m.isSame(selectedDate, 'day');
 
                 const dayDiv = document.createElement('div');
-                // اگر امروز است، همیشه فعال باشد
-                const shouldBeActive = isToday || isSelected;
+                // فقط روز انتخاب شده فعال باشد
+                const shouldBeActive = isSelected;
                 dayDiv.className = 'day' + (isToday ? ' today' : '') + (shouldBeActive ? ' active' : '');
                 const weekDay = weekDaysByMomentIndex[m.day()];
                 // تغییر فرمت ماه از امرداد به مرداد

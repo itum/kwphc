@@ -1,0 +1,319 @@
+/**
+ * استایل‌های ثبت نام سمینارها
+ */
+
+/* فرم ثبت نام */
+.um-seminar-registration-form {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.um-seminar-registration-form h3 {
+    margin-top: 0;
+    color: #333;
+    text-align: center;
+}
+
+.um-form-row {
+    margin-bottom: 15px;
+}
+
+.um-form-row label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.um-form-row input,
+.um-form-row select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.um-form-row input:focus,
+.um-form-row select:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
+}
+
+.um-register-button {
+    background: #0073aa;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    width: 100%;
+}
+
+.um-register-button:hover {
+    background: #005a87;
+}
+
+.um-register-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* پیام‌های موفقیت و خطا */
+.um-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+    border: 1px solid #c3e6cb;
+}
+
+.um-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+    border: 1px solid #f5c6cb;
+}
+
+.um-loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* مودال ثبت نام */
+.um-registration-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.um-modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.um-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.um-modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.um-modal-close {
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+    padding: 5px;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.um-modal-close:hover {
+    color: #333;
+    background: #eee;
+}
+
+.um-modal-body {
+    padding: 20px;
+}
+
+/* دکمه‌های ثبت نام در ویجت */
+.um-seminar-register-btn {
+    background: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.um-seminar-register-btn:hover {
+    background: #218838;
+    color: white;
+    text-decoration: none;
+}
+
+/* استایل‌های گزارش‌ها */
+.um-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.um-stat-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    border: 1px solid #e1e5e9;
+}
+
+.um-stat-card h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.um-stat-card div {
+    font-size: 2em;
+    font-weight: bold;
+    color: #0073aa;
+}
+
+.um-payment-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.um-status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.um-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.um-status-failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.um-status-cancelled {
+    background: #e2e3e5;
+    color: #6c757d;
+}
+
+/* استایل‌های responsive */
+@media (max-width: 768px) {
+    .um-seminar-registration-form {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+    .um-modal-content {
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .um-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .um-stat-card {
+        padding: 15px;
+    }
+}
+
+/* استایل‌های اضافی برای فرم */
+.um-form-row input[type="file"] {
+    padding: 6px;
+    border: 2px dashed #ccc;
+    background: #f9f9f9;
+}
+
+.um-form-row input[type="file"]:hover {
+    border-color: #0073aa;
+    background: #f0f8ff;
+}
+
+/* استایل‌های دکمه‌های عملیات */
+.um-view-details {
+    background: #0073aa;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.um-view-details:hover {
+    background: #005a87;
+    color: white;
+    text-decoration: none;
+}
+
+/* استایل‌های جدول گزارش‌ها */
+.wp-list-table th {
+    background: #f1f1f1;
+    font-weight: bold;
+}
+
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+/* استایل‌های پیام‌های سیستم */
+.um-message {
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.um-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.um-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.um-message.warning {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}

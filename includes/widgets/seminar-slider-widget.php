@@ -362,21 +362,63 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                         </div>
                                     </div>
                                     <?php
-                                    // استفاده از ترجمه برای دکمه
-                                    if (function_exists('pll__')) {
-                                        $button_text = pll__('شروع یادگیری') ?: 'شروع یادگیری';
-                                    } else {
-                                        $button_text = 'شروع یادگیری';
+                                    <?php
+                                    // بررسی امکان ثبت نام
+                                    $seminar_id = 0;
+                                    if ($settings['seminar_source'] === 'auto') {
+                                        $seminar_id = get_the_ID();
                                     }
                                     
-                                    $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
-                                    $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
-                                    $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';
+                                    if ($seminar_id && function_exists('UM_Seminar_Registration')) {
+                                        $registration_manager = new UM_Seminar_Registration();
+                                        $can_register = $registration_manager->can_register($seminar_id);
+                                        
+                                        if ($can_register['can_register']) {
+                                            $seminar_price = intval(get_post_meta($seminar_id, '_seminar_price', true));
+                                            $button_text = $seminar_price > 0 ? 'ثبت نام و پرداخت' : 'ثبت نام رایگان';
+                                            ?>
+                                            <a href="#" class="btn-start um-seminar-register-btn" data-seminar-id="<?php echo $seminar_id; ?>">
+                                                <span><?php echo esc_html($button_text); ?></span>
+                                                <i data-lucide="arrow-left"></i>
+                                            </a>
+                                            <?php
+                                        } else {
+                                            // استفاده از ترجمه برای دکمه
+                                            if (function_exists('pll__')) {
+                                                $button_text = pll__('شروع یادگیری') ?: 'شروع یادگیری';
+                                            } else {
+                                                $button_text = 'شروع یادگیری';
+                                            }
+                                            
+                                            $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
+                                            $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
+                                            $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';
+                                            ?>
+                                            <a href="<?php echo $link_url; ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
+                                                <span><?php echo esc_html($button_text); ?></span>
+                                                <i data-lucide="arrow-left"></i>
+                                            </a>
+                                            <?php
+                                        }
+                                    } else {
+                                        // استفاده از ترجمه برای دکمه
+                                        if (function_exists('pll__')) {
+                                            $button_text = pll__('شروع یادگیری') ?: 'شروع یادگیری';
+                                        } else {
+                                            $button_text = 'شروع یادگیری';
+                                        }
+                                        
+                                        $link_url = !empty($item['seminar_link']['url']) ? esc_url($item['seminar_link']['url']) : '#';
+                                        $target = !empty($item['seminar_link']['is_external']) ? ' target="_blank"' : '';
+                                        $nofollow = !empty($item['seminar_link']['nofollow']) ? ' rel="nofollow"' : '';
+                                        ?>
+                                        <a href="<?php echo $link_url; ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
+                                            <span><?php echo esc_html($button_text); ?></span>
+                                            <i data-lucide="arrow-left"></i>
+                                        </a>
+                                        <?php
+                                    }
                                     ?>
-                                    <a href="<?php echo $link_url; ?>" class="btn-start"<?php echo $target; ?><?php echo $nofollow; ?>>
-                                        <span><?php echo esc_html($button_text); ?></span>
-                                        <i data-lucide="arrow-left"></i>
-                                    </a>
                                 </div>
                             </div>
                         <?php endforeach; ?>

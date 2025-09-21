@@ -80,6 +80,14 @@ class University_Management {
             if (file_exists($gw))  { require_once $gw;  new UM_Hall_Gateway(); }
         });
         
+        // بارگذاری ماژول ثبت نام سمینارها
+        add_action('plugins_loaded', function() {
+            $reg = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-seminar-registration.php';
+            $gw  = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-zarinpal-gateway.php';
+            if (file_exists($reg)) { require_once $reg; new UM_Seminar_Registration(); }
+            if (file_exists($gw))  { require_once $gw; }
+        });
+        
         // افزودن متاباکس‌ها
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
         
@@ -102,6 +110,13 @@ class University_Management {
         add_action('wp_ajax_um_import_database', array($this, 'ajax_import_database'));
         add_action('wp_ajax_um_delete_imported_data', array($this, 'ajax_delete_imported_data'));
         add_action('wp_ajax_um_get_import_status', array($this, 'ajax_get_import_status'));
+        
+        // اکشن‌های AJAX برای ثبت نام سمینار
+        add_action('wp_ajax_um_get_registration_form', array($this, 'ajax_get_registration_form'));
+        add_action('wp_ajax_nopriv_um_get_registration_form', array($this, 'ajax_get_registration_form'));
+        
+        // اکشن‌های AJAX برای تنظیمات درگاه پرداخت
+        add_action('wp_ajax_um_save_payment_settings', array($this, 'ajax_save_payment_settings'));
         add_action('wp_ajax_um_get_import_logs', array($this, 'ajax_get_import_logs'));
         add_action('wp_ajax_um_clear_import_logs', array($this, 'ajax_clear_import_logs'));
         
@@ -489,6 +504,15 @@ class University_Management {
             'manage_options',
             'university-azmoon',
             array($this, 'azmoon_admin_page')
+        );
+        
+        add_submenu_page(
+            'university-management',
+            __('گزارش ثبت نام سمینارها', 'university-management'),
+            __('گزارش ثبت نام سمینارها', 'university-management'),
+            'manage_options',
+            'university-seminar-reports',
+            array($this, 'seminar_reports_admin_page')
         );
         
         add_submenu_page(
@@ -1444,6 +1468,23 @@ class University_Management {
             true
         );
         
+        // جاوااسکریپت ثبت نام سمینار
+        wp_enqueue_script(
+            'um-seminar-registration',
+            UM_PLUGIN_URL . 'assets/js/seminar-registration.js',
+            array('jquery'),
+            UM_VERSION,
+            true
+        );
+        
+        // استایل‌های ثبت نام سمینار
+        wp_enqueue_style(
+            'um-seminar-registration',
+            UM_PLUGIN_URL . 'assets/css/seminar-registration.css',
+            array(),
+            UM_VERSION
+        );
+        
         // لوکالایز اسکریپت برای مقادیر داینامیک
         wp_localize_script(
             'university-management-script',
@@ -1451,6 +1492,16 @@ class University_Management {
             array(
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('university-management-nonce')
+            )
+        );
+        
+        // لوکالایز اسکریپت برای ثبت نام سمینار
+        wp_localize_script(
+            'um-seminar-registration',
+            'um_ajax',
+            array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('um_seminar_registration')
             )
         );
         
@@ -1543,6 +1594,7 @@ class University_Management {
                         'logoutNonce' => wp_create_nonce('um_logout_nonce'),
                         'seminarsNonce' => wp_create_nonce('um_seminars_nonce'),
                         'apiSettingsNonce' => wp_create_nonce('um_api_settings_nonce'),
+                        'paymentSettingsNonce' => wp_create_nonce('um_general_settings'),
                         'tokenExpires' => get_option('_um_token_expires', 0),
                         'isAuthenticated' => (get_option('_um_auth_status') === 'authenticated'),
                         'messages' => array(
@@ -3368,6 +3420,9 @@ class University_Management {
         // ثبت پست‌تایپ‌ها
         $this->register_post_types();
         
+        // ایجاد جداول دیتابیس
+        $this->create_database_tables();
+        
         // بروزرسانی rewrite rules
         flush_rewrite_rules();
         
@@ -3391,6 +3446,251 @@ class University_Management {
     }
 
     /**
+     * ایجاد جداول دیتابیس
+     */
+    public function create_database_tables() {
+        global $wpdb;
+        
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        // جدول ثبت نام سمینارها
+        $table_name = $wpdb->prefix . 'um_seminar_registrations';
+        
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            seminar_id bigint(20) NOT NULL,
+            user_id bigint(20) DEFAULT NULL,
+            first_name varchar(100) NOT NULL,
+            last_name varchar(100) NOT NULL,
+            father_name varchar(100) NOT NULL,
+            occupation varchar(100) NOT NULL,
+            id_number varchar(20) NOT NULL,
+            national_id varchar(20) NOT NULL,
+            birth_place varchar(100) NOT NULL,
+            issue_place varchar(100) NOT NULL,
+            email varchar(100) NOT NULL,
+            phone varchar(20) NOT NULL,
+            education_level varchar(50) NOT NULL,
+            field_of_study varchar(100) NOT NULL,
+            price int(11) NOT NULL DEFAULT 0,
+            payment_status varchar(20) NOT NULL DEFAULT 'pending',
+            payment_reference varchar(100) DEFAULT NULL,
+            registration_date datetime DEFAULT CURRENT_TIMESTAMP,
+            documents text DEFAULT NULL,
+            PRIMARY KEY (id),
+            KEY seminar_id (seminar_id),
+            KEY user_id (user_id),
+            KEY payment_status (payment_status)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+        
+        // جدول گزارش‌های پرداخت
+        $table_name = $wpdb->prefix . 'um_seminar_payments';
+        
+        $sql = "CREATE TABLE $table_name (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            registration_id mediumint(9) NOT NULL,
+            seminar_id bigint(20) NOT NULL,
+            amount int(11) NOT NULL,
+            payment_method varchar(50) NOT NULL,
+            payment_reference varchar(100) NOT NULL,
+            payment_status varchar(20) NOT NULL,
+            payment_date datetime DEFAULT CURRENT_TIMESTAMP,
+            gateway_response text DEFAULT NULL,
+            PRIMARY KEY (id),
+            KEY registration_id (registration_id),
+            KEY seminar_id (seminar_id),
+            KEY payment_status (payment_status)
+        ) $charset_collate;";
+        
+        dbDelta($sql);
+    }
+
+    /**
+     * صفحه گزارش‌های ثبت نام سمینارها
+     */
+    public function seminar_reports_admin_page() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'um_seminar_registrations';
+        $payments_table = $wpdb->prefix . 'um_seminar_payments';
+        
+        // دریافت آمار کلی
+        $total_registrations = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        $pending_payments = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE payment_status = 'pending'");
+        $completed_payments = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE payment_status = 'completed'");
+        $total_revenue = $wpdb->get_var("SELECT SUM(amount) FROM $payments_table WHERE payment_status = 'completed'");
+        
+        // دریافت لیست ثبت نام‌ها
+        $registrations = $wpdb->get_results("
+            SELECT r.*, p.post_title as seminar_title 
+            FROM $table_name r 
+            LEFT JOIN {$wpdb->posts} p ON r.seminar_id = p.ID 
+            ORDER BY r.registration_date DESC 
+            LIMIT 50
+        ");
+        
+        ?>
+        <div class="wrap">
+            <h1><?php _e('گزارش ثبت نام سمینارها', 'university-management'); ?></h1>
+            
+            <div class="um-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
+                <div class="um-stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0 0 10px 0; color: #333;"><?php _e('کل ثبت نام‌ها', 'university-management'); ?></h3>
+                    <div style="font-size: 2em; font-weight: bold; color: #0073aa;"><?php echo number_format($total_registrations); ?></div>
+                </div>
+                
+                <div class="um-stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0 0 10px 0; color: #333;"><?php _e('پرداخت‌های در انتظار', 'university-management'); ?></h3>
+                    <div style="font-size: 2em; font-weight: bold; color: #ff6b35;"><?php echo number_format($pending_payments); ?></div>
+                </div>
+                
+                <div class="um-stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0 0 10px 0; color: #333;"><?php _e('پرداخت‌های تکمیل شده', 'university-management'); ?></h3>
+                    <div style="font-size: 2em; font-weight: bold; color: #28a745;"><?php echo number_format($completed_payments); ?></div>
+                </div>
+                
+                <div class="um-stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin: 0 0 10px 0; color: #333;"><?php _e('کل درآمد', 'university-management'); ?></h3>
+                    <div style="font-size: 2em; font-weight: bold; color: #6f42c1;"><?php echo number_format($total_revenue ?: 0); ?> <?php _e('تومان', 'university-management'); ?></div>
+                </div>
+            </div>
+            
+            <h2><?php _e('لیست ثبت نام‌ها', 'university-management'); ?></h2>
+            
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th><?php _e('نام و نام خانوادگی', 'university-management'); ?></th>
+                        <th><?php _e('سمینار', 'university-management'); ?></th>
+                        <th><?php _e('ایمیل', 'university-management'); ?></th>
+                        <th><?php _e('تلفن', 'university-management'); ?></th>
+                        <th><?php _e('مبلغ', 'university-management'); ?></th>
+                        <th><?php _e('وضعیت پرداخت', 'university-management'); ?></th>
+                        <th><?php _e('تاریخ ثبت نام', 'university-management'); ?></th>
+                        <th><?php _e('عملیات', 'university-management'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($registrations): ?>
+                        <?php foreach ($registrations as $registration): ?>
+                            <tr>
+                                <td><?php echo esc_html($registration->first_name . ' ' . $registration->last_name); ?></td>
+                                <td><?php echo esc_html($registration->seminar_title); ?></td>
+                                <td><?php echo esc_html($registration->email); ?></td>
+                                <td><?php echo esc_html($registration->phone); ?></td>
+                                <td><?php echo number_format($registration->price); ?> <?php _e('تومان', 'university-management'); ?></td>
+                                <td>
+                                    <span class="um-payment-status um-status-<?php echo esc_attr($registration->payment_status); ?>">
+                                        <?php
+                                        switch ($registration->payment_status) {
+                                            case 'completed':
+                                                _e('تکمیل شده', 'university-management');
+                                                break;
+                                            case 'pending':
+                                                _e('در انتظار', 'university-management');
+                                                break;
+                                            case 'failed':
+                                                _e('ناموفق', 'university-management');
+                                                break;
+                                            default:
+                                                _e('نامشخص', 'university-management');
+                                        }
+                                        ?>
+                                    </span>
+                                </td>
+                                <td><?php echo date_i18n('Y/m/d H:i', strtotime($registration->registration_date)); ?></td>
+                                <td>
+                                    <a href="#" class="button button-small um-view-details" data-registration-id="<?php echo $registration->id; ?>">
+                                        <?php _e('جزئیات', 'university-management'); ?>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="8" style="text-align: center;"><?php _e('هیچ ثبت نامی یافت نشد.', 'university-management'); ?></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <style>
+        .um-payment-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .um-status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .um-status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .um-status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        </style>
+        <?php
+    }
+
+    /**
+     * AJAX: دریافت فرم ثبت نام
+     */
+    public function ajax_get_registration_form() {
+        check_ajax_referer('um_seminar_registration', 'nonce');
+        
+        $seminar_id = intval($_POST['seminar_id'] ?? 0);
+        
+        if (!$seminar_id) {
+            wp_send_json_error('شناسه سمینار نامعتبر است.');
+        }
+        
+        // بررسی وجود کلاس ثبت نام
+        if (!class_exists('UM_Seminar_Registration')) {
+            wp_send_json_error('کلاس ثبت نام موجود نیست.');
+        }
+        
+        $registration_manager = new UM_Seminar_Registration();
+        $form_html = $registration_manager->registration_shortcode(array(
+            'seminar_id' => $seminar_id,
+            'show_title' => 'false'
+        ));
+        
+        wp_send_json_success($form_html);
+    }
+
+    /**
+     * AJAX: ذخیره تنظیمات درگاه پرداخت
+     */
+    public function ajax_save_payment_settings() {
+        check_ajax_referer('um_general_settings', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('شما دسترسی به این عملیات را ندارید.');
+        }
+        
+        $merchant_id = sanitize_text_field($_POST['merchant_id'] ?? '');
+        $sandbox = sanitize_text_field($_POST['sandbox'] ?? '0');
+        
+        if (empty($merchant_id)) {
+            wp_send_json_error('کلید درگاه الزامی است.');
+        }
+        
+        update_option('um_zarinpal_merchant_id', $merchant_id);
+        update_option('um_zarinpal_sandbox', $sandbox);
+        
+        wp_send_json_success('تنظیمات درگاه پرداخت با موفقیت ذخیره شد.');
+    }
+
+    /**
      * متاباکس جزئیات سمینار
      */
     public function seminar_details_meta_box($post) {
@@ -3400,18 +3700,42 @@ class University_Management {
         $time = get_post_meta($post->ID, '_seminar_time', true);
         $button_text = get_post_meta($post->ID, '_seminar_button_text', true);
         $button_link = get_post_meta($post->ID, '_seminar_button_link', true);
+        $active_date = get_post_meta($post->ID, '_seminar_active_date', true);
+        $registration_active = get_post_meta($post->ID, '_seminar_registration_active', true);
+        $seminar_price = get_post_meta($post->ID, '_seminar_price', true);
+        $seminar_duration = get_post_meta($post->ID, '_seminar_duration', true);
+        $seminar_capacity = get_post_meta($post->ID, '_seminar_capacity', true);
 
-        echo '<p><label for="seminar_teacher">' . __('مدرس', 'university-management') . '</label>';
-        echo '<input type="text" id="seminar_teacher" name="seminar_teacher" value="' . esc_attr($teacher) . '" class="widefat"></p>';
+        echo '<table class="form-table">';
+        
+        echo '<tr><th><label for="seminar_teacher">' . __('مدرس', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="seminar_teacher" name="seminar_teacher" value="' . esc_attr($teacher) . '" class="regular-text"></td></tr>';
 
-        echo '<p><label for="seminar_time">' . __('زمان برگزاری', 'university-management') . '</label>';
-        echo '<input type="text" id="seminar_time" name="seminar_time" value="' . esc_attr($time) . '" class="widefat" placeholder="مثال: ۱۴۰۳/۰۵/۲۰"></p>';
+        echo '<tr><th><label for="seminar_time">' . __('زمان برگزاری', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="seminar_time" name="seminar_time" value="' . esc_attr($time) . '" class="regular-text" placeholder="مثال: ۱۴۰۳/۰۵/۲۰"></td></tr>';
 
-        echo '<p><label for="seminar_button_text">' . __('عنوان دکمه', 'university-management') . '</label>';
-        echo '<input type="text" id="seminar_button_text" name="seminar_button_text" value="' . esc_attr($button_text) . '" class="widefat" placeholder="مثال: شروع یادگیری"></p>';
+        echo '<tr><th><label for="seminar_active_date">' . __('تاریخ فعال', 'university-management') . '</label></th>';
+        echo '<td><input type="date" id="seminar_active_date" name="seminar_active_date" value="' . esc_attr($active_date) . '" class="regular-text"></td></tr>';
 
-        echo '<p><label for="seminar_button_link">' . __('لینک دکمه', 'university-management') . '</label>';
-        echo '<input type="url" id="seminar_button_link" name="seminar_button_link" value="' . esc_url($button_link) . '" class="widefat" placeholder="https://example.com"></p>';
+        echo '<tr><th><label for="seminar_registration_active">' . __('فعال بودن ثبت نام', 'university-management') . '</label></th>';
+        echo '<td><input type="checkbox" id="seminar_registration_active" name="seminar_registration_active" value="1"' . checked($registration_active, '1', false) . '> ' . __('ثبت نام فعال است', 'university-management') . '</td></tr>';
+
+        echo '<tr><th><label for="seminar_price">' . __('قیمت (تومان)', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="seminar_price" name="seminar_price" value="' . esc_attr($seminar_price) . '" class="regular-text" placeholder="0 برای رایگان"> ' . __('تومان (0 = رایگان)', 'university-management') . '</td></tr>';
+
+        echo '<tr><th><label for="seminar_duration">' . __('مدت زمان (ساعت)', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="seminar_duration" name="seminar_duration" value="' . esc_attr($seminar_duration) . '" class="regular-text" placeholder="مثال: 8"></td></tr>';
+
+        echo '<tr><th><label for="seminar_capacity">' . __('ظرفیت', 'university-management') . '</label></th>';
+        echo '<td><input type="number" id="seminar_capacity" name="seminar_capacity" value="' . esc_attr($seminar_capacity) . '" class="regular-text" placeholder="مثال: 30"></td></tr>';
+
+        echo '<tr><th><label for="seminar_button_text">' . __('عنوان دکمه', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="seminar_button_text" name="seminar_button_text" value="' . esc_attr($button_text) . '" class="regular-text" placeholder="مثال: شروع یادگیری"></td></tr>';
+
+        echo '<tr><th><label for="seminar_button_link">' . __('لینک دکمه', 'university-management') . '</label></th>';
+        echo '<td><input type="url" id="seminar_button_link" name="seminar_button_link" value="' . esc_url($button_link) . '" class="regular-text" placeholder="https://example.com"></td></tr>';
+
+        echo '</table>';
     }
 
     /**
@@ -3489,6 +3813,28 @@ class University_Management {
 
         if (isset($_POST['seminar_time'])) {
             update_post_meta($post_id, '_seminar_time', sanitize_text_field($_POST['seminar_time']));
+        }
+
+        if (isset($_POST['seminar_active_date'])) {
+            update_post_meta($post_id, '_seminar_active_date', sanitize_text_field($_POST['seminar_active_date']));
+        }
+
+        if (isset($_POST['seminar_registration_active'])) {
+            update_post_meta($post_id, '_seminar_registration_active', '1');
+        } else {
+            update_post_meta($post_id, '_seminar_registration_active', '0');
+        }
+
+        if (isset($_POST['seminar_price'])) {
+            update_post_meta($post_id, '_seminar_price', intval($_POST['seminar_price']));
+        }
+
+        if (isset($_POST['seminar_duration'])) {
+            update_post_meta($post_id, '_seminar_duration', intval($_POST['seminar_duration']));
+        }
+
+        if (isset($_POST['seminar_capacity'])) {
+            update_post_meta($post_id, '_seminar_capacity', intval($_POST['seminar_capacity']));
         }
         
         if (isset($_POST['seminar_button_text'])) {
