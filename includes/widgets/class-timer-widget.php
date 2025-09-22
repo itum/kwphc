@@ -241,6 +241,71 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $this->end_controls_section();
 
         // بخش استایل
+        // فیلترهای زمانی و روز هفته برای حالت خودکار
+        $this->start_controls_section(
+            'section_filters',
+            [
+                'label' => um_translate('فیلترها', __('فیلترها', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+                'condition' => [ 'class_source' => 'auto' ],
+            ]
+        );
+
+        $this->add_control(
+            'filter_mode',
+            [
+                'label' => um_translate('حالت نمایش', __('حالت نمایش', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'single',
+                'options' => [ 'single' => 'single', 'range' => 'range' ],
+            ]
+        );
+
+        $this->add_control(
+            'from_date',
+            [
+                'label' => um_translate('از تاریخ', __('از تاریخ', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DATE_TIME,
+                'picker_options' => [ 'enableTime' => false, 'dateFormat' => 'Y-m-d' ],
+                'default' => '',
+            ]
+        );
+
+        $this->add_control(
+            'to_date',
+            [
+                'label' => um_translate('تا تاریخ', __('تا تاریخ', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DATE_TIME,
+                'picker_options' => [ 'enableTime' => false, 'dateFormat' => 'Y-m-d' ],
+                'default' => '',
+                'condition' => [ 'filter_mode' => 'range' ],
+            ]
+        );
+
+        $this->add_control(
+            'full_week',
+            [
+                'label' => um_translate('نمایش کل هفته', __('نمایش کل هفته', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SWITCHER,
+                'default' => 'yes',
+            ]
+        );
+
+        $this->add_control(
+            'weekdays',
+            [
+                'label' => um_translate('روزهای هفته', __('روزهای هفته', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SELECT2,
+                'multiple' => true,
+                'options' => [ 6=>'شنبه',0=>'یکشنبه',1=>'دوشنبه',2=>'سه‌شنبه',3=>'چهارشنبه',4=>'پنجشنبه',5=>'جمعه' ],
+                'default' => [],
+                'condition' => [ 'full_week!' => 'yes' ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل
         $this->start_controls_section(
             'section_style',
             [
@@ -340,6 +405,35 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         $classes = array();
         
         if ($settings['class_source'] === 'auto') {
+            // اعمال فیلتر تاریخ و روزهای هفته
+            $meta_query = array();
+            $from = !empty($settings['from_date']) ? date('Y-m-d', strtotime($settings['from_date'])) : '';
+            $to = !empty($settings['to_date']) ? date('Y-m-d', strtotime($settings['to_date'])) : '';
+            if ($from && (!isset($settings['filter_mode']) || $settings['filter_mode'] === 'single')) {
+                $meta_query[] = array(
+                    'key' => '_class_date',
+                    'value' => array($from . ' 00:00:00', $from . ' 23:59:59'),
+                    'compare' => 'BETWEEN',
+                    'type' => 'DATETIME',
+                );
+            } elseif ($from && $to) {
+                $meta_query[] = array(
+                    'key' => '_class_date',
+                    'value' => array($from . ' 00:00:00', $to . ' 23:59:59'),
+                    'compare' => 'BETWEEN',
+                    'type' => 'DATETIME',
+                );
+            }
+            $fullWeekYes = isset($settings['full_week']) && $settings['full_week'] === 'yes';
+            $weekdays = isset($settings['weekdays']) && is_array($settings['weekdays']) ? array_map('intval', $settings['weekdays']) : array();
+            if (!$fullWeekYes && !empty($weekdays)) {
+                $meta_query[] = array(
+                    'key' => '_class_weekday',
+                    'value' => $weekdays,
+                    'compare' => 'IN',
+                    'type' => 'NUMERIC',
+                );
+            }
             // دریافت کلاس‌ها از پست‌تایپ
             $args = array(
                 'post_type' => 'um_classes',
@@ -351,6 +445,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                 'order' => 'ASC',
                 'post_status' => 'publish',
                 'meta_type' => 'DATETIME',
+                'meta_query' => $meta_query,
             );
             
             $query = new \WP_Query($args);
