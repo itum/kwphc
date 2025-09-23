@@ -350,6 +350,73 @@ function display_all_db_objects($pdo, $dbName) {
                     echo "</tr>";
                 }
                 echo "</tbody></table>";
+                // شمارش کل رکوردها و پیشنمایش دادهها
+                try {
+                    $countQuery = "SELECT COUNT(*) as total_records FROM [" . $table . "]";
+                    $countStmt = $pdo->query($countQuery);
+                    $totalRecords = $countStmt->fetch(PDO::FETCH_ASSOC)['total_records'];
+                    echo "<h4>تعداد کل رکوردها: " . number_format($totalRecords) . "</h4>";
+
+                    // تعیین ستون مرتبسازی
+                    $preferredSortColumn = null;
+                    $dateTypes = ['date','datetime','smalldatetime','datetime2','datetimeoffset','time'];
+                    $numericTypes = ['bigint','int','smallint','tinyint','decimal','numeric','float','real'];
+                    foreach ($columns as $column) {
+                        $colName = $column['COLUMN_NAME'];
+                        $dataType = strtolower($column['DATA_TYPE']);
+                        if (in_array($dataType, $dateTypes) && preg_match('/date|time|tarikh|exam/i', $colName)) {
+                            $preferredSortColumn = $colName;
+                            break;
+                        }
+                    }
+                    if ($preferredSortColumn === null) {
+                        foreach ($columns as $column) {
+                            $colName = $column['COLUMN_NAME'];
+                            $dataType = strtolower($column['DATA_TYPE']);
+                            if (in_array($dataType, $numericTypes) && preg_match('/id|code|noe|num|counter|count|co_c/i', $colName)) {
+                                $preferredSortColumn = $colName;
+                                break;
+                            }
+                        }
+                    }
+
+                    $limit = (int) min(100, (int) $totalRecords);
+                    if ($limit > 0) {
+                        $dataQuery = "SELECT TOP $limit * FROM [" . $table . "]";
+                        if ($preferredSortColumn) {
+                            $dataQuery .= " ORDER BY [" . $preferredSortColumn . "] DESC";
+                        }
+                        $dataStmt = $pdo->query($dataQuery);
+                        $data = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        if ($data) {
+                            echo "<h4>نمایش " . count($data) . " رکورد آخر (مرتبشده نزولی)</h4>";
+                            echo "<div style='max-height: 400px; overflow-y: auto;'>";
+                            echo "<table style='width: 100%; border-collapse: collapse; font-size: 11px;'>";
+                            echo "<thead><tr>";
+                            foreach (array_keys($data[0]) as $columnName) {
+                                echo "<th>" . htmlspecialchars($columnName) . "</th>";
+                            }
+                            echo "</tr></thead><tbody>";
+                            foreach ($data as $row) {
+                                echo "<tr>";
+                                foreach ($row as $value) {
+                                    $displayValue = htmlspecialchars($value ?? 'NULL');
+                                    if (mb_strlen($displayValue) > 30) $displayValue = mb_substr($displayValue, 0, 30) . '...';
+                                    echo "<td>" . $displayValue . "</td>";
+                                }
+                                echo "</tr>";
+                            }
+                            echo "</tbody></table>";
+                            echo "</div>";
+                            if ($totalRecords > 100) {
+                                echo "<p><em>فقط 100 رکورد آخر نمایش داده شد. کل رکوردها: " . number_format($totalRecords) . "</em></p>";
+                            }
+                        }
+                    }
+                } catch (PDOException $e) {
+                    echo "<p class='error'>❌ خطا در دریافت دادههای جدول " . htmlspecialchars($table) . ": " . htmlspecialchars($e->getMessage()) . "</p>";
+                }
             } catch (PDOException $e) {
                 echo "<p class='error'>❌ خطا در دریافت ستون‌های جدول " . htmlspecialchars($table) . ": " . htmlspecialchars($e->getMessage()) . "</p>";
             }
@@ -384,6 +451,63 @@ function display_all_db_objects($pdo, $dbName) {
                     echo "</tr>";
                 }
                 echo "</tbody></table>";
+                // پیشنمایش دادههای ویو (TOP 100) بههمراه مرتبسازی هوشمند
+                try {
+                    // تعیین ستون مرتبسازی براساس نوع تاریخ/عددی و نامهای متداول
+                    $preferredSortColumn = null;
+                    $dateTypes = ['date','datetime','smalldatetime','datetime2','datetimeoffset','time'];
+                    $numericTypes = ['bigint','int','smallint','tinyint','decimal','numeric','float','real'];
+                    foreach ($columns as $column) {
+                        $colName = $column['COLUMN_NAME'];
+                        $dataType = strtolower($column['DATA_TYPE']);
+                        if (in_array($dataType, $dateTypes) && preg_match('/date|time|tarikh|exam/i', $colName)) {
+                            $preferredSortColumn = $colName;
+                            break;
+                        }
+                    }
+                    if ($preferredSortColumn === null) {
+                        foreach ($columns as $column) {
+                            $colName = $column['COLUMN_NAME'];
+                            $dataType = strtolower($column['DATA_TYPE']);
+                            if (in_array($dataType, $numericTypes) && preg_match('/id|code|noe|num|counter|count|co_c/i', $colName)) {
+                                $preferredSortColumn = $colName;
+                                break;
+                            }
+                        }
+                    }
+
+                    $viewQuery = "SELECT TOP 100 * FROM [" . $view . "]";
+                    if ($preferredSortColumn) {
+                        $viewQuery .= " ORDER BY [" . $preferredSortColumn . "] DESC";
+                    }
+                    $viewStmt = $pdo->query($viewQuery);
+                    $viewData = $viewStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    if ($viewData) {
+                        echo "<div style='max-height: 400px; overflow-y: auto;'>";
+                        echo "<table style='width: 100%; border-collapse: collapse; font-size: 11px;'>";
+                        echo "<thead><tr>";
+                        foreach (array_keys($viewData[0]) as $columnName) {
+                            echo "<th>" . htmlspecialchars($columnName) . "</th>";
+                        }
+                        echo "</tr></thead><tbody>";
+                        foreach ($viewData as $row) {
+                            echo "<tr>";
+                            foreach ($row as $value) {
+                                $displayValue = htmlspecialchars($value ?? 'NULL');
+                                if (mb_strlen($displayValue) > 30) $displayValue = mb_substr($displayValue, 0, 30) . '...';
+                                echo "<td>" . $displayValue . "</td>";
+                            }
+                            echo "</tr>";
+                        }
+                        echo "</tbody></table>";
+                        echo "</div>";
+                    } else {
+                        echo "<p>اطلاعاتی برای نمایش در ویو یافت نشد.</p>";
+                    }
+                } catch (PDOException $e) {
+                    echo "<p class='error'>❌ خطا در دریافت دادههای ویو " . htmlspecialchars($view) . ": " . htmlspecialchars($e->getMessage()) . "</p>";
+                }
             } catch (PDOException $e) {
                 echo "<p class='error'>❌ خطا در دریافت ستون‌های ویو " . htmlspecialchars($view) . ": " . htmlspecialchars($e->getMessage()) . "</p>";
             }
