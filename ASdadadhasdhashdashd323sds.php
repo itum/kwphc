@@ -172,8 +172,14 @@ if (isset($_GET['export_classes'])) {
             exit;
         }
 
+        // پارامترهای بخشبندی اختیاری
+        $offset = isset($_GET['offset']) ? max(0, (int) $_GET['offset']) : 0;
+        $limit  = isset($_GET['limit']) ? max(0, (int) $_GET['limit']) : 0; // 0 یعنی همه
+
         // نام فایل
-        $filename = 'classes-' . $object . '-' . date('Ymd-His') . '.csv';
+        $filename = 'classes-' . $object . '-' . date('Ymd-His');
+        if ($limit > 0) { $filename .= '-offset' . $offset . '-limit' . $limit; }
+        $filename .= '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Pragma: no-cache');
@@ -280,6 +286,11 @@ if (isset($_GET['export_classes'])) {
             }
             return $am <=> $bm;
         });
+
+        // اِعمال offset/limit در سطح آرایه مرتبشده
+        if ($limit > 0) {
+            $rows = array_slice($rows, $offset, $limit);
+        }
 
         foreach ($rows as $r) {
             fputcsv($out, [
@@ -505,6 +516,14 @@ function display_doreh_objects($pdo, $dbName) {
                 echo "<a href='?export_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 6px 6px 0;padding:6px 10px;background:#1565c0;color:#fff;border-radius:4px;text-decoration:none'>دانلود classes.csv (استاندارد)</a>";
                 echo "<a href='?export_classes=" . urlencode($targetView) . "&sep=;' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#0277bd;color:#fff;border-radius:4px;text-decoration:none'>دانلود CSV با ; جداکننده</a>";
                 echo "<a href='?validate_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#6a1b9a;color:#fff;border-radius:4px;text-decoration:none'>ولیدیشن قبل از ایمپورت</a>";
+                // لینکهای تکهای 50 و 100 ردیفی
+                echo "<div style='margin-top:8px;font-size:12px'>دانلود تکهای: ";
+                $sizes = [50, 100];
+                foreach ($sizes as $sz) {
+                    echo "<a href='?export_classes=" . urlencode($targetView) . "&limit=$sz' style='margin:0 6px; text-decoration:none; color:#1565c0'>" . $sz . " ردیف اول</a>";
+                    echo "<a href='?export_classes=" . urlencode($targetView) . "&offset=$sz&limit=$sz' style='margin:0 6px; text-decoration:none; color:#1565c0'>" . $sz . " ردیف بعدی</a>";
+                }
+                echo "</div>";
                 echo "</div>";
                 // تعیین ستون مرتب‌سازی برای ویو
                 $viewColumnsStmt = $pdo->prepare("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
