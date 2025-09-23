@@ -338,6 +338,27 @@ $simple_classes = new WP_Query($simple_classes_args);
                             <input type="hidden" id="um_to_form" value="<?php echo isset($_GET['um_to'])? esc_attr($_GET['um_to']) : ''; ?>">
                         </div>
                         <div>
+                            <span style="display:block; font-weight:600; margin-bottom:4px;">حالت نمایش</span>
+                            <?php $um_mode_cur = isset($_GET['um_mode']) ? sanitize_text_field($_GET['um_mode']) : 'single'; ?>
+                            <select id="um_mode_form" style="width:140px;">
+                                <option value="single" <?php selected($um_mode_cur, 'single'); ?>>single</option>
+                                <option value="range" <?php selected($um_mode_cur, 'range'); ?>>range</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span style="display:block; font-weight:600; margin-bottom:4px;">نمایش کل هفته</span>
+                            <label style="display:flex;gap:6px;align-items:center;">
+                                <input type="checkbox" id="um_fullweek_form" value="1" <?php checked(isset($_GET['um_fullweek']) && $_GET['um_fullweek']==='1'); ?>> بله
+                            </label>
+                        </div>
+                        <div>
+                            <span style="display:block; font-weight:600; margin-bottom:4px;">روزهای هفته</span>
+                            <?php $weekdays_form = isset($_GET['um_weekdays']) && is_array($_GET['um_weekdays']) ? array_map('intval', $_GET['um_weekdays']) : array(); ?>
+                            <select multiple id="um_weekdays_form" style="min-width:180px;height:84px;">
+                                <?php $labels = array(6=>'شنبه',0=>'یکشنبه',1=>'دوشنبه',2=>'سه‌شنبه',3=>'چهارشنبه',4=>'پنجشنبه',5=>'جمعه'); foreach ($labels as $phpW=>$label){ echo '<option value="'.esc_attr($phpW).'"'.(in_array($phpW,$weekdays_form,true)?' selected':'').'>'.esc_html($label).'</option>'; } ?>
+                            </select>
+                        </div>
+                        <div>
                             <button type="button" class="button" id="applyFilterFromForm">اعمال فیلتر</button>
                         </div>
                     </div>
@@ -436,12 +457,30 @@ $simple_classes = new WP_Query($simple_classes_args);
       }
       bind(fDisp, fH); bind(tDisp, tH);
       var btn = document.getElementById('applyFilterFromForm');
+      var modeSel = document.getElementById('um_mode_form');
+      var fullCk = document.getElementById('um_fullweek_form');
+      var wdays = document.getElementById('um_weekdays_form');
+
+      // فعال/غیرفعال کردن انتخاب روزها براساس تیک کل هفته
+      function toggleWeekdays(){ if (!wdays) return; wdays.disabled = !!(fullCk && fullCk.checked); }
+      if (fullCk){ fullCk.addEventListener('change', toggleWeekdays); toggleWeekdays(); }
+
       if (btn){
         btn.addEventListener('click', function(){
           var url = new URL(window.location.href);
           url.searchParams.set('page','university-class-timing');
           if (fH && fH.value) url.searchParams.set('um_from', fH.value); else url.searchParams.delete('um_from');
           if (tH && tH.value) url.searchParams.set('um_to', tH.value); else url.searchParams.delete('um_to');
+          if (modeSel) url.searchParams.set('um_mode', modeSel.value || 'single');
+          if (fullCk && fullCk.checked) { url.searchParams.set('um_fullweek','1'); url.searchParams.delete('um_weekdays[]'); }
+          else {
+            url.searchParams.delete('um_fullweek');
+            if (wdays){
+              // حذف هر مورد قبلی
+              ['um_weekdays','um_weekdays[]'].forEach(function(k){ url.searchParams.delete(k); });
+              Array.from(wdays.selectedOptions||[]).forEach(function(opt){ url.searchParams.append('um_weekdays[]', opt.value); });
+            }
+          }
           window.location.assign(url.toString());
         });
       }
