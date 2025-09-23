@@ -229,9 +229,9 @@ if (isset($_GET['export_classes'])) {
             $startTime = (string)($row['Start_Time'] ?? '');
             $teacher = trim(((string)($row['name'] ?? '')) . ' ' . ((string)($row['family'] ?? '')));
 
-            // تاریخها به قالب YYYY-MM-DD (فقط جایگزینی / با -)
-            $dateStart = $sDate ? str_replace('/', '-', $sDate) : '';
-            $dateEnd = $fDate ? str_replace('/', '-', $fDate) : '';
+            // تاریخها به قالب YYYY/MM/DD (سازگار با ایمپورتر نمونه)
+            $dateStart = $sDate ? str_replace('-', '/', trim($sDate)) : '';
+            $dateEnd = $fDate ? str_replace('-', '/', trim($fDate)) : '';
 
             $dateMode = ($dateStart && $dateEnd && $dateStart !== $dateEnd) ? 'range' : 'single';
             if ($dateMode === 'single') { $dateEnd = ''; }
@@ -257,11 +257,13 @@ if (isset($_GET['export_classes'])) {
 
         // مرتبسازی بر اساس ماه date_start (1 -> 12) سپس روز
         usort($rows, function($a, $b) {
-            $am = (int) ltrim(explode('-', $a['date_start'])[1] ?? '0', '0');
-            $bm = (int) ltrim(explode('-', $b['date_start'])[1] ?? '0', '0');
+            $aParts = preg_split('/[\/-]/', $a['date_start']);
+            $bParts = preg_split('/[\/-]/', $b['date_start']);
+            $am = (int) ltrim($aParts[1] ?? '0', '0');
+            $bm = (int) ltrim($bParts[1] ?? '0', '0');
             if ($am === $bm) {
-                $ad = (int) ltrim(explode('-', $a['date_start'])[2] ?? '0', '0');
-                $bd = (int) ltrim(explode('-', $b['date_start'])[2] ?? '0', '0');
+                $ad = (int) ltrim($aParts[2] ?? '0', '0');
+                $bd = (int) ltrim($bParts[2] ?? '0', '0');
                 if ($ad === $bd) { return strcmp($a['class_name'], $b['class_name']); }
                 return $ad <=> $bd;
             }
