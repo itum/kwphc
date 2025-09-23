@@ -323,6 +323,26 @@ $simple_classes = new WP_Query($simple_classes_args);
                 <?php else: ?>
                     <?php wp_nonce_field('um_add_class', 'um_add_class_nonce'); ?>
                 <?php endif; ?>
+
+                <div class="um-form-row" style="margin-bottom: 15px; padding: 10px; background:#f9f9f9; border:1px solid #eee; border-radius:4px;">
+                    <label style="display:block; margin-bottom:8px; font-weight:bold;">فیلتر بازه نمایش کلاس‌ها (برای لیست «کلاس‌های آینده»)</label>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <div>
+                            <span style="display:block; font-weight:600; margin-bottom:4px;">از تاریخ (شمسی)</span>
+                            <input type="text" id="um_from_form_jdate" placeholder="1404/01/01" style="width:140px;">
+                            <input type="hidden" id="um_from_form" value="<?php echo isset($_GET['um_from'])? esc_attr($_GET['um_from']) : ''; ?>">
+                        </div>
+                        <div>
+                            <span style="display:block; font-weight:600; margin-bottom:4px;">تا تاریخ (شمسی)</span>
+                            <input type="text" id="um_to_form_jdate" placeholder="1404/01/30" style="width:140px;">
+                            <input type="hidden" id="um_to_form" value="<?php echo isset($_GET['um_to'])? esc_attr($_GET['um_to']) : ''; ?>">
+                        </div>
+                        <div>
+                            <button type="button" class="button" id="applyFilterFromForm">اعمال فیلتر</button>
+                        </div>
+                    </div>
+                    <small style="display:block; margin-top:6px; color:#666;">این فیلتر فقط لیست «کلاس‌های آینده» را به‌روزرسانی می‌کند و باعث ارسال فرم افزودن کلاس نمی‌شود.</small>
+                </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_name" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام کلاس', 'university-management'); ?> *</label>
@@ -398,9 +418,41 @@ $simple_classes = new WP_Query($simple_classes_args);
     } catch(e){ console.warn('Class timing JDate init error', e); }
   }
 
+  // همچنین ورودی‌های فیلتر بازه در فرم افزودن کلاس را مقداردهی و مدیریت کن
+  function initRangeInForm(){
+    try{
+      if (typeof moment.loadPersian === 'function') moment.loadPersian({usePersianDigits:false});
+      var fDisp = document.getElementById('um_from_form_jdate');
+      var tDisp = document.getElementById('um_to_form_jdate');
+      var fH = document.getElementById('um_from_form');
+      var tH = document.getElementById('um_to_form');
+      function bind(disp, hidden){
+        if (!disp || !hidden) return;
+        if (hidden.value){ var m = moment(hidden.value, 'YYYY-MM-DD'); if (m.isValid()) disp.value = m.format('jYYYY/jMM/jDD'); }
+        disp.addEventListener('input', function(){
+          var v=(disp.value||'').replace(/[-.]/g,'/');
+          var m=moment(v,'jYYYY/jMM/jDD',true); hidden.value = m.isValid()? m.format('YYYY-MM-DD') : '';
+        });
+      }
+      bind(fDisp, fH); bind(tDisp, tH);
+      var btn = document.getElementById('applyFilterFromForm');
+      if (btn){
+        btn.addEventListener('click', function(){
+          var url = new URL(window.location.href);
+          url.searchParams.set('page','university-class-timing');
+          if (fH && fH.value) url.searchParams.set('um_from', fH.value); else url.searchParams.delete('um_from');
+          if (tH && tH.value) url.searchParams.set('um_to', tH.value); else url.searchParams.delete('um_to');
+          window.location.assign(url.toString());
+        });
+      }
+    }catch(e){ console.warn('Range form init error', e); }
+  }
+
+  function boot(){ ensureMoment(initJDate); ensureMoment(initRangeInForm); }
+
   if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', function(){ ensureMoment(initJDate); });
-  } else { ensureMoment(initJDate); }
+    document.addEventListener('DOMContentLoaded', boot);
+  } else { boot(); }
 })();
 </script>
                 <div class="um-form-row" style="margin-bottom: 15px;">
