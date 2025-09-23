@@ -4,8 +4,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 /**
- * تست اتصال به چند دیتابیس SQL Server با رابط کاربری تب‌بندی شده
- */
+* تست اتصال به دیتابیس SQL Server و نمایش جداول/ویوهای مرتبط با دوره‌ها
+*/
 
 // تابع لاگ خطا
 function logError($message) {
@@ -14,29 +14,129 @@ function logError($message) {
     file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
 }
 
-// تابع نمایش جداول مرتبط با Kw_Azmoon
-function display_azmoon_tables($pdo, $dbName) {
-    echo "<h2>جداول مرتبط با آزمون در دیتابیس " . htmlspecialchars($dbName) . "</h2>";
-    
+// هندلر دانلود اکسل (قبل از هر خروجی باید اجرا شود)
+if (isset($_GET['export'])) {
+    $server_ip = "185.128.81.210";
+    $port = "2033";
+    $username = "kwphc.ir_englishuser";
+    $password = "654DSF#@F0k";
+    $database = 'kwphc.ir_english';
+
+    $object = preg_replace('/[^A-Za-z0-9_]/', '', $_GET['export']);
+    if (!$object) {
+        http_response_code(400);
+        echo 'Invalid export target';
+        exit;
+    }
+
     try {
-        // جستجوی جداول مرتبط با آزمون
-        $azmoonTablesQuery = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-                              WHERE TABLE_TYPE = 'BASE TABLE' 
-                              AND (TABLE_NAME LIKE '%azmoon%' OR TABLE_NAME LIKE '%Azmoon%' OR TABLE_NAME LIKE '%AZMOON%' 
-                                  OR TABLE_NAME LIKE '%kw_azmoon%' OR TABLE_NAME LIKE '%Kw_Azmoon%')";
-        $azmoonTablesStmt = $pdo->query($azmoonTablesQuery);
-        $azmoonTables = $azmoonTablesStmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        if (empty($azmoonTables)) {
-            echo "<p>هیچ جدول مرتبط با آزمون یافت نشد.</p>";
-            return;
+        $dsn = "sqlsrv:Server=$server_ip,$port;Database=$database";
+        $pdo_export = new PDO($dsn, $username, $password);
+        $pdo_export->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // بررسی وجود جدول/ویو
+        $exists = false;
+        $chk = $pdo_export->prepare("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ? UNION ALL SELECT 1 FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME = ?");
+        $chk->execute([$object, $object]);
+        $exists = (bool)$chk->fetchColumn();
+        if (!$exists) {
+            http_response_code(404);
+            echo 'Object not found';
+            exit;
         }
-        
-        echo "<p>تعداد جداول مرتبط با آزمون: " . count($azmoonTables) . "</p>";
-        
-        foreach ($azmoonTables as $table) {
+
+        // دریافت ستون‌ها به ترتیب صحیح
+        $colsStmt = $pdo_export->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
+        $colsStmt->execute([$object]);
+        $columns = $colsStmt->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($columns)) {
+            http_response_code(500);
+            echo 'No columns found';
+            exit;
+        }
+
+        // هدرهای اکسل و استریم UTF-16LE (سازگار با فارسی)
+        $filename = $object . '-' . date('Ymd-His') . '.xls';
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-16LE');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        // BOM برای UTF-16LE
+        echo "\xFF\xFE";
+
+        $out = function($row) {
+            $line = [];
+            foreach ($row as $value) {
+                if ($value === null) { $value = ''; }
+                $value = str_replace(["\t", "\r", "\n"], ' ', (string)$value);
+                $line[] = $value;
+            }
+            $tsv = implode("\t", $line) . "\r\n";
+            echo mb_convert_encoding($tsv, 'UTF-16LE', 'UTF-8');
+        };
+
+        // ردیف هدر
+        $out($columns);
+
+        // استریم رکوردها در قطعات
+        set_time_limit(0);
+        $stmt = $pdo_export->query("SELECT * FROM [" . $object . "]");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            // مرتب‌سازی ستون‌ها طبق ترتیب هدر
+            $ordered = [];
+            foreach ($columns as $c) { $ordered[] = array_key_exists($c, $row) ? $row[$c] : null; }
+            $out($ordered);
+        }
+    } catch (Throwable $e) {
+        logError('Export error: ' . $e->getMessage());
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        echo 'Export failed';
+    }
+    exit;
+}
+
+// تابع نمایش جداول و ویوهای مرتبط با دوره‌ها
+function display_doreh_objects($pdo, $dbName) {
+    echo "<h2>آیتم‌های مرتبط با دوره‌ها در دیتابیس " . htmlspecialchars($dbName) . "</h2>";
+
+    // جداول و ویو هدف
+    $targetTables = [
+        'Nwcoding_Doreh',
+        'Nwcoding_Masold',
+        'Nwcoding_Noe_Doreh',
+        'NwDoreh_Ejra'
+    ];
+    $targetView = 'VNWDoreh_Ejra';
+
+    try {
+        // فیلتر جداولی که واقعا وجود دارند
+        $existingTables = [];
+        $tableExistStmt = $pdo->prepare("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?");
+        foreach ($targetTables as $tbl) {
+            try {
+                $tableExistStmt->execute([$tbl]);
+                if ($tableExistStmt->fetchColumn()) {
+                    $existingTables[] = $tbl;
+                }
+            } catch (PDOException $e) {
+                // نادیده گرفتن خطای بررسی وجود جدول، صرفا لاگ
+                logError("Table existence check failed for {$tbl}: " . $e->getMessage());
+            }
+        }
+
+        if (empty($existingTables)) {
+            echo "<p>هیچ یک از جداول هدف یافت نشد.</p>";
+        } else {
+            echo "<p>تعداد جداول یافت شده: " . count($existingTables) . "</p>";
+        }
+
+        foreach ($existingTables as $table) {
             echo "<div style='border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 5px;'>";
             echo "<h3>جدول: " . htmlspecialchars($table) . "</h3>";
+            echo "<div><a href='?export=" . urlencode($table) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این جدول</a></div>";
             
             try {
                 // نمایش ساختار جدول
@@ -65,15 +165,40 @@ function display_azmoon_tables($pdo, $dbName) {
                 $countStmt = $pdo->query($countQuery);
                 $totalRecords = $countStmt->fetch(PDO::FETCH_ASSOC)['total_records'];
                 echo "<h4>تعداد کل رکوردها: " . number_format($totalRecords) . "</h4>";
-                
-                // نمایش تمام رکوردها (یا حداکثر 50 رکورد)
-                $limit = min(50, $totalRecords);
+
+                // تعیین ستون مرتب‌سازی براساس نوع تاریخ/عددی و نام‌های متداول
+                $preferredSortColumn = null;
+                $dateTypes = ['date','datetime','smalldatetime','datetime2','datetimeoffset','time'];
+                $numericTypes = ['bigint','int','smallint','tinyint','decimal','numeric','float','real'];
+                foreach ($columns as $column) {
+                    $colName = $column['COLUMN_NAME'];
+                    $dataType = strtolower($column['DATA_TYPE']);
+                    if (in_array($dataType, $dateTypes) && preg_match('/date|time|tarikh|exam/i', $colName)) {
+                        $preferredSortColumn = $colName;
+                        break;
+                    }
+                }
+                if ($preferredSortColumn === null) {
+                    foreach ($columns as $column) {
+                        $colName = $column['COLUMN_NAME'];
+                        $dataType = strtolower($column['DATA_TYPE']);
+                        if (in_array($dataType, $numericTypes) && preg_match('/id|code|noe|num|counter|count|co_c/i', $colName)) {
+                            $preferredSortColumn = $colName;
+                            break;
+                        }
+                    }
+                }
+                // نمایش تمام رکوردها (یا حداکثر 100 رکورد)
+                $limit = min(100, $totalRecords);
                 $dataQuery = "SELECT TOP $limit * FROM [" . $table . "]";
+                if ($preferredSortColumn) {
+                    $dataQuery .= " ORDER BY [" . $preferredSortColumn . "] DESC";
+                }
                 $dataStmt = $pdo->query($dataQuery);
                 $data = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 if ($data) {
-                    echo "<h4>نمایش " . count($data) . " رکورد اول</h4>";
+                    echo "<h4>نمایش " . count($data) . " رکورد آخر (مرتب‌شده نزولی)</h4>";
                     echo "<div style='max-height: 400px; overflow-y: auto;'>";
                     echo "<table style='width: 100%; border-collapse: collapse; font-size: 11px;'>";
                     echo "<thead><tr>";
@@ -94,8 +219,8 @@ function display_azmoon_tables($pdo, $dbName) {
                     echo "</tbody></table>";
                     echo "</div>";
                     
-                    if ($totalRecords > 50) {
-                        echo "<p><em>فقط 50 رکورد اول نمایش داده شد. کل رکوردها: " . number_format($totalRecords) . "</em></p>";
+                    if ($totalRecords > 100) {
+                        echo "<p><em>فقط 100 رکورد آخر نمایش داده شد. کل رکوردها: " . number_format($totalRecords) . "</em></p>";
                     }
                 } else {
                     echo "<p>داده‌ای یافت نشد.</p>";
@@ -107,28 +232,186 @@ function display_azmoon_tables($pdo, $dbName) {
             
             echo "</div>";
         }
-        
+
+        // نمایش ویو در صورت وجود
+        try {
+            $viewExistStmt = $pdo->prepare("SELECT 1 FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME = ?");
+            $viewExistStmt->execute([$targetView]);
+            if ($viewExistStmt->fetchColumn()) {
+                echo "<div style='border: 2px solid #aaa; margin: 15px 0; padding: 15px; border-radius: 5px;'>";
+                echo "<h3>ویو: " . htmlspecialchars($targetView) . "</h3>";
+                echo "<div><a href='?export=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این ویو</a></div>";
+                // تعیین ستون مرتب‌سازی برای ویو
+                $viewColumnsStmt = $pdo->prepare("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
+                $viewColumnsStmt->execute([$targetView]);
+                $viewColumns = $viewColumnsStmt->fetchAll(PDO::FETCH_ASSOC);
+                $preferredSortColumn = null;
+                $dateTypes = ['date','datetime','smalldatetime','datetime2','datetimeoffset','time'];
+                $numericTypes = ['bigint','int','smallint','tinyint','decimal','numeric','float','real'];
+                foreach ($viewColumns as $column) {
+                    $colName = $column['COLUMN_NAME'];
+                    $dataType = strtolower($column['DATA_TYPE']);
+                    if (in_array($dataType, $dateTypes) && preg_match('/date|time|tarikh|exam/i', $colName)) {
+                        $preferredSortColumn = $colName;
+                        break;
+                    }
+                }
+                if ($preferredSortColumn === null) {
+                    foreach ($viewColumns as $column) {
+                        $colName = $column['COLUMN_NAME'];
+                        $dataType = strtolower($column['DATA_TYPE']);
+                        if (in_array($dataType, $numericTypes) && preg_match('/id|code|noe|num|counter|count|co_c/i', $colName)) {
+                            $preferredSortColumn = $colName;
+                            break;
+                        }
+                    }
+                }
+                // پیش‌نمایش 100 رکورد آخر
+                $viewQuery = "SELECT TOP 100 * FROM [" . $targetView . "]";
+                if ($preferredSortColumn) {
+                    $viewQuery .= " ORDER BY [" . $preferredSortColumn . "] DESC";
+                }
+                $viewStmt = $pdo->query($viewQuery);
+                $viewData = $viewStmt->fetchAll(PDO::FETCH_ASSOC);
+                if ($viewData) {
+                    echo "<div style='max-height: 400px; overflow-y: auto;'>";
+                    echo "<table style='width: 100%; border-collapse: collapse; font-size: 11px;'>";
+                    echo "<thead><tr>";
+                    foreach (array_keys($viewData[0]) as $columnName) {
+                        echo "<th>" . htmlspecialchars($columnName) . "</th>";
+                    }
+                    echo "</tr></thead><tbody>";
+                    foreach ($viewData as $row) {
+                        echo "<tr>";
+                        foreach ($row as $value) {
+                            $displayValue = htmlspecialchars($value ?? 'NULL');
+                            if (mb_strlen($displayValue) > 30) $displayValue = mb_substr($displayValue, 0, 30) . '...';
+                            echo "<td>" . $displayValue . "</td>";
+                        }
+                        echo "</tr>";
+                    }
+                    echo "</tbody></table>";
+                    echo "</div>";
+                } else {
+                    echo "<p>اطلاعاتی برای نمایش در ویو یافت نشد.</p>";
+                }
+                echo "</div>";
+            } else {
+                echo "<p>ویو مشخص‌شده یافت نشد: " . htmlspecialchars($targetView) . "</p>";
+            }
+        } catch (PDOException $e) {
+            echo "<p class='error'>❌ خطا در بررسی/نمایش ویو: " . htmlspecialchars($e->getMessage()) . "</p>";
+            logError("View display error: " . $e->getMessage());
+        }
+
     } catch (PDOException $e) {
-        echo "<p class='error'>❌ خطا در جستجوی جداول آزمون: " . htmlspecialchars($e->getMessage()) . "</p>";
-        logError("Azmoon tables search error: " . $e->getMessage());
+        echo "<p class='error'>❌ خطا در پردازش آیتم‌های دوره: " . htmlspecialchars($e->getMessage()) . "</p>";
+        logError("Doreh items processing error: " . $e->getMessage());
+    }
+}
+
+// تابع نمایش همه جداول و ویوها به‌همراه فیلدها
+function display_all_db_objects($pdo, $dbName) {
+    echo "<h2>همه جداول و ویوها در دیتابیس " . htmlspecialchars($dbName) . "</h2>";
+
+    try {
+        // دریافت لیست جداول
+        $tablesStmt = $pdo->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' ORDER BY TABLE_NAME");
+        $tables = $tablesStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        // دریافت لیست ویوها
+        $viewsStmt = $pdo->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS ORDER BY TABLE_NAME");
+        $views = $viewsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        echo "<h3>جداول (" . count($tables) . ")</h3>";
+        if (empty($tables)) {
+            echo "<p>جدولی یافت نشد.</p>";
+        }
+        foreach ($tables as $table) {
+            echo "<div style='border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 5px;'>";
+            echo "<h4>جدول: " . htmlspecialchars($table) . "</h4>";
+            echo "<div><a href='?export=" . urlencode($table) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این جدول</a></div>";
+
+            try {
+                $columnsQuery = "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE 
+                                 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION";
+                $columnsStmt = $pdo->prepare($columnsQuery);
+                $columnsStmt->execute([$table]);
+                $columns = $columnsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                echo "<table style='width: 100%; border-collapse: collapse; font-size: 12px;'>";
+                echo "<thead><tr><th>نام ستون</th><th>نوع داده</th><th>حداکثر طول</th><th>Nullable</th></tr></thead><tbody>";
+                foreach ($columns as $column) {
+                    echo "<tr>";
+                    echo "<td>" . htmlspecialchars($column['COLUMN_NAME']) . "</td>";
+                    echo "<td>" . htmlspecialchars($column['DATA_TYPE']) . "</td>";
+                    echo "<td>" . ($column['CHARACTER_MAXIMUM_LENGTH'] ?? 'نامحدود') . "</td>";
+                    echo "<td>" . ($column['IS_NULLABLE'] === 'YES' ? 'بله' : 'خیر') . "</td>";
+                    echo "</tr>";
+                }
+                echo "</tbody></table>";
+            } catch (PDOException $e) {
+                echo "<p class='error'>❌ خطا در دریافت ستون‌های جدول " . htmlspecialchars($table) . ": " . htmlspecialchars($e->getMessage()) . "</p>";
+            }
+
+            echo "</div>";
+        }
+
+        echo "<h3>ویوها (" . count($views) . ")</h3>";
+        if (empty($views)) {
+            echo "<p>ویویی یافت نشد.</p>";
+        }
+        foreach ($views as $view) {
+            echo "<div style='border: 1px dashed #bbb; margin: 15px 0; padding: 15px; border-radius: 5px; background:#fafafa'>";
+            echo "<h4>ویو: " . htmlspecialchars($view) . "</h4>";
+            echo "<div><a href='?export=" . urlencode($view) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این ویو</a></div>";
+
+            try {
+                $columnsQuery = "SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE 
+                                 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION";
+                $columnsStmt = $pdo->prepare($columnsQuery);
+                $columnsStmt->execute([$view]);
+                $columns = $columnsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                echo "<table style='width: 100%; border-collapse: collapse; font-size: 12px;'>";
+                echo "<thead><tr><th>نام ستون</th><th>نوع داده</th><th>حداکثر طول</th><th>Nullable</th></tr></thead><tbody>";
+                foreach ($columns as $column) {
+                    echo "<tr>";
+                    echo "<td>" . htmlspecialchars($column['COLUMN_NAME']) . "</td>";
+                    echo "<td>" . htmlspecialchars($column['DATA_TYPE']) . "</td>";
+                    echo "<td>" . ($column['CHARACTER_MAXIMUM_LENGTH'] ?? 'نامحدود') . "</td>";
+                    echo "<td>" . ($column['IS_NULLABLE'] === 'YES' ? 'بله' : 'خیر') . "</td>";
+                    echo "</tr>";
+                }
+                echo "</tbody></table>";
+            } catch (PDOException $e) {
+                echo "<p class='error'>❌ خطا در دریافت ستون‌های ویو " . htmlspecialchars($view) . ": " . htmlspecialchars($e->getMessage()) . "</p>";
+            }
+
+            echo "</div>";
+        }
+
+    } catch (PDOException $e) {
+        echo "<p class='error'>❌ خطا در فهرست‌کردن جداول/ویوها: " . htmlspecialchars($e->getMessage()) . "</p>";
+        logError("List tables/views error: " . $e->getMessage());
     }
 }
 
 // تنظیمات اصلی
 $server_ip = "185.128.81.210";
 $port = "2033";
-$username = "kwphc.ir_mainuesr";
-$password = "AS*35Rt%@-l5f";
+$username = "kwphc.ir_englishuser";
+$password = "654DSF#@F0k";
 
 // محافظت کامل از اجرای اسکریپت
 try {
-    // اتصال به دیتابیس
-    $dsn = "sqlsrv:Server=$server_ip,$port;Database=kwphc.ir_main";
+    // اتصال به دیتابیس (در صورت نیاز نام دیتابیس را اصلاح کنید)
+    $dsn = "sqlsrv:Server=$server_ip,$port;Database=kwphc.ir_english";
     $pdo_azmoon = new PDO($dsn, $username, $password);
     $pdo_azmoon->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // اجرای تابع نمایش جداول آزمون
-    display_azmoon_tables($pdo_azmoon, 'kwphc.ir_main');
+    // اجرای تابع نمایش آیتم‌های دوره
+    display_doreh_objects($pdo_azmoon, 'kwphc.ir_english');
 
 } catch (PDOException $mainError) {
     echo "<p class='error'>❌ خطای اصلی در اتصال به دیتابیس: " . htmlspecialchars($mainError->getMessage()) . "</p>";
@@ -140,7 +423,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدیریت آزمون‌ها - دیتابیس kwphc.ir_main</title>
+    <title>مدیریت دوره‌ها - دیتابیس kwphc.ir_english</title>
     <style>
         body { font-family: Tahoma, sans-serif; margin: 20px; background: #f5f5f5; }
         .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -161,36 +444,57 @@ try {
 <body>
 
 <div class="container">
-    <h1>مدیریت آزمون‌ها - دیتابیس kwphc.ir_main</h1>
+    <h1>مدیریت دوره‌ها - دیتابیس kwphc.ir_english</h1>
 
     <div class="tab-container">
-        <button class="tab-links active" onclick="openDatabase(event, 'azmoon_tab')">جداول آزمون</button>
+        <button class="tab-links active" onclick="openDatabase(event, 'doreh_tab')">دوره‌ها</button>
+        <button class="tab-links" onclick="openDatabase(event, 'all_objects_tab')">همه جداول و ویوها</button>
     </div>
 
-    <div id="azmoon_tab" class="tab-content">
+    <div id="doreh_tab" class="tab-content">
         <div class="azmoon-section">
-            <h2>جداول مرتبط با آزمون در دیتابیس kwphc.ir_main</h2>
+            <h2>جداول/ویوهای مرتبط با دوره در دیتابیس kwphc.ir_english</h2>
+            <div style="margin:10px 0">
+                <a href="?export=VNWDoreh_Ejra" class="download-btn" style="display:inline-block;padding:8px 12px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none">دانلود اکسل (تمام رکوردهای ویو VNWDoreh_Ejra)</a>
+            </div>
             <?php
             // تنظیمات اصلی
             $server_ip = "185.128.81.210";
             $port = "2033";
-            $username = "kwphc.ir_mainuesr";
-            $password = "AS*35Rt%@-l5f";
+            $username = "kwphc.ir_englishuser";
+            $password = "654DSF#@F0k";
 
             if (empty($password) || $password === 'YOUR_PASSWORD_HERE') {
                 echo "<p class='error'>⚠️ پسورد در اسکریپت تنظیم نشده است!</p>";
             } else {
                 try {
-                    $dsn = "sqlsrv:Server=$server_ip,$port;Database=kwphc.ir_main";
+                    $dsn = "sqlsrv:Server=$server_ip,$port;Database=kwphc.ir_english";
                     $pdo_azmoon = new PDO($dsn, $username, $password);
                     $pdo_azmoon->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     
-                    // اجرای تابع نمایش جداول آزمون
-                    display_azmoon_tables($pdo_azmoon, 'kwphc.ir_main');
+                    // اجرای تابع نمایش جداول/ویوهای دوره
+                    display_doreh_objects($pdo_azmoon, 'kwphc.ir_english');
                     
                 } catch (PDOException $e) {
                     echo "<p class='error'>❌ خطا در اتصال به دیتابیس: " . htmlspecialchars($e->getMessage()) . "</p>";
                 }
+            }
+            ?>
+        </div>
+    </div>
+
+    <div id="all_objects_tab" class="tab-content">
+        <div class="azmoon-section">
+            <h2>فهرست کامل جداول و ویوها در دیتابیس kwphc.ir_english</h2>
+            <?php
+            // اتصال مجدد یا استفاده از همان اتصال
+            try {
+                $dsn = "sqlsrv:Server=$server_ip,$port;Database=kwphc.ir_english";
+                $pdo_all = new PDO($dsn, $username, $password);
+                $pdo_all->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                display_all_db_objects($pdo_all, 'kwphc.ir_english');
+            } catch (PDOException $e) {
+                echo "<p class='error'>❌ خطا در اتصال/نمایش فهرست کامل: " . htmlspecialchars($e->getMessage()) . "</p>";
             }
             ?>
         </div>

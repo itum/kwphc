@@ -83,77 +83,116 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
     } else {
         // دریافت مقادیر فرم
         $class_name = sanitize_text_field($_POST['class_name']);
-        $class_date = sanitize_text_field($_POST['class_date']);
+        // حالت های تاریخ: single | range
+        $date_mode = isset($_POST['date_mode']) ? sanitize_text_field($_POST['date_mode']) : 'single';
+        // فیلدهای تاریخ (میلادی که در hidden ذخیره می‌شوند)
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : '';
+        $date_to   = isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : '';
+        // برای سازگاری قدیمی اگر class_date ارسال شد
+        $legacy_class_date = isset($_POST['class_date']) ? sanitize_text_field($_POST['class_date']) : '';
         $class_time = sanitize_text_field($_POST['class_time']);
         $class_duration = absint($_POST['class_duration']);
         $class_teacher = sanitize_text_field($_POST['class_teacher']);
         $class_description = wp_kses_post($_POST['class_description']);
         $class_status = isset($_POST['class_status']) ? sanitize_text_field($_POST['class_status']) : 'scheduled';
+        $full_week = isset($_POST['full_week']) ? true : false;
+        $weekdays = isset($_POST['weekdays']) && is_array($_POST['weekdays']) ? array_map('intval', $_POST['weekdays']) : array();
         
-        // بررسی داده‌های الزامی
-        if (!empty($class_name) && !empty($class_date) && !empty($class_time)) {
-            // تبدیل تاریخ به فرمت مناسب
-            $class_datetime = $class_date . ' ' . $class_time . ':00';
-            
-            // تبدیل به timestamp برای بهتر کار کردن
+        // تابع کمکی برای ایجاد یک کلاس در تاریخ مشخص
+        $create_class = function($date_ymd) use ($class_name, $class_time, $class_description, $class_duration, $class_teacher, $class_status) {
+            $class_datetime = $date_ymd . ' ' . $class_time . ':00';
             $class_timestamp = strtotime($class_datetime);
             if ($class_timestamp === false) {
-                add_settings_error('um_class_timing', 'um_date_error', __('تاریخ یا زمان وارد شده معتبر نیست.', 'university-management'), 'error');
+                return new WP_Error('invalid_date', __('تاریخ یا زمان وارد شده معتبر نیست.', 'university-management'));
+            }
+            $post_data = array(
+                'post_title'    => $class_name,
+                'post_content'  => $class_description,
+                'post_status'   => 'publish',
+                'post_type'     => 'um_classes',
+                'post_author'   => get_current_user_id(),
+            );
+            $post_id = wp_insert_post($post_data);
+            if (!is_wp_error($post_id) && $post_id > 0) {
+                update_post_meta($post_id, '_class_date', $class_datetime);
+                update_post_meta($post_id, '_class_timestamp', $class_timestamp);
+                update_post_meta($post_id, '_class_duration', $class_duration ?: 90);
+                update_post_meta($post_id, '_class_teacher', $class_teacher);
+                update_post_meta($post_id, '_class_status', in_array($class_status, array('scheduled','canceled','postponed','finished'), true) ? $class_status : 'scheduled');
+            }
+            return $post_id;
+        };
+
+        // بررسی داده‌های الزامی
+        $base_date = $legacy_class_date ?: $date_from; // در حالت single ممکن است از فیلد قدیمی بیاید
+        if (!empty($class_name) && !empty($base_date) && !empty($class_time)) {
+            // اگر حالت بازه است، بر اساس روزهای انتخابی تکرار ایجاد کنیم
+            if ($date_mode === 'range' && !empty($date_from) && !empty($date_to)) {
+                $start_ts = strtotime($date_from . ' 00:00:00');
+                $end_ts   = strtotime($date_to . ' 23:59:59');
+                if ($start_ts === false || $end_ts === false || $start_ts > $end_ts) {
+                    add_settings_error('um_class_timing', 'um_range_error', __('بازه تاریخ معتبر نیست.', 'university-management'), 'error');
+                } else {
+                    if ($full_week) {
+                        $weekdays = array(0,1,2,3,4,5,6);
+                    }
+                    if (empty($weekdays)) {
+                        add_settings_error('um_class_timing', 'um_weekdays_error', __('حداقل یک روز هفته را انتخاب کنید.', 'university-management'), 'error');
+                    } else {
+                        $created = array();
+                        $current = $start_ts;
+                        $uploaded_attachment_id = 0;
+                        while ($current <= $end_ts) {
+                            $w = intval(date('w', $current));
+                            if (in_array($w, $weekdays, true)) {
+                                $date_ymd = date('Y-m-d', $current);
+                                $pid = $create_class($date_ymd);
+                                if (!is_wp_error($pid) && $pid > 0) {
+                                    // تصویر را فقط یک بار آپلود کن و برای بقیه ست کن
+                                    if ($uploaded_attachment_id === 0 && isset($_FILES['class_image']) && !empty($_FILES['class_image']['name'])) {
+                                        require_once(ABSPATH . 'wp-admin/includes/image.php');
+                                        require_once(ABSPATH . 'wp-admin/includes/file.php');
+                                        require_once(ABSPATH . 'wp-admin/includes/media.php');
+                                        $uploaded_attachment_id = media_handle_upload('class_image', $pid);
+                                        if (is_wp_error($uploaded_attachment_id)) {
+                                            $uploaded_attachment_id = 0;
+                                        }
+                                    }
+                                    if ($uploaded_attachment_id) {
+                                        set_post_thumbnail($pid, $uploaded_attachment_id);
+                                    }
+                                    $created[] = $pid;
+                                }
+                            }
+                            $current = strtotime('+1 day', $current);
+                        }
+                        if (!empty($created)) {
+                            add_settings_error('um_class_timing', 'um_classes_added', sprintf(__('تعداد %d کلاس در بازه انتخابی ایجاد شد.', 'university-management'), count($created)), 'success');
+                        } else {
+                            add_settings_error('um_class_timing', 'um_no_class_created', __('هیچ کلاسی ایجاد نشد.', 'university-management'), 'warning');
+                        }
+                    }
+                }
             } else {
-                // ایجاد پست جدید
-                $post_data = array(
-                    'post_title'    => $class_name,
-                    'post_content'  => $class_description,
-                    'post_status'   => 'publish',
-                    'post_type'     => 'um_classes',
-                    'post_author'   => get_current_user_id(),
-                );
-                
-                $post_id = wp_insert_post($post_data);
-                
-                // Debug: چک کردن نتیجه wp_insert_post
-                error_log('UM Debug: wp_insert_post result: ' . print_r($post_id, true));
-                error_log('UM Debug: post_data: ' . print_r($post_data, true));
-                
+                // حالت تک‌تاریخ
+                $post_id = $create_class($base_date);
                 if (!is_wp_error($post_id) && $post_id > 0) {
-                    // ذخیره متادیتا
-                    $meta_saved = array();
-                    $meta_saved[] = update_post_meta($post_id, '_class_date', $class_datetime);
-                    $meta_saved[] = update_post_meta($post_id, '_class_timestamp', $class_timestamp);
-                    $meta_saved[] = update_post_meta($post_id, '_class_duration', $class_duration ?: 90);
-                    $meta_saved[] = update_post_meta($post_id, '_class_teacher', $class_teacher);
-                    $meta_saved[] = update_post_meta($post_id, '_class_status', in_array($class_status, array('scheduled','canceled','postponed','finished'), true) ? $class_status : 'scheduled');
-                    // ذخیره روز هفته برای فیلترهای آتی (0=Sunday ... 6=Saturday در PHP)
-                    $weekday_php = (int) date('w', $class_timestamp);
-                    update_post_meta($post_id, '_class_weekday', $weekday_php);
-                    
-                    // اضافه کردن تصویر شاخص (اگر آپلود شده باشد)
                     if (isset($_FILES['class_image']) && !empty($_FILES['class_image']['name'])) {
                         require_once(ABSPATH . 'wp-admin/includes/image.php');
                         require_once(ABSPATH . 'wp-admin/includes/file.php');
                         require_once(ABSPATH . 'wp-admin/includes/media.php');
-                        
                         $attachment_id = media_handle_upload('class_image', $post_id);
-                        
                         if (!is_wp_error($attachment_id)) {
                             set_post_thumbnail($post_id, $attachment_id);
                         }
                     }
-                    
-                    // نمایش پیام موفقیت
                     add_settings_error('um_class_timing', 'um_class_added', sprintf(__('کلاس "%s" با موفقیت اضافه شد. شناسه پست: %d (وضعیت: %s)', 'university-management'), $class_name, $post_id, esc_html($class_status)), 'success');
-                    
-                    // بازنشانی فرم برای جلوگیری از ارسال مجدد
-                    // wp_redirect(add_query_arg(array('page' => 'university-class-timing', 'added' => '1'), admin_url('admin.php')));
-                    // exit;
                 } else {
-                    // نمایش پیام خطا با جزئیات بیشتر
                     $error_message = is_wp_error($post_id) ? $post_id->get_error_message() : 'خطای نامشخص در ایجاد پست';
                     add_settings_error('um_class_timing', 'um_class_error', sprintf(__('خطا در افزودن کلاس: %s', 'university-management'), $error_message), 'error');
                 }
             }
         } else {
-            // نمایش پیام خطا برای فیلدهای الزامی
             add_settings_error('um_class_timing', 'um_class_required', __('نام کلاس، تاریخ و زمان الزامی هستند.', 'university-management'), 'error');
         }
     }
@@ -192,9 +231,6 @@ if (isset($_POST['um_update_class_nonce']) && wp_verify_nonce($_POST['um_update_
                 update_post_meta($class_id, '_class_duration', $class_duration ?: 90);
                 update_post_meta($class_id, '_class_teacher', $class_teacher);
                 update_post_meta($class_id, '_class_status', in_array($class_status, array('scheduled','canceled','postponed','finished'), true) ? $class_status : 'scheduled');
-                // به‌روزرسانی روز هفته
-                $weekday_php = (int) date('w', $class_timestamp);
-                update_post_meta($class_id, '_class_weekday', $weekday_php);
 
                 // تصویر (اختیاری)
                 if (isset($_FILES['class_image']) && !empty($_FILES['class_image']['name'])) {
@@ -234,49 +270,6 @@ if (isset($_GET['added']) && $_GET['added'] == '1') {
 }
 
 // دریافت کلاس‌های موجود
-// ساخت فیلترهای تاریخ و روز هفته از ورودی
-$from = isset($_GET['um_from']) ? sanitize_text_field($_GET['um_from']) : '';
-$to = isset($_GET['um_to']) ? sanitize_text_field($_GET['um_to']) : '';
-$fullweek = isset($_GET['um_fullweek']) && $_GET['um_fullweek'] == '1';
-$weekdays = isset($_GET['um_weekdays']) && is_array($_GET['um_weekdays']) ? array_map('intval', $_GET['um_weekdays']) : array();
-
-$meta_query = array();
-// بازه تاریخ
-if ($from && $to) {
-    $meta_query[] = array(
-        'key' => '_class_date',
-        'value' => array($from . ' 00:00:00', $to . ' 23:59:59'),
-        'compare' => 'BETWEEN',
-        'type' => 'DATETIME',
-    );
-} elseif ($from) {
-    $meta_query[] = array(
-        'key' => '_class_date',
-        'value' => $from . ' 00:00:00',
-        'compare' => '>=',
-        'type' => 'DATETIME',
-    );
-} else {
-    // پیش‌فرض آینده
-    $meta_query[] = array(
-        'key' => '_class_date',
-        'value' => date('Y-m-d 00:00:00'),
-        'compare' => '>=',
-        'type' => 'DATETIME',
-    );
-}
-
-// روزهای هفته: اگر fullweek فعال نیست و آرایه‌ای انتخاب شده
-if (!$fullweek && !empty($weekdays)) {
-    // استفاده از compare IN روی متای `_class_weekday`
-    $meta_query[] = array(
-        'key' => '_class_weekday',
-        'value' => $weekdays,
-        'compare' => 'IN',
-        'type' => 'NUMERIC',
-    );
-}
-
 $args = array(
     'post_type'      => 'um_classes',
     'posts_per_page' => -1,
@@ -284,7 +277,14 @@ $args = array(
     'orderby'        => 'meta_value',
     'meta_key'       => '_class_date',
     'order'          => 'ASC',
-    'meta_query'     => $meta_query,
+    'meta_query'     => array(
+        array(
+            'key'     => '_class_date',
+            'value'   => date('Y-m-d 00:00:00'), // شروع روز جاری
+            'compare' => '>=',
+            'type'    => 'DATETIME'
+        )
+    )
 );
 
 $classes = new WP_Query($args);
@@ -323,60 +323,18 @@ $simple_classes = new WP_Query($simple_classes_args);
                 <?php else: ?>
                     <?php wp_nonce_field('um_add_class', 'um_add_class_nonce'); ?>
                 <?php endif; ?>
-
-                <div class="um-form-row" style="margin-bottom: 15px; padding: 10px; background:#f9f9f9; border:1px solid #eee; border-radius:4px;">
-                    <label style="display:block; margin-bottom:8px; font-weight:bold;">فیلتر بازه نمایش کلاس‌ها (برای لیست «کلاس‌های آینده»)</label>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                        <div>
-                            <span style="display:block; font-weight:600; margin-bottom:4px;">از تاریخ (شمسی)</span>
-                            <input type="text" id="um_from_form_jdate" placeholder="1404/01/01" style="width:140px;">
-                            <input type="hidden" id="um_from_form" value="<?php echo isset($_GET['um_from'])? esc_attr($_GET['um_from']) : ''; ?>">
-                        </div>
-                        <div>
-                            <span style="display:block; font-weight:600; margin-bottom:4px;">تا تاریخ (شمسی)</span>
-                            <input type="text" id="um_to_form_jdate" placeholder="1404/01/30" style="width:140px;">
-                            <input type="hidden" id="um_to_form" value="<?php echo isset($_GET['um_to'])? esc_attr($_GET['um_to']) : ''; ?>">
-                        </div>
-                        <div>
-                            <span style="display:block; font-weight:600; margin-bottom:4px;">حالت نمایش</span>
-                            <?php $um_mode_cur = isset($_GET['um_mode']) ? sanitize_text_field($_GET['um_mode']) : 'single'; ?>
-                            <select id="um_mode_form" style="width:140px;">
-                                <option value="single" <?php selected($um_mode_cur, 'single'); ?>>single</option>
-                                <option value="range" <?php selected($um_mode_cur, 'range'); ?>>range</option>
-                            </select>
-                        </div>
-                        <div>
-                            <span style="display:block; font-weight:600; margin-bottom:4px;">نمایش کل هفته</span>
-                            <label style="display:flex;gap:6px;align-items:center;">
-                                <input type="checkbox" id="um_fullweek_form" value="1" <?php checked(isset($_GET['um_fullweek']) && $_GET['um_fullweek']==='1'); ?>> بله
-                            </label>
-                        </div>
-                        <div>
-                            <span style="display:block; font-weight:600; margin-bottom:4px;">روزهای هفته</span>
-                            <?php $weekdays_form = isset($_GET['um_weekdays']) && is_array($_GET['um_weekdays']) ? array_map('intval', $_GET['um_weekdays']) : array(); ?>
-                            <select multiple id="um_weekdays_form" style="min-width:180px;height:84px;">
-                                <?php $labels = array(6=>'شنبه',0=>'یکشنبه',1=>'دوشنبه',2=>'سه‌شنبه',3=>'چهارشنبه',4=>'پنجشنبه',5=>'جمعه'); foreach ($labels as $phpW=>$label){ echo '<option value="'.esc_attr($phpW).'"'.(in_array($phpW,$weekdays_form,true)?' selected':'').'>'.esc_html($label).'</option>'; } ?>
-                            </select>
-                        </div>
-                        <div>
-                            <button type="button" class="button" id="applyFilterFromForm">اعمال فیلتر</button>
-                        </div>
-                    </div>
-                    <small style="display:block; margin-top:6px; color:#666;">این فیلتر فقط لیست «کلاس‌های آینده» را به‌روزرسانی می‌کند و باعث ارسال فرم افزودن کلاس نمی‌شود.</small>
-                </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_name" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام کلاس', 'university-management'); ?> *</label>
                     <input type="text" id="class_name" name="class_name" class="regular-text" required style="width: 100%;" value="<?php echo esc_attr($editing_class ? $editing_name : ''); ?>">
                 </div>
-                
+
 <script>
 (function(){
   // جلوگیری از رفتن به ویرایشگر پست‌تایپ؛ ویرایش باید در همین صفحه انجام شود
   document.addEventListener('click', function(e){
     var a = e.target.closest('a.um-edit-class');
     if (a){
-      // اگر href به post.php باشد، مسیر را به edit داخلی تغییر بده
       try {
         var href = a.getAttribute('href') || '';
         if (href.indexOf('post.php') !== -1){
@@ -404,100 +362,102 @@ $simple_classes = new WP_Query($simple_classes_args);
     } else { cb(); }
   }
 
-  function initJDate(){
-    try {
-      if (typeof moment.loadPersian === 'function') moment.loadPersian({usePersianDigits:false});
-
-      var display = document.getElementById('class_date_display');
-      var hidden = document.getElementById('class_date');
-      if (!display || !hidden) return;
-
-      // اگر مقدار اولیه میلادی داریم، در ورودی شمسی نشان دهیم
-      if (hidden.value){
-        var m = moment(hidden.value, 'YYYY-MM-DD');
-        if (m.isValid()) display.value = m.format('jYYYY/jMM/jDD');
+  function bindJalaliPair(displayId, hiddenId, initial){
+    var display = document.getElementById(displayId);
+    var hidden = document.getElementById(hiddenId);
+    if (!display || !hidden) return;
+    if (initial){
+      var m0 = moment(initial, 'YYYY-MM-DD');
+      if (m0.isValid()) display.value = m0.format('jYYYY/jMM/jDD');
+    }
+    if (hidden.value && !display.value){
+      var m1 = moment(hidden.value, 'YYYY-MM-DD');
+      if (m1.isValid()) display.value = m1.format('jYYYY/jMM/jDD');
+    }
+    display.addEventListener('input', function(){
+      var v = (display.value || '').replace(/[-.]/g,'/');
+      var m = moment(v, 'jYYYY/jMM/jDD', true);
+      if (m.isValid()){
+        hidden.value = m.format('YYYY-MM-DD');
+        display.setCustomValidity('');
+      } else {
+        hidden.value = '';
+        display.setCustomValidity('تاریخ نامعتبر است. مثال: 1404/05/20');
       }
-
-      display.addEventListener('input', function(){
-        var v = (display.value || '').replace(/[-.]/g,'/');
-        var m = moment(v, 'jYYYY/jMM/jDD', true);
-        if (m.isValid()){
-          hidden.value = m.format('YYYY-MM-DD');
-          display.setCustomValidity('');
-        } else {
-          hidden.value = '';
-          display.setCustomValidity('تاریخ نامعتبر است. مثال: 1404/05/20');
-        }
-      });
-
-      var form = display.form; 
-      if (form){
-        form.addEventListener('submit', function(e){
-          if (!hidden.value){ e.preventDefault(); display.reportValidity(); }
-        });
-      }
-    } catch(e){ console.warn('Class timing JDate init error', e); }
+    });
   }
 
-  // همچنین ورودی‌های فیلتر بازه در فرم افزودن کلاس را مقداردهی و مدیریت کن
-  function initRangeInForm(){
-    try{
-      if (typeof moment.loadPersian === 'function') moment.loadPersian({usePersianDigits:false});
-      var fDisp = document.getElementById('um_from_form_jdate');
-      var tDisp = document.getElementById('um_to_form_jdate');
-      var fH = document.getElementById('um_from_form');
-      var tH = document.getElementById('um_to_form');
-      function bind(disp, hidden){
-        if (!disp || !hidden) return;
-        if (hidden.value){ var m = moment(hidden.value, 'YYYY-MM-DD'); if (m.isValid()) disp.value = m.format('jYYYY/jMM/jDD'); }
-        disp.addEventListener('input', function(){
-          var v=(disp.value||'').replace(/[-.]/g,'/');
-          var m=moment(v,'jYYYY/jMM/jDD',true); hidden.value = m.isValid()? m.format('YYYY-MM-DD') : '';
-        });
-      }
-      bind(fDisp, fH); bind(tDisp, tH);
-      var btn = document.getElementById('applyFilterFromForm');
-      var modeSel = document.getElementById('um_mode_form');
-      var fullCk = document.getElementById('um_fullweek_form');
-      var wdays = document.getElementById('um_weekdays_form');
+  function initUI(){
+    if (typeof moment.loadPersian === 'function') moment.loadPersian({usePersianDigits:false});
+    bindJalaliPair('date_from_display', 'date_from', '<?php echo esc_js($editing_class ? $editing_date_greg : ''); ?>');
+    bindJalaliPair('date_to_display', 'date_to', '');
 
-      // فعال/غیرفعال کردن انتخاب روزها براساس تیک کل هفته
-      function toggleWeekdays(){ if (!wdays) return; wdays.disabled = !!(fullCk && fullCk.checked); }
-      if (fullCk){ fullCk.addEventListener('change', toggleWeekdays); toggleWeekdays(); }
+    // برای سازگاری فیلد قدیمی: فقط زمانی ساخته می‌شود که حالت single باشد
+    bindJalaliPair('class_date_display', 'class_date', '<?php echo esc_js($editing_class ? $editing_date_greg : ''); ?>');
 
-      if (btn){
-        btn.addEventListener('click', function(){
-          var url = new URL(window.location.href);
-          url.searchParams.set('page','university-class-timing');
-          if (fH && fH.value) url.searchParams.set('um_from', fH.value); else url.searchParams.delete('um_from');
-          if (tH && tH.value) url.searchParams.set('um_to', tH.value); else url.searchParams.delete('um_to');
-          if (modeSel) url.searchParams.set('um_mode', modeSel.value || 'single');
-          if (fullCk && fullCk.checked) { url.searchParams.set('um_fullweek','1'); url.searchParams.delete('um_weekdays[]'); }
-          else {
-            url.searchParams.delete('um_fullweek');
-            if (wdays){
-              // حذف هر مورد قبلی
-              ['um_weekdays','um_weekdays[]'].forEach(function(k){ url.searchParams.delete(k); });
-              Array.from(wdays.selectedOptions||[]).forEach(function(opt){ url.searchParams.append('um_weekdays[]', opt.value); });
-            }
-          }
-          window.location.assign(url.toString());
-        });
-      }
-    }catch(e){ console.warn('Range form init error', e); }
+    var mode = document.getElementById('date_mode');
+    var rangeWrap = document.getElementById('range_fields');
+    var singleWrap = document.getElementById('single_field');
+    var fullWeek = document.getElementById('full_week');
+    var weekdays = document.getElementById('weekdays');
+
+    function renderVisibility(){
+      var isRange = mode.value === 'range';
+      rangeWrap.style.display = isRange ? '' : 'none';
+      singleWrap.style.display = isRange ? 'none' : '';
+      weekdays.parentElement.style.display = (isRange && !fullWeek.checked) ? '' : 'none';
+    }
+    mode.addEventListener('change', renderVisibility);
+    fullWeek.addEventListener('change', renderVisibility);
+    renderVisibility();
   }
-
-  function boot(){ ensureMoment(initJDate); ensureMoment(initRangeInForm); }
 
   if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', boot);
-  } else { boot(); }
+    document.addEventListener('DOMContentLoaded', function(){ ensureMoment(initUI); });
+  } else { ensureMoment(initUI); }
 })();
 </script>
+
                 <div class="um-form-row" style="margin-bottom: 15px;">
-                    <label for="class_date_display" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ کلاس', 'university-management'); ?> *</label>
-                    <input type="text" id="class_date_display" class="regular-text" required style="width: 100%;" placeholder="مثال: ۱۴۰۴/۰۵/۲۰">
+                    <label for="date_mode" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('حالت تاریخ', 'university-management'); ?></label>
+                    <select id="date_mode" name="date_mode" style="width: 100%;">
+                        <option value="single">single</option>
+                        <option value="range">range</option>
+                    </select>
+                </div>
+
+                <div id="single_field" class="um-form-row" style="margin-bottom: 15px;">
+                    <label for="class_date_display" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ شروع (شمسی)', 'university-management'); ?> *</label>
+                    <input type="text" id="class_date_display" class="regular-text" style="width: 100%;" placeholder="مثال: ۱۴۰۴/۰۵/۲۰">
                     <input type="hidden" id="class_date" name="class_date" value="<?php echo esc_attr($editing_class ? $editing_date_greg : ''); ?>">
+                </div>
+
+                <div id="range_fields">
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="date_from_display" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ شروع (از تاریخ)', 'university-management'); ?></label>
+                        <input type="text" id="date_from_display" class="regular-text" style="width: 100%;" placeholder="مثال: ۱۴۰۴/۰۵/۲۰">
+                        <input type="hidden" id="date_from" name="date_from" value="">
+                    </div>
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="date_to_display" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ پایان (تا تاریخ)', 'university-management'); ?></label>
+                        <input type="text" id="date_to_display" class="regular-text" style="width: 100%;" placeholder="مثال: ۱۴۰۴/۰۵/۲۵">
+                        <input type="hidden" id="date_to" name="date_to" value="">
+                    </div>
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom:5px; font-weight:bold;"><?php _e('روزهای هفته', 'university-management'); ?></label>
+                        <label style="display:inline-flex; align-items:center; gap:6px; margin-bottom:8px;">
+                            <input type="checkbox" id="full_week" name="full_week" value="1"> <?php _e('نمایش کل هفته', 'university-management'); ?>
+                        </label>
+                        <select id="weekdays" name="weekdays[]" multiple size="7" style="width:100%;">
+                            <option value="6">شنبه</option>
+                            <option value="0">یکشنبه</option>
+                            <option value="1">دوشنبه</option>
+                            <option value="2">سه‌شنبه</option>
+                            <option value="3">چهارشنبه</option>
+                            <option value="4">پنجشنبه</option>
+                            <option value="5">جمعه</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="um-form-row" style="margin-bottom: 15px;">
@@ -548,81 +508,6 @@ $simple_classes = new WP_Query($simple_classes_args);
         <!-- لیست کلاس‌های آینده -->
         <div class="um-admin-list" style="background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: calc(60% - 20px); min-width: 300px; padding: 20px; box-sizing: border-box;">
             <h2><?php _e('کلاس‌های آینده', 'university-management'); ?></h2>
-            <form method="get" style="margin:10px 0 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
-                <input type="hidden" name="page" value="university-class-timing">
-                <div>
-                    <label style="display:block;font-weight:bold;">از تاریخ (شمسی)</label>
-                    <input type="text" name="um_from_jdate" id="um_from_jdate" value="<?php echo isset($_GET['um_from_jdate'])? esc_attr($_GET['um_from_jdate']) : ''; ?>" placeholder="1404/01/01" style="width:140px;">
-                    <input type="hidden" name="um_from" id="um_from" value="<?php echo isset($_GET['um_from'])? esc_attr($_GET['um_from']) : ''; ?>">
-                </div>
-                <div>
-                    <label style="display:block;font-weight:bold;">تا تاریخ (شمسی)</label>
-                    <input type="text" name="um_to_jdate" id="um_to_jdate" value="<?php echo isset($_GET['um_to_jdate'])? esc_attr($_GET['um_to_jdate']) : ''; ?>" placeholder="1404/01/30" style="width:140px;">
-                    <input type="hidden" name="um_to" id="um_to" value="<?php echo isset($_GET['um_to'])? esc_attr($_GET['um_to']) : ''; ?>">
-                </div>
-                <div>
-                    <label style="display:block;font-weight:bold;">حالت نمایش</label>
-                    <select name="um_mode" style="width:140px;">
-                        <option value="single" <?php selected(isset($_GET['um_mode'])?$_GET['um_mode']:'' , 'single'); ?>>single</option>
-                        <option value="range" <?php selected(isset($_GET['um_mode'])?$_GET['um_mode']:'' , 'range'); ?>>range</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="display:block;font-weight:bold;">نمایش کل هفته</label>
-                    <label style="display:flex;gap:6px;align-items:center;">
-                        <input type="checkbox" name="um_fullweek" value="1" <?php checked(isset($_GET['um_fullweek']) && $_GET['um_fullweek']=='1'); ?>> بله
-                    </label>
-                </div>
-                <div>
-                    <label style="display:block;font-weight:bold;">روزهای هفته</label>
-                    <?php $weekdays = isset($_GET['um_weekdays']) && is_array($_GET['um_weekdays']) ? array_map('intval', $_GET['um_weekdays']) : array(); ?>
-                    <select multiple name="um_weekdays[]" style="min-width:180px;height:84px;">
-                        <?php
-                        $labels = array(
-                            6 => 'شنبه', 0 => 'یکشنبه', 1 => 'دوشنبه', 2 => 'سه‌شنبه', 3 => 'چهارشنبه', 4 => 'پنجشنبه', 5 => 'جمعه'
-                        );
-                        foreach ($labels as $phpW => $label) {
-                            echo '<option value="' . esc_attr($phpW) . '"' . (in_array($phpW, $weekdays, true) ? ' selected' : '') . '>' . esc_html($label) . '</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-                <div>
-                    <button class="button button-primary" type="submit">اعمال فیلتر</button>
-                    <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=university-class-timing')); ?>">ریست</a>
-                </div>
-            </form>
-            <script>
-            (function(){
-                function ensure(cb){
-                    function ls(src, cb2){ var s=document.createElement('script'); s.src=src; s.async=true; s.onload=cb2; document.head.appendChild(s); }
-                    if (typeof moment==='undefined'){ ls('https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js', function(){ ls('https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', cb); }); }
-                    else if (typeof moment.loadPersian==='undefined'){ ls('https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.js', cb); }
-                    else cb();
-                }
-                function init(){
-                    try{ if (typeof moment.loadPersian==='function') moment.loadPersian({usePersianDigits:false}); }catch(e){}
-                    var fromDisp=document.getElementById('um_from_jdate');
-                    var toDisp=document.getElementById('um_to_jdate');
-                    var fromH=document.getElementById('um_from');
-                    var toH=document.getElementById('um_to');
-                    function bind(disp, hidden){
-                        if (!disp || !hidden) return;
-                        if (hidden.value){
-                            var m = moment(hidden.value, 'YYYY-MM-DD');
-                            if (m.isValid()) disp.value = m.format('jYYYY/jMM/jDD');
-                        }
-                        disp.addEventListener('input', function(){
-                            var v = (disp.value||'').replace(/[-.]/g,'/');
-                            var m = moment(v, 'jYYYY/jMM/jDD', true);
-                            if (m.isValid()) hidden.value = m.format('YYYY-MM-DD'); else hidden.value='';
-                        });
-                    }
-                    bind(fromDisp, fromH); bind(toDisp, toH);
-                }
-                if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ ensure(init); }); else ensure(init);
-            })();
-            </script>
             
             <!-- اطلاعات debugging -->
             <div style="background: #f0f8ff; padding: 10px; margin-bottom: 15px; border-left: 3px solid #0073aa;">
