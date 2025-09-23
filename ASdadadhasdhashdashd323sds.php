@@ -198,8 +198,12 @@ if (isset($_GET['export_classes'])) {
         ];
         fputcsv($out, $headers);
 
-        // انتخاب ستونهای لازم و حذف تکراریها
-        $sql = "SELECT DISTINCT NAM_DORE, S_Date, F_Date, Start_Time, name, family FROM [" . $object . "]";
+        // انتخاب ستونهای لازم و حذف تکراریها (یک ردیف برای هر NAM_DORE + S_Date)
+        $sql = "WITH cte AS (\n"
+             . "  SELECT NAM_DORE, S_Date, F_Date, Start_Time, name, family,\n"
+             . "         ROW_NUMBER() OVER (PARTITION BY NAM_DORE, S_Date ORDER BY Start_Time DESC, name, family) rn\n"
+             . "  FROM [" . $object . "]\n"
+             . ") SELECT NAM_DORE, S_Date, F_Date, Start_Time, name, family FROM cte WHERE rn = 1";
         $stmt = $pdo_export->query($sql);
 
         // تابع کمکی برای انتخاب 1 تا 2 روز تصادفی
@@ -216,6 +220,7 @@ if (isset($_GET['export_classes'])) {
             return $map;
         };
 
+        $rows = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $className = (string)($row['NAM_DORE'] ?? '');
             $sDate = (string)($row['S_Date'] ?? '');
@@ -235,18 +240,38 @@ if (isset($_GET['export_classes'])) {
 
             $daysMap = $pickDays();
 
-            $record = [
-                $className,
-                $dateMode,
-                $dateStart,
-                $dateEnd,
-                $startTime,
-                $duration,
-                $teacher,
-                $status,
-                $daysMap['sat'],$daysMap['sun'],$daysMap['mon'],$daysMap['tue'],$daysMap['wed'],$daysMap['thu'],$daysMap['fri']
+            $rows[] = [
+                'class_name' => $className,
+                'date_mode' => $dateMode,
+                'date_start' => $dateStart,
+                'date_end' => $dateEnd,
+                'class_time' => $startTime,
+                'duration_minutes' => $duration,
+                'teacher_name' => $teacher,
+                'status' => $status,
+                'sat' => $daysMap['sat'], 'sun' => $daysMap['sun'], 'mon' => $daysMap['mon'], 'tue' => $daysMap['tue'], 'wed' => $daysMap['wed'], 'thu' => $daysMap['thu'], 'fri' => $daysMap['fri'],
             ];
-            fputcsv($out, $record);
+        }
+
+        // مرتبسازی بر اساس ماه date_start (1 -> 12) سپس روز
+        usort($rows, function($a, $b) {
+            $am = (int) ltrim(explode('-', $a['date_start'])[1] ?? '0', '0');
+            $bm = (int) ltrim(explode('-', $b['date_start'])[1] ?? '0', '0');
+            if ($am === $bm) {
+                $ad = (int) ltrim(explode('-', $a['date_start'])[2] ?? '0', '0');
+                $bd = (int) ltrim(explode('-', $b['date_start'])[2] ?? '0', '0');
+                if ($ad === $bd) { return strcmp($a['class_name'], $b['class_name']); }
+                return $ad <=> $bd;
+            }
+            return $am <=> $bm;
+        });
+
+        foreach ($rows as $r) {
+            fputcsv($out, [
+                $r['class_name'], $r['date_mode'], $r['date_start'], $r['date_end'], $r['class_time'],
+                $r['duration_minutes'], $r['teacher_name'], $r['status'],
+                $r['sat'], $r['sun'], $r['mon'], $r['tue'], $r['wed'], $r['thu'], $r['fri']
+            ]);
         }
 
         fclose($out);
