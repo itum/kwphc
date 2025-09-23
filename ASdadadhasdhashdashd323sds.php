@@ -141,6 +141,125 @@ if (isset($_GET['export'])) {
     exit;
 }
 
+// هندلر دانلود CSV استاندارد classes.csv برای ویو دوره‌ها
+if (isset($_GET['export_classes'])) {
+    $server_ip = "185.128.81.210";
+    $port = "2033";
+    $username = "kwphc.ir_englishuser";
+    $password = "654DSF#@F0k";
+    $database = 'kwphc.ir_english';
+
+    $object = preg_replace('/[^A-Za-z0-9_]/', '', $_GET['export_classes']);
+    if (!$object) {
+        http_response_code(400);
+        echo 'Invalid export target';
+        exit;
+    }
+
+    try {
+        $dsn = "sqlsrv:Server=$server_ip,$port;Database=$database";
+        $pdo_export = new PDO($dsn, $username, $password);
+        $pdo_export->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // فقط برای ویوها/جداولی که وجود دارند
+        $exists = false;
+        $chk = $pdo_export->prepare("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ? UNION ALL SELECT 1 FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_NAME = ?");
+        $chk->execute([$object, $object]);
+        $exists = (bool)$chk->fetchColumn();
+        if (!$exists) {
+            http_response_code(404);
+            echo 'Object not found';
+            exit;
+        }
+
+        // نام فایل
+        $filename = 'classes-' . $object . '-' . date('Ymd-His') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        // BOM برای UTF-8
+        echo "\xEF\xBB\xBF";
+
+        $out = fopen('php://output', 'w');
+
+        // هدرهای کلاسها
+        $headers = [
+            'class_name',
+            'date_mode',
+            'date_start',
+            'date_end',
+            'class_time',
+            'duration_minutes',
+            'teacher_name',
+            'status',
+            'sat','sun','mon','tue','wed','thu','fri'
+        ];
+        fputcsv($out, $headers);
+
+        // انتخاب ستونهای لازم و حذف تکراریها
+        $sql = "SELECT DISTINCT NAM_DORE, S_Date, F_Date, Start_Time, name, family FROM [" . $object . "]";
+        $stmt = $pdo_export->query($sql);
+
+        // تابع کمکی برای انتخاب 1 تا 2 روز تصادفی
+        $pickDays = function() {
+            $days = ['sat','sun','mon','tue','wed','thu','fri'];
+            $num = rand(1, 2);
+            $selectedIdx = [];
+            while (count($selectedIdx) < $num) {
+                $i = rand(0, 6);
+                $selectedIdx[$i] = true;
+            }
+            $map = [];
+            foreach ($days as $i => $d) { $map[$d] = isset($selectedIdx[$i]) ? 'yes' : 'no'; }
+            return $map;
+        };
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $className = (string)($row['NAM_DORE'] ?? '');
+            $sDate = (string)($row['S_Date'] ?? '');
+            $fDate = (string)($row['F_Date'] ?? '');
+            $startTime = (string)($row['Start_Time'] ?? '');
+            $teacher = trim(((string)($row['name'] ?? '')) . ' ' . ((string)($row['family'] ?? '')));
+
+            // تاریخها به قالب YYYY-MM-DD (فقط جایگزینی / با -)
+            $dateStart = $sDate ? str_replace('/', '-', $sDate) : '';
+            $dateEnd = $fDate ? str_replace('/', '-', $fDate) : '';
+
+            $dateMode = ($dateStart && $dateEnd && $dateStart !== $dateEnd) ? 'range' : 'single';
+            if ($dateMode === 'single') { $dateEnd = ''; }
+
+            $duration = 120; // بر اساس درخواست
+            $status = 'scheduled';
+
+            $daysMap = $pickDays();
+
+            $record = [
+                $className,
+                $dateMode,
+                $dateStart,
+                $dateEnd,
+                $startTime,
+                $duration,
+                $teacher,
+                $status,
+                $daysMap['sat'],$daysMap['sun'],$daysMap['mon'],$daysMap['tue'],$daysMap['wed'],$daysMap['thu'],$daysMap['fri']
+            ];
+            fputcsv($out, $record);
+        }
+
+        fclose($out);
+    } catch (Throwable $e) {
+        logError('Export classes.csv error: ' . $e->getMessage());
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        echo 'Export failed';
+    }
+    exit;
+}
+
 // تابع نمایش جداول و ویوهای مرتبط با دوره‌ها
 function display_doreh_objects($pdo, $dbName) {
     echo "<h2>آیتم‌های مرتبط با دوره‌ها در دیتابیس " . htmlspecialchars($dbName) . "</h2>";
@@ -283,7 +402,10 @@ function display_doreh_objects($pdo, $dbName) {
             if ($viewExistStmt->fetchColumn()) {
                 echo "<div style='border: 2px solid #aaa; margin: 15px 0; padding: 15px; border-radius: 5px;'>";
                 echo "<h3>ویو: " . htmlspecialchars($targetView) . "</h3>";
-                echo "<div><a href='?export=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این ویو</a></div>";
+                echo "<div>";
+                echo "<a href='?export=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 6px 6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این ویو</a>";
+                echo "<a href='?export_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#1565c0;color:#fff;border-radius:4px;text-decoration:none'>دانلود classes.csv (استاندارد)</a>";
+                echo "</div>";
                 // تعیین ستون مرتب‌سازی برای ویو
                 $viewColumnsStmt = $pdo->prepare("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
                 $viewColumnsStmt->execute([$targetView]);
