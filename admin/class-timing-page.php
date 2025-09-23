@@ -36,6 +36,83 @@ if (
     }
 }
 
+// دانلود فایل نمونه اکسل
+if (
+    isset($_GET['page']) && $_GET['page'] === 'university-class-timing' &&
+    isset($_GET['action']) && $_GET['action'] === 'um_download_sample_xlsx'
+) {
+    if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'um_download_sample_xlsx')) {
+        wp_die(__('درخواست نامعتبر است.', 'university-management'));
+    }
+    // English headers for maximum compatibility
+    $headers = array(
+        'class_name (required)',
+        'date_mode (single|range, required)',
+        'date_start (YYYY-MM-DD, required)',
+        'date_end (YYYY-MM-DD, optional for range)',
+        'class_time (HH:MM, required)',
+        'duration_minutes (required)',
+        'teacher_name (required)',
+        'status (scheduled|canceled|postponed|finished, optional)',
+        'description (optional)',
+        'sat','sun','mon','tue','wed','thu','fri'
+    );
+    // Use Shamsi in sample
+    $g1 = strtotime('+3 days');
+    $g2s = strtotime('+1 week'); $g2e = strtotime('+3 week');
+    list($j1y,$j1m,$j1d) = um_gregorian_to_jalali(intval(date('Y',$g1)), intval(date('n',$g1)), intval(date('j',$g1)));
+    list($j2sy,$j2sm,$j2sd) = um_gregorian_to_jalali(intval(date('Y',$g2s)), intval(date('n',$g2s)), intval(date('j',$g2s)));
+    list($j2ey,$j2em,$j2ed) = um_gregorian_to_jalali(intval(date('Y',$g2e)), intval(date('n',$g2e)), intval(date('j',$g2e)));
+    $row1 = array('Sample PHP Class','single', sprintf('%04d/%02d/%02d',$j1y,$j1m,$j1d), '', '10:00', '90', 'Professor Demo', 'scheduled', 'Single date class example', 'no','no','no','no','no','no','no');
+    $row2 = array('NodeJS Course','range', sprintf('%04d/%02d/%02d',$j2sy,$j2sm,$j2sd), sprintf('%04d/%02d/%02d',$j2ey,$j2em,$j2ed), '14:00', '90', 'Engineer Demo', 'scheduled', 'Create classes on selected weekdays', 'yes','no','yes','no','yes','no','no');
+    $rows = array($headers, $row1, $row2);
+    // Always deliver UTF-8 CSV (Excel compatible)
+    if (!headers_sent()) {
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="um-classes-sample.csv"');
+        header('Pragma: public');
+        header('Cache-Control: max-age=0');
+    }
+    echo "\xEF\xBB\xBF"; // UTF-8 BOM for Excel
+    $out = fopen('php://output', 'w');
+    foreach ($rows as $r) { fputcsv($out, $r); }
+    fclose($out);
+    exit;
+}
+
+// حذف دسته‌ای کلاس‌ها بر اساس batch_id
+if (
+    isset($_GET['page']) && $_GET['page'] === 'university-class-timing' &&
+    isset($_GET['action']) && $_GET['action'] === 'um_delete_import_batch' &&
+    isset($_GET['batch_id'])
+) {
+    if (!current_user_can('manage_options')) {
+        add_settings_error('um_class_timing', 'um_batch_delete_cap', __('اجازه انجام این عملیات را ندارید.', 'university-management'), 'error');
+    } elseif (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'um_delete_import_batch_' . sanitize_text_field($_GET['batch_id']))) {
+        add_settings_error('um_class_timing', 'um_batch_delete_nonce', __('اعتبار لینک حذف به پایان رسیده است.', 'university-management'), 'error');
+    } else {
+        global $wpdb;
+        $batch_id = sanitize_text_field($_GET['batch_id']);
+        $post_ids = $wpdb->get_col($wpdb->prepare(
+            "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s",
+            '_um_batch_id',
+            $batch_id
+        ));
+        $deleted = 0;
+        if (!empty($post_ids)) {
+            foreach ($post_ids as $pid) {
+                $res = wp_delete_post((int)$pid, true); // حذف دائمی
+                if ($res) { $deleted++; }
+            }
+        }
+        if ($deleted > 0) {
+            add_settings_error('um_class_timing', 'um_batch_deleted', sprintf(__('تعداد %1$d کلاس مربوط به ایمپورت %2$s حذف شد', 'university-management'), $deleted, esc_html($batch_id)), 'success');
+        } else {
+            add_settings_error('um_class_timing', 'um_batch_not_found', __('هیچ کلاسی با این batch_id یافت نشد.', 'university-management'), 'warning');
+        }
+    }
+}
+
 // وضعیت ویرایش (لود داده‌های کلاس برای فرم)
 $editing_class = null;
 $editing_id = 0;
@@ -98,8 +175,18 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
         $full_week = isset($_POST['full_week']) ? true : false;
         $weekdays = isset($_POST['weekdays']) && is_array($_POST['weekdays']) ? array_map('intval', $_POST['weekdays']) : array();
         
+        // شناسه batch برای ایمپورت اکسل (اختیاری)
+        $incoming_batch_id = isset($_POST['um_batch_id']) ? sanitize_text_field($_POST['um_batch_id']) : '';
+        if ($incoming_batch_id === 'new') {
+            if (function_exists('wp_generate_uuid4')) {
+                $incoming_batch_id = wp_generate_uuid4();
+            } else {
+                $incoming_batch_id = 'batch_' . date('Ymd_His') . '_' . wp_rand(1000, 9999);
+            }
+        }
+
         // تابع کمکی برای ایجاد یک کلاس در تاریخ مشخص
-        $create_class = function($date_ymd) use ($class_name, $class_time, $class_description, $class_duration, $class_teacher, $class_status) {
+        $create_class = function($date_ymd) use ($class_name, $class_time, $class_description, $class_duration, $class_teacher, $class_status, $incoming_batch_id) {
             $class_datetime = $date_ymd . ' ' . $class_time . ':00';
             $class_timestamp = strtotime($class_datetime);
             if ($class_timestamp === false) {
@@ -119,6 +206,10 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
                 update_post_meta($post_id, '_class_duration', $class_duration ?: 90);
                 update_post_meta($post_id, '_class_teacher', $class_teacher);
                 update_post_meta($post_id, '_class_status', in_array($class_status, array('scheduled','canceled','postponed','finished'), true) ? $class_status : 'scheduled');
+                if (!empty($incoming_batch_id)) {
+                    update_post_meta($post_id, '_um_batch_id', $incoming_batch_id);
+                    update_post_meta($post_id, '_um_batch_time', current_time('mysql'));
+                }
             }
             return $post_id;
         };
@@ -199,6 +290,198 @@ if (isset($_POST['um_add_class_nonce']) && wp_verify_nonce($_POST['um_add_class_
 } elseif (isset($_POST['um_add_class_nonce'])) {
     // اگر nonce معتبر نباشد
     add_settings_error('um_class_timing', 'um_nonce_error', __('خطای امنیتی. لطفاً دوباره تلاش کنید.', 'university-management'), 'error');
+}
+
+// پردازش ایمپورت اکسل
+if (isset($_POST['um_import_xlsx_nonce']) && wp_verify_nonce($_POST['um_import_xlsx_nonce'], 'um_import_xlsx')) {
+    if (!current_user_can('manage_options')) {
+        add_settings_error('um_class_timing', 'um_xlsx_cap', __('اجازه انجام این عملیات را ندارید.', 'university-management'), 'error');
+    } elseif (!isset($_FILES['um_xlsx_file']) || empty($_FILES['um_xlsx_file']['tmp_name'])) {
+        add_settings_error('um_class_timing', 'um_xlsx_file', __('فایل اکسل انتخاب نشده است.', 'university-management'), 'error');
+    } else {
+        $file_tmp = $_FILES['um_xlsx_file']['tmp_name'];
+        $name = $_FILES['um_xlsx_file']['name'];
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $rows = array();
+        if (in_array($ext, array('csv','tsv'))) {
+            // CSV/TSV
+            $content = file_get_contents($file_tmp);
+            if ($ext === 'tsv') {
+                // handle UTF-16LE with BOM
+                if (substr($content,0,2) === "\xFF\xFE") { $content = mb_convert_encoding(substr($content,2), 'UTF-8', 'UTF-16LE'); }
+                $lines = preg_split("/(\r\n|\n|\r)/", $content);
+                foreach ($lines as $line) { if ($line==='') continue; $rows[] = preg_split("/\t/", $line); }
+            } else {
+                // CSV UTF-8
+                $handle = fopen($file_tmp, 'r');
+                if ($handle) { while (($r = fgetcsv($handle)) !== false) { $rows[] = $r; } fclose($handle); }
+            }
+        } else {
+            // XLSX
+            require_once UM_PLUGIN_DIR . 'includes/simplexlsx.php';
+            $data = file_get_contents($file_tmp);
+            $xlsx = SimpleXLSX::parseData($data);
+            if ($xlsx) { $rows = $xlsx->rows(0); }
+        }
+        if (empty($rows)) {
+            add_settings_error('um_class_timing', 'um_xlsx_parse', __('خطا در خواندن فایل یا فایل خالی است.', 'university-management'), 'error');
+        } else {
+            // انتظار داریم ردیف 0 هدر و ردیف 1 راهنما باشد
+            if (count($rows) < 3) {
+                add_settings_error('um_class_timing', 'um_xlsx_empty', __('فایل اکسل خالی یا نامعتبر است.', 'university-management'), 'error');
+            } else {
+                // batch id
+                $batch_mode = isset($_POST['um_import_batch']) ? sanitize_text_field($_POST['um_import_batch']) : 'new';
+                $batch_id = '';
+                if ($batch_mode === 'manual') {
+                    $batch_id = sanitize_text_field($_POST['um_import_batch_manual'] ?? '');
+                }
+                if (empty($batch_id)) {
+                    $batch_id = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : ('batch_' . date('Ymd_His') . '_' . wp_rand(1000,9999));
+                }
+
+                $created_total = 0; $errors = array();
+
+                // Map indices by header names (flexible order)
+                $headers = array_map('trim', $rows[0]);
+                // Map English headers primarily; also accept Persian equivalents
+                $idx = array(
+                    'name' => um_header_index($headers, array('class_name (required)','نام کلاس (اجباری)')),
+                    'mode' => um_header_index($headers, array('date_mode (single|range, required)','حالت تاریخ (single/range) (اجباری)')),
+                    'start' => um_header_index($headers, array('date_start (YYYY-MM-DD, required)','تاریخ شروع (YYYY-MM-DD) (اجباری)')),
+                    'end' => um_header_index($headers, array('date_end (YYYY-MM-DD, optional for range)','تاریخ پایان (YYYY-MM-DD) (اختیاری برای range)')),
+                    'time' => um_header_index($headers, array('class_time (HH:MM, required)','زمان شروع کلاس (HH:MM) (اجباری)')),
+                    'duration' => um_header_index($headers, array('duration_minutes (required)','مدت زمان کلاس (دقیقه) (اجباری)')),
+                    'teacher' => um_header_index($headers, array('teacher_name (required)','نام استاد (اجباری)')),
+                    'status' => um_header_index($headers, array('status (scheduled|canceled|postponed|finished, optional)','وضعیت (scheduled/canceled/postponed/finished) (اختیاری)')),
+                    'desc' => um_header_index($headers, array('description (optional)','توضیحات (اختیاری)')),
+                    'sat' => um_header_index($headers, array('sat','شنبه')),
+                    'sun' => um_header_index($headers, array('sun','یکشنبه')),
+                    'mon' => um_header_index($headers, array('mon','دوشنبه')),
+                    'tue' => um_header_index($headers, array('tue','سه‌شنبه')),
+                    'wed' => um_header_index($headers, array('wed','چهارشنبه')),
+                    'thu' => um_header_index($headers, array('thu','پنجشنبه')),
+                    'fri' => um_header_index($headers, array('fri','جمعه')),
+                );
+
+                // تابع ایجاد کلاس (با استفاده از تابع داخلی موجود)
+                $make = function($class_name, $date_mode, $date_from, $date_to, $class_time, $duration, $teacher, $status, $desc, $weekdays) use (&$created_total, $batch_id) {
+                    // شبیه‌سازی درخواست فرم برای استفاده از همان منطق ذخیره
+                    $_POST['class_name'] = $class_name;
+                    $_POST['date_mode'] = $date_mode;
+                    $_POST['date_from'] = $date_from;
+                    $_POST['date_to'] = $date_to;
+                    $_POST['class_time'] = $class_time;
+                    $_POST['class_duration'] = $duration;
+                    $_POST['class_teacher'] = $teacher;
+                    $_POST['class_status'] = $status ?: 'scheduled';
+                    $_POST['class_description'] = $desc;
+                    $_POST['weekdays'] = $weekdays;
+                    $_POST['um_batch_id'] = $batch_id;
+                };
+
+                // پردازش سطرها (از ردیف 2 به بعد: 0=هدر،1=راهنما)
+                for ($i = 2; $i < count($rows); $i++) {
+                    $r = $rows[$i];
+                    $name = trim($r[$idx['name']] ?? '');
+                    $mode = strtolower(trim($r[$idx['mode']] ?? ''));
+                    $start_raw = trim($r[$idx['start']] ?? '');
+                    $end_raw = trim($r[$idx['end']] ?? '');
+                    $start = um_normalize_import_date($start_raw);
+                    $end = um_normalize_import_date($end_raw);
+                    $time = trim($r[$idx['time']] ?? '');
+                    $duration = absint($r[$idx['duration']] ?? 90);
+                    $teacher = trim($r[$idx['teacher']] ?? '');
+                    $status = trim($r[$idx['status']] ?? '');
+                    $desc = trim($r[$idx['desc']] ?? '');
+
+                    $yes = function($v){ return in_array(strtolower(trim((string)$v)), array('yes','y','1','true','بله')); };
+                    $week = array();
+                    if ($mode === 'range') {
+                        // WordPress date('w'): 0=Sunday...6=Saturday
+                        if ($yes($r[$idx['sun']] ?? '')) $week[] = 0;
+                        if ($yes($r[$idx['mon']] ?? '')) $week[] = 1;
+                        if ($yes($r[$idx['tue']] ?? '')) $week[] = 2;
+                        if ($yes($r[$idx['wed']] ?? '')) $week[] = 3;
+                        if ($yes($r[$idx['thu']] ?? '')) $week[] = 4;
+                        if ($yes($r[$idx['fri']] ?? '')) $week[] = 5;
+                        if ($yes($r[$idx['sat']] ?? '')) $week[] = 6;
+                    }
+
+                    if ($name === '' || $mode === '' || $start === '' || $time === '' || $duration <= 0 || $teacher === '') {
+                        $errors[] = sprintf('سطر %d: فیلدهای اجباری ناقص است.', $i+1);
+                        continue;
+                    }
+                    if (!in_array($mode, array('single','range'), true)) {
+                        $errors[] = sprintf('سطر %d: حالت تاریخ فقط single یا range باشد.', $i+1);
+                        continue;
+                    }
+
+                    // آماده‌سازی داده‌ها برای ایجاد
+                    $make($name, $mode, $start, $end, $time, $duration, $teacher, $status, $desc, $week);
+
+                    // اجرای همان منطق ساخت با فراخوانی مستقیم تابع create_class ممکن نیست چون در scope محلی تعریف شده.
+                    // بنابراین از پردازش فرم اصلی تقلید نمی‌کنیم؛ در عوض در پایین بعد از این بلاک،
+                    // از تابع داخلی دوباره استفاده نشده و خودمان فرآیند ایجاد را تکرار می‌کنیم.
+                    // برای سادگی، در اینجا مستقیماً کلاس می‌سازیم:
+
+                    $create_single = function($date_ymd) use ($name, $time, $desc, $duration, $teacher, $status, $batch_id) {
+                        $datetime = $date_ymd . ' ' . $time . ':00';
+                        $ts = strtotime($datetime);
+                        if ($ts === false) { return 0; }
+                        $post_id = wp_insert_post(array(
+                            'post_title' => $name,
+                            'post_content' => $desc,
+                            'post_status' => 'publish',
+                            'post_type' => 'um_classes',
+                            'post_author' => get_current_user_id(),
+                        ));
+                        if (!is_wp_error($post_id) && $post_id > 0) {
+                            update_post_meta($post_id, '_class_date', $datetime);
+                            update_post_meta($post_id, '_class_timestamp', $ts);
+                            update_post_meta($post_id, '_class_duration', $duration ?: 90);
+                            update_post_meta($post_id, '_class_teacher', $teacher);
+                            update_post_meta($post_id, '_class_status', in_array($status, array('scheduled','canceled','postponed','finished'), true) ? $status : 'scheduled');
+                            update_post_meta($post_id, '_um_batch_id', $batch_id);
+                            update_post_meta($post_id, '_um_batch_time', current_time('mysql'));
+                            return $post_id;
+                        }
+                        return 0;
+                    };
+
+                    if ($mode === 'single') {
+                        $pid = $create_single($start);
+                        if ($pid) { $created_total++; } else { $errors[] = sprintf('سطر %d: ایجاد کلاس ناموفق بود.', $i+1); }
+                    } else {
+                        if ($end === '') { $errors[] = sprintf('سطر %d: تاریخ پایان برای حالت range الزامی است.', $i+1); continue; }
+                        $start_ts = strtotime($start . ' 00:00:00');
+                        $end_ts = strtotime($end . ' 23:59:59');
+                        if ($start_ts === false || $end_ts === false || $start_ts > $end_ts) { $errors[] = sprintf('سطر %d: بازه تاریخ نامعتبر است.', $i+1); continue; }
+                        if (empty($week)) { $errors[] = sprintf('سطر %d: حداقل یک روز هفته را انتخاب کنید.', $i+1); continue; }
+                        $current = $start_ts;
+                        while ($current <= $end_ts) {
+                            $w = intval(date('w', $current));
+                            if (in_array($w, $week, true)) {
+                                $date_ymd = date('Y-m-d', $current);
+                                $pid = $create_single($date_ymd);
+                                if ($pid) { $created_total++; }
+                            }
+                            $current = strtotime('+1 day', $current);
+                        }
+                    }
+                }
+
+                if ($created_total > 0) {
+                    add_settings_error('um_class_timing', 'um_xlsx_created', sprintf(__('ایمپورت اکسل با موفقیت انجام شد. تعداد %d کلاس ایجاد شد. شناسه دسته: %s', 'university-management'), $created_total, esc_html($batch_id)), 'success');
+                } else {
+                    add_settings_error('um_class_timing', 'um_xlsx_none', __('هیچ کلاسی ایجاد نشد.', 'university-management'), 'warning');
+                }
+                if (!empty($errors)) {
+                    add_settings_error('um_class_timing', 'um_xlsx_errors', implode('<br>', array_map('esc_html', $errors)), 'error');
+                }
+            }
+        }
+    }
 }
 
 // پردازش به‌روزرسانی کلاس
@@ -306,6 +589,81 @@ $simple_classes_args = array(
     'post_status'    => array('publish', 'draft', 'private'),
 );
 $simple_classes = new WP_Query($simple_classes_args);
+
+function um_header_index(array $headers, array $candidates) {
+    // Normalize headers: trim, lowercase, strip UTF-8 BOM if present
+    $norm_headers = array();
+    foreach ($headers as $i => $h) {
+        $h = (string)$h;
+        if (substr($h, 0, 3) === "\xEF\xBB\xBF") { $h = substr($h, 3); }
+        $norm_headers[$i] = strtolower(trim($h));
+    }
+    $norm_candidates = array();
+    foreach ($candidates as $c) { $norm_candidates[] = strtolower(trim((string)$c)); }
+    foreach ($norm_headers as $i => $h) {
+        if (in_array($h, $norm_candidates, true)) { return $i; }
+    }
+    return -1;
+}
+
+// تبدیل تاریخ ورودی ایمپورت به میلادی (YYYY-MM-DD). اگر شمسی باشد (مثل 1404/05/21) تبدیل می‌کنیم
+function um_normalize_import_date($date_str) {
+    $date_str = trim((string)$date_str);
+    if ($date_str === '') return '';
+    // اگر شبیه 1404/05/21 یا 1404-05-21 باشد و سال بزرگتر از 1300 باشد، شمسی در نظر بگیریم
+    $ds = str_replace('-', '/', $date_str);
+    if (preg_match('/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/', $ds, $m)) {
+        $y = intval($m[1]); $mo = intval($m[2]); $d = intval($m[3]);
+        if ($y >= 1300) {
+            list($gy, $gm, $gd) = um_jalali_to_gregorian($y, $mo, $d);
+            return sprintf('%04d-%02d-%02d', $gy, $gm, $gd);
+        }
+    }
+    // در غیر اینصورت همان مقدار (ممکن است از قبل میلادی باشد)
+    return str_replace('/', '-', $date_str);
+}
+
+// الگوریتم تبدیل جلالی به میلادی (منبع عمومی)
+function um_jalali_to_gregorian($jy, $jm, $jd) {
+    $jy = intval($jy); $jm = intval($jm); $jd = intval($jd);
+    $jy += 1595;
+    $days = -355668 + (365 * $jy) + (int)floor($jy / 33) * 8 + (int)floor(((($jy % 33) + 3) / 4)) + $jd + (($jm < 7) ? ($jm - 1) * 31 : (($jm - 7) * 30) + 186);
+    $gy = 400 * (int)floor($days / 146097);
+    $days %= 146097;
+    if ($days > 36524) {
+        $gy += 100 * (int)floor(--$days / 36524);
+        $days %= 36524;
+        if ($days >= 365) $days++;
+    }
+    $gy += 4 * (int)floor($days / 1461);
+    $days %= 1461;
+    if ($days > 365) {
+        $gy += (int)floor(($days - 1) / 365);
+        $days = ($days - 1) % 365;
+    }
+    $gd = $days + 1;
+    $sal_a = array(0,31,($gy % 4 == 0 && $gy % 100 != 0) || ($gy % 400 == 0) ? 29 : 28,31,30,31,30,31,31,30,31,30,31);
+    for ($gm = 1; $gm <= 12 && $gd > $sal_a[$gm]; $gm++) { $gd -= $sal_a[$gm]; }
+    return array($gy, $gm, $gd);
+}
+
+// تبدیل میلادی به جلالی برای تولید نمونه
+function um_gregorian_to_jalali($gy, $gm, $gd) {
+    $g_d_m = array(0,31,28,31,30,31,30,31,31,30,31,30,31);
+    $gy2 = $gy-1600; $gm2 = $gm-1; $gd2 = $gd-1;
+    $g_day_no = 365*$gy2 + (int)(($gy2+3)/4) - (int)(($gy2+99)/100) + (int)(($gy2+399)/400);
+    for ($i=0;$i<$gm2;$i++) $g_day_no += $g_d_m[$i+1];
+    if ($gm>2 && (($gy%4==0 && $gy%100!=0) || ($gy%400==0))) $g_day_no++;
+    $g_day_no += $gd2;
+    $j_day_no = $g_day_no - 79;
+    $j_np = (int)($j_day_no / 12053); $j_day_no %= 12053;
+    $jy = 979 + 33*$j_np + 4*(int)($j_day_no/1461); $j_day_no %= 1461;
+    if ($j_day_no >= 366) { $jy += (int)(($j_day_no-366)/365); $j_day_no = ($j_day_no-366)%365; }
+    $jm_list = array(31,31,31,31,31,31,30,30,30,30,30,29);
+    for ($jm=0;$jm<12 && $j_day_no >= $jm_list[$jm]; $jm++) $j_day_no -= $jm_list[$jm];
+    $jm += 1; $jd = $j_day_no + 1;
+    return array($jy,$jm,$jd);
+}
 ?>
 
 <div class="wrap">
@@ -324,6 +682,12 @@ $simple_classes = new WP_Query($simple_classes_args);
                     <?php wp_nonce_field('um_add_class', 'um_add_class_nonce'); ?>
                 <?php endif; ?>
                 
+                <div class="um-form-row" style="margin-bottom: 15px;">
+                    <label for="um_batch_id" style="display: block; margin-bottom: 5px; font-weight: bold;">Batch ID (اختیاری – برای ایمپورت اکسل)</label>
+                    <input type="text" id="um_batch_id" name="um_batch_id" class="regular-text" style="width: 100%;" placeholder="مثال: 2025-09-23_141200 یا UUID؛ مقدار new = ساخت خودکار">
+                    <p class="description">در زمان ایمپورت اکسل، یک شناسه یکتا به همه رکوردهای این فایل نسبت دهید تا مدیریت و حذف گروهی ممکن شود.</p>
+                </div>
+
                 <div class="um-form-row" style="margin-bottom: 15px;">
                     <label for="class_name" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام کلاس', 'university-management'); ?> *</label>
                     <input type="text" id="class_name" name="class_name" class="regular-text" required style="width: 100%;" value="<?php echo esc_attr($editing_class ? $editing_name : ''); ?>">
@@ -503,10 +867,84 @@ $simple_classes = new WP_Query($simple_classes_args);
                     <?php endif; ?>
                 </div>
             </form>
+
+            <hr style="margin:20px 0;">
+            <h2><?php _e('ایمپورت از اکسل', 'university-management'); ?></h2>
+            <p class="description">برای ورود گروهی کلاس‌ها از فایل اکسل استفاده کنید. می‌توانید فایل نمونه را دانلود کنید.</p>
+            <p>
+                <a href="<?php echo esc_url( admin_url('admin-ajax.php?action=um_download_sample_xlsx&_ajax_nonce=' . wp_create_nonce('um_download_sample_xlsx')) ); ?>" class="button">
+                    <?php _e('دانلود فایل نمونه CSV (English headers)', 'university-management'); ?>
+                </a>
+            </p>
+            <form method="post" enctype="multipart/form-data">
+                <?php wp_nonce_field('um_import_xlsx', 'um_import_xlsx_nonce'); ?>
+                <div class="um-form-row" style="margin-bottom: 10px;">
+                    <input type="file" name="um_xlsx_file" accept=".xlsx,.xls,.csv,.tsv" required>
+                </div>
+                <div class="um-form-row" style="margin-bottom: 10px;">
+                    <label for="import_batch_mode" style="display:block;margin-bottom:5px;font-weight:bold;">Batch ID</label>
+                    <select id="import_batch_mode" name="um_import_batch" style="width:100%;max-width:200px;">
+                        <option value="new">ساخت خودکار شناسه جدید</option>
+                        <option value="manual">ثبت شناسه دلخواه</option>
+                    </select>
+                    <input type="text" name="um_import_batch_manual" placeholder="در حالت Manual اینجا بنویسید" style="margin-top:8px;width:100%;max-width:300px;">
+                </div>
+                <button type="submit" class="button button-primary"><?php _e('آپلود و ایمپورت اکسل', 'university-management'); ?></button>
+            </form>
         </div>
         
-        <!-- لیست کلاس‌های آینده -->
+        <!-- مدیریت ایمپورت‌های اکسل (Batch) + لیست کلاس‌ها -->
         <div class="um-admin-list" style="background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: calc(60% - 20px); min-width: 300px; padding: 20px; box-sizing: border-box;">
+            <h2><?php _e('مدیریت ایمپورت‌های اکسل', 'university-management'); ?></h2>
+            <table class="wp-list-table widefat fixed striped" style="width: 100%; margin-bottom: 20px;">
+                <thead>
+                    <tr>
+                        <th><?php _e('شناسه Batch', 'university-management'); ?></th>
+                        <th><?php _e('تاریخ/ساعت ایمپورت', 'university-management'); ?></th>
+                        <th><?php _e('تعداد کلاس‌ها', 'university-management'); ?></th>
+                        <th><?php _e('عملیات', 'university-management'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                global $wpdb;
+                $batch_rows = $wpdb->get_results($wpdb->prepare(
+                    "SELECT meta_value AS batch_id, MAX(meta_id) AS mid FROM {$wpdb->postmeta} WHERE meta_key=%s GROUP BY meta_value ORDER BY mid DESC",
+                    '_um_batch_id'
+                ));
+                if (empty($batch_rows)) {
+                    echo '<tr><td colspan="4">' . esc_html__('هیچ ایمپورتی یافت نشد.', 'university-management') . '</td></tr>';
+                } else {
+                    foreach ($batch_rows as $row) {
+                        $bid = $row->batch_id;
+                        if ($bid === '' || $bid === null) { continue; }
+                        $count = (int)$wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key=%s AND meta_value=%s",
+                            '_um_batch_id', $bid
+                        ));
+                        $import_time = $wpdb->get_var($wpdb->prepare(
+                            "SELECT pm.meta_value FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->postmeta} pm2 ON pm.post_id=pm2.post_id WHERE pm.meta_key=%s AND pm2.meta_key=%s AND pm2.meta_value=%s LIMIT 1",
+                            '_um_batch_time', '_um_batch_id', $bid
+                        ));
+                        $import_time_disp = $import_time ? date_i18n('Y/m/d H:i', strtotime($import_time)) : '—';
+                        $del_url = wp_nonce_url(
+                            add_query_arg(array('page'=>'university-class-timing','action'=>'um_delete_import_batch','batch_id'=>$bid), admin_url('admin.php')),
+                            'um_delete_import_batch_' . $bid
+                        );
+                        $confirm_msg = esc_js(__('آیا از حذف همه کلاس‌های این ایمپورت اطمینان دارید؟ این عملیات قابل بازگشت نیست.', 'university-management'));
+                        $btn_label = esc_html__('حذف همه کلاس‌های این ایمپورت', 'university-management');
+                        echo '<tr>';
+                        echo '<td><code>' . esc_html($bid) . '</code></td>';
+                        echo '<td>' . esc_html($import_time_disp) . '</td>';
+                        echo '<td>' . esc_html($count) . '</td>';
+                        echo '<td><a class="button" href="' . esc_url($del_url) . '" onclick="return confirm(\'' . $confirm_msg . '\');">' . $btn_label . '</a></td>';
+                        echo '</tr>';
+                    }
+                }
+                ?>
+                </tbody>
+            </table>
+
             <h2><?php _e('کلاس‌های آینده', 'university-management'); ?></h2>
             
             <!-- اطلاعات debugging -->

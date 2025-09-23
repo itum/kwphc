@@ -104,6 +104,8 @@ class University_Management {
         // اکشن‌های AJAX برای پایگاه داده
         add_action('wp_ajax_um_import_database', array($this, 'ajax_import_database'));
         add_action('wp_ajax_um_delete_imported_data', array($this, 'ajax_delete_imported_data'));
+        // دانلود نمونه CSV کلاس‌ها (بدون رندر HTML)
+        add_action('wp_ajax_um_download_sample_xlsx', array($this, 'ajax_download_classes_sample'));
         add_action('wp_ajax_um_get_import_status', array($this, 'ajax_get_import_status'));
         
         // اکشن‌های AJAX برای ثبت نام سمینار
@@ -147,6 +149,82 @@ class University_Management {
         // ثبت شورت‌کدهای داینامیک
         add_action('init', array($this, 'register_shortcodes'));
 
+    }
+
+    public function ajax_download_classes_sample() {
+        if (!current_user_can('manage_options')) { wp_die('Forbidden'); }
+        check_ajax_referer('um_download_sample_xlsx');
+        $headers = array(
+            'class_name (required)',
+            'date_mode (single|range, required)',
+            'date_start (YYYY-MM-DD, required)',
+            'date_end (YYYY-MM-DD, optional for range)',
+            'class_time (HH:MM, required)',
+            'duration_minutes (required)',
+            'teacher_name (required)',
+            'status (scheduled|canceled|postponed|finished, optional)',
+            'description (optional)',
+            'sat','sun','mon','tue','wed','thu','fri'
+        );
+        // Produce Shamsi dates in sample for user convenience
+        $g1 = strtotime('+3 days');
+        $g2s = strtotime('+1 week'); $g2e = strtotime('+3 week');
+        list($j1y,$j1m,$j1d) = self::um_gregorian_to_jalali(intval(date('Y',$g1)), intval(date('n',$g1)), intval(date('j',$g1)));
+        list($j2sy,$j2sm,$j2sd) = self::um_gregorian_to_jalali(intval(date('Y',$g2s)), intval(date('n',$g2s)), intval(date('j',$g2s)));
+        list($j2ey,$j2em,$j2ed) = self::um_gregorian_to_jalali(intval(date('Y',$g2e)), intval(date('n',$g2e)), intval(date('j',$g2e)));
+        $row1 = array('Sample PHP Class','single', sprintf('%04d/%02d/%02d',$j1y,$j1m,$j1d), '', '10:00', '90', 'Professor Demo', 'scheduled', 'Single date class example', 'no','no','no','no','no','no','no');
+        $row2 = array('NodeJS Course','range', sprintf('%04d/%02d/%02d',$j2sy,$j2sm,$j2sd), sprintf('%04d/%02d/%02d',$j2ey,$j2em,$j2ed), '14:00', '90', 'Engineer Demo', 'scheduled', 'Create classes on selected weekdays', 'yes','no','yes','no','yes','no','no');
+        $rows = array($headers, $row1, $row2);
+        if (!headers_sent()) {
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="um-classes-sample.csv"');
+            header('Pragma: public');
+            header('Cache-Control: max-age=0');
+        }
+        echo "\xEF\xBB\xBF"; // BOM for Excel
+        $out = fopen('php://output', 'w');
+        foreach ($rows as $r) { fputcsv($out, $r); }
+        fclose($out);
+        wp_die();
+    }
+    // Helper converters inside class
+    private static function um_gregorian_to_jalali($gy, $gm, $gd) {
+        $g_d_m = array(0,31,28,31,30,31,30,31,31,30,31,30,31);
+        $gy2 = $gy-1600; $gm2 = $gm-1; $gd2 = $gd-1;
+        $g_day_no = 365*$gy2 + (int)(($gy2+3)/4) - (int)(($gy2+99)/100) + (int)(($gy2+399)/400);
+        for ($i=0;$i<$gm2;$i++) $g_day_no += $g_d_m[$i+1];
+        if ($gm>2 && (($gy%4==0 && $gy%100!=0) || ($gy%400==0))) $g_day_no++;
+        $g_day_no += $gd2;
+        $j_day_no = $g_day_no - 79;
+        $j_np = (int)($j_day_no / 12053); $j_day_no %= 12053;
+        $jy = 979 + 33*$j_np + 4*(int)($j_day_no/1461); $j_day_no %= 1461;
+        if ($j_day_no >= 366) { $jy += (int)(($j_day_no-366)/365); $j_day_no = ($j_day_no-366)%365; }
+        $jm_list = array(31,31,31,31,31,31,30,30,30,30,30,29);
+        for ($jm=0;$jm<12 && $j_day_no >= $jm_list[$jm]; $jm++) $j_day_no -= $jm_list[$jm];
+        $jm += 1; $jd = $j_day_no + 1;
+        return array($jy,$jm,$jd);
+    }
+    private static function um_jalali_to_gregorian($jy, $jm, $jd) {
+        $jy = intval($jy); $jm = intval($jm); $jd = intval($jd);
+        $jy += 1595;
+        $days = -355668 + (365 * $jy) + (int)floor($jy / 33) * 8 + (int)floor(((($jy % 33) + 3) / 4)) + $jd + (($jm < 7) ? ($jm - 1) * 31 : (($jm - 7) * 30) + 186);
+        $gy = 400 * (int)floor($days / 146097);
+        $days %= 146097;
+        if ($days > 36524) {
+            $gy += 100 * (int)floor(--$days / 36524);
+            $days %= 36524;
+            if ($days >= 365) $days++;
+        }
+        $gy += 4 * (int)floor($days / 1461);
+        $days %= 1461;
+        if ($days > 365) {
+            $gy += (int)floor(($days - 1) / 365);
+            $days = ($days - 1) % 365;
+        }
+        $gd = $days + 1;
+        $sal_a = array(0,31,($gy % 4 == 0 && $gy % 100 != 0) || ($gy % 400 == 0) ? 29 : 28,31,30,31,30,31,31,30,31,30,31);
+        for ($gm = 1; $gm <= 12 && $gd > $sal_a[$gm]; $gm++) { $gd -= $sal_a[$gm]; }
+        return array($gy, $gm, $gd);
     }
 
     /**
