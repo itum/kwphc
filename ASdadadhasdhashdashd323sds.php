@@ -79,11 +79,54 @@ if (isset($_GET['export'])) {
         // ردیف هدر
         $out($columns);
 
-        // استریم رکوردها در قطعات
+        // استریم رکوردها در قطعات (با حذف رکوردهای تکراری بر اساس کلید منطقی)
         set_time_limit(0);
-        $stmt = $pdo_export->query("SELECT * FROM [" . $object . "]");
+
+        // تعیین ستون کلید برای حذف رکوردهای تکراری
+        $keyColumn = null;
+        $preferredSortColumn = null;
+        $dateTypes = ['date','datetime','smalldatetime','datetime2','datetimeoffset','time'];
+        $numericTypes = ['bigint','int','smallint','tinyint','decimal','numeric','float','real'];
+
+        // دریافت انواع ستون‌ها برای تشخیص بهتر
+        $colsMetaStmt = $pdo_export->prepare("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
+        $colsMetaStmt->execute([$object]);
+        $columnsMeta = $colsMetaStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($columnsMeta as $column) {
+            $colName = $column['COLUMN_NAME'];
+            $dataType = strtolower($column['DATA_TYPE']);
+            if ($preferredSortColumn === null && (in_array($dataType, $dateTypes) && preg_match('/date|time|tarikh|exam/i', $colName))) {
+                $preferredSortColumn = $colName;
+            }
+            if ($keyColumn === null && preg_match('/^(co_c|.*course.*code|.*class.*code|.*doreh.*code|.*code|.*id)$/i', $colName)) {
+                $keyColumn = $colName;
+            }
+        }
+        if ($preferredSortColumn === null) {
+            foreach ($columnsMeta as $column) {
+                $colName = $column['COLUMN_NAME'];
+                $dataType = strtolower($column['DATA_TYPE']);
+                if (in_array($dataType, $numericTypes) && preg_match('/id|code|noe|num|counter|count|co_c/i', $colName)) {
+                    $preferredSortColumn = $colName;
+                    break;
+                }
+            }
+        }
+
+        // ساخت کوئری نهایی با حذف تکراریها
+        if ($keyColumn) {
+            $orderCol = $preferredSortColumn ? $preferredSortColumn : $keyColumn;
+            $sql = "WITH cte AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY [" . $keyColumn . "] ORDER BY [" . $orderCol . "] DESC) rn FROM [" . $object . "]) SELECT * FROM cte WHERE rn = 1";
+        } else {
+            // اگر کلید پیدا نشد، تلاش برای DISTINCT روی همه ستونها
+            $colsList = '[' . implode('],[', $columns) . ']';
+            $sql = "SELECT DISTINCT " . $colsList . " FROM [" . $object . "]";
+        }
+
+        $stmt = $pdo_export->query($sql);
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            // مرتب‌سازی ستون‌ها طبق ترتیب هدر
+            // مرتب‌سازی ستونها طبق ترتیب هدر
             $ordered = [];
             foreach ($columns as $c) { $ordered[] = array_key_exists($c, $row) ? $row[$c] : null; }
             $out($ordered);
