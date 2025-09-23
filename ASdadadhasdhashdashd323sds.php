@@ -236,6 +236,13 @@ if (isset($_GET['export_classes'])) {
             $dateMode = ($dateStart && $dateEnd && $dateStart !== $dateEnd) ? 'range' : 'single';
             if ($dateMode === 'single') { $dateEnd = ''; }
 
+            // سفتسازی مقادیر اجباری
+            if (!$className) { $className = 'بدون نام'; }
+            if (!$dateStart) { continue; } // بدون تاریخ شروع، از ردیف صرفنظر میشود
+            if ($dateMode === 'range' && !$dateEnd) { $dateEnd = $dateStart; }
+            if (!$startTime) { $startTime = '08:00'; }
+            if (!$teacher || $teacher === '-') { $teacher = 'نامشخص'; }
+
             $duration = 120; // بر اساس درخواست
             $status = 'scheduled';
 
@@ -285,6 +292,64 @@ if (isset($_GET['export_classes'])) {
             http_response_code(500);
         }
         echo 'Export failed';
+    }
+    exit;
+}
+
+// هندلر ولیدیشن قبل از ایمپورت: گزارش سطرهای مشکلدار
+if (isset($_GET['validate_classes'])) {
+    $server_ip = "185.128.81.210";
+    $port = "2033";
+    $username = "kwphc.ir_englishuser";
+    $password = "654DSF#@F0k";
+    $database = 'kwphc.ir_english';
+
+    $object = preg_replace('/[^A-Za-z0-9_]/', '', $_GET['validate_classes']);
+    if (!$object) { http_response_code(400); echo 'Invalid target'; exit; }
+
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo "Validation report for $object\n";
+
+    try {
+        $dsn = "sqlsrv:Server=$server_ip,$port;Database=$database";
+        $pdo = new PDO($dsn, $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $sql = "WITH cte AS (\n"
+             . "  SELECT NAM_DORE, S_Date, F_Date, Start_Time, name, family,\n"
+             . "         ROW_NUMBER() OVER (PARTITION BY NAM_DORE, S_Date ORDER BY Start_Time DESC, name, family) rn\n"
+             . "  FROM [" . $object . "]\n"
+             . ") SELECT NAM_DORE, S_Date, F_Date, Start_Time, name, family FROM cte WHERE rn = 1";
+        $stmt = $pdo->query($sql);
+
+        $rowNum = 1; $issues = 0;
+        while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $className = trim((string)($r['NAM_DORE'] ?? ''));
+            $sDate = trim((string)($r['S_Date'] ?? ''));
+            $fDate = trim((string)($r['F_Date'] ?? ''));
+            $startTime = trim((string)($r['Start_Time'] ?? ''));
+            $teacher = trim(((string)($r['name'] ?? '')) . ' ' . ((string)($r['family'] ?? '')));
+
+            $problems = [];
+            if ($className === '') { $problems[] = 'class_name empty'; }
+            if ($sDate === '') { $problems[] = 'date_start empty'; }
+            if (!preg_match('/^\d{4}[\/-]\d{2}[\/-]\d{2}$/', $sDate)) { $problems[] = 'date_start format'; }
+            if ($fDate !== '' && !preg_match('/^\d{4}[\/-]\d{2}[\/-]\d{2}$/', $fDate)) { $problems[] = 'date_end format'; }
+            if ($startTime === '') { $problems[] = 'class_time empty'; }
+            if (!preg_match('/^\d{2}:\d{2}$/', $startTime)) { $problems[] = 'class_time format'; }
+            if ($teacher === '' || $teacher === '-') { $problems[] = 'teacher_name empty'; }
+
+            if ($problems) {
+                ++$issues;
+                echo "Row $rowNum: " . implode(', ', $problems) . "\n";
+            }
+            ++$rowNum;
+        }
+        if ($issues === 0) {
+            echo "No issues found.";
+        }
+    } catch (Throwable $e) {
+        echo 'Validation failed: ' . $e->getMessage();
     }
     exit;
 }
@@ -433,7 +498,8 @@ function display_doreh_objects($pdo, $dbName) {
                 echo "<h3>ویو: " . htmlspecialchars($targetView) . "</h3>";
                 echo "<div>";
                 echo "<a href='?export=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 6px 6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این ویو</a>";
-                echo "<a href='?export_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#1565c0;color:#fff;border-radius:4px;text-decoration:none'>دانلود classes.csv (استاندارد)</a>";
+                echo "<a href='?export_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 6px 6px 0;padding:6px 10px;background:#1565c0;color:#fff;border-radius:4px;text-decoration:none'>دانلود classes.csv (استاندارد)</a>";
+                echo "<a href='?validate_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#6a1b9a;color:#fff;border-radius:4px;text-decoration:none'>ولیدیشن قبل از ایمپورت</a>";
                 echo "</div>";
                 // تعیین ستون مرتب‌سازی برای ویو
                 $viewColumnsStmt = $pdo->prepare("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
