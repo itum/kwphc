@@ -179,10 +179,14 @@ if (isset($_GET['export_classes'])) {
         header('Pragma: no-cache');
         header('Expires: 0');
 
-        // BOM برای UTF-8
-        echo "\xEF\xBB\xBF";
+        // بدون BOM: برخی ایمپورترها در ستون اول مشکل پیدا میکنند
 
         $out = fopen('php://output', 'w');
+        // جداکننده را کاما نگه میداریم؛ اگر ایمپورتر سمیکالن میخواهد میتوانیم با &sep=; در URL کنترل کنیم
+        if (isset($_GET['sep']) && $_GET['sep'] === ';') {
+            ini_set('auto_detect_line_endings', '1');
+            // fputcsv از delimiter سفارشی پشتیبانی میکند در هر call
+        }
 
         // هدرهای کلاسها (دقیقا مطابق فایل نمونه classes.csv)
         $headers = [
@@ -197,7 +201,7 @@ if (isset($_GET['export_classes'])) {
             'description (optional)',
             'sat','sun','mon','tue','wed','thu','fri'
         ];
-        fputcsv($out, $headers);
+        fputcsv($out, $headers, isset($_GET['sep']) && $_GET['sep'] === ';' ? ';' : ',');
 
         // انتخاب ستونهای لازم و حذف تکراریها (یک ردیف برای هر NAM_DORE + S_Date)
         $sql = "WITH cte AS (\n"
@@ -282,7 +286,7 @@ if (isset($_GET['export_classes'])) {
                 $r['class_name'], $r['date_mode'], $r['date_start'], $r['date_end'], $r['class_time'],
                 $r['duration_minutes'], $r['teacher_name'], $r['status'], $r['description'],
                 $r['sat'], $r['sun'], $r['mon'], $r['tue'], $r['wed'], $r['thu'], $r['fri']
-            ]);
+            ], isset($_GET['sep']) && $_GET['sep'] === ';' ? ';' : ',');
         }
 
         fclose($out);
@@ -499,6 +503,7 @@ function display_doreh_objects($pdo, $dbName) {
                 echo "<div>";
                 echo "<a href='?export=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 6px 6px 0;padding:6px 10px;background:#2f7d32;color:#fff;border-radius:4px;text-decoration:none'>دانلود اکسل این ویو</a>";
                 echo "<a href='?export_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 6px 6px 0;padding:6px 10px;background:#1565c0;color:#fff;border-radius:4px;text-decoration:none'>دانلود classes.csv (استاندارد)</a>";
+                echo "<a href='?export_classes=" . urlencode($targetView) . "&sep=;' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#0277bd;color:#fff;border-radius:4px;text-decoration:none'>دانلود CSV با ; جداکننده</a>";
                 echo "<a href='?validate_classes=" . urlencode($targetView) . "' style='display:inline-block;margin:6px 0;padding:6px 10px;background:#6a1b9a;color:#fff;border-radius:4px;text-decoration:none'>ولیدیشن قبل از ایمپورت</a>";
                 echo "</div>";
                 // تعیین ستون مرتب‌سازی برای ویو
