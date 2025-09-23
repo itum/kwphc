@@ -184,16 +184,17 @@ if (isset($_GET['export_classes'])) {
 
         $out = fopen('php://output', 'w');
 
-        // هدرهای کلاسها
+        // هدرهای کلاسها (دقیقا مطابق فایل نمونه classes.csv)
         $headers = [
-            'class_name',
-            'date_mode',
-            'date_start',
-            'date_end',
-            'class_time',
-            'duration_minutes',
-            'teacher_name',
-            'status',
+            'class_name (required)',
+            'date_mode (single|range, required)',
+            'date_start (YYYY-MM-DD, required)',
+            'date_end (YYYY-MM-DD, optional for range)',
+            'class_time (HH:MM, required)',
+            'duration_minutes (required)',
+            'teacher_name (required)',
+            'status (scheduled|canceled|postponed|finished, optional)',
+            'description (optional)',
             'sat','sun','mon','tue','wed','thu','fri'
         ];
         fputcsv($out, $headers);
@@ -249,6 +250,7 @@ if (isset($_GET['export_classes'])) {
                 'duration_minutes' => $duration,
                 'teacher_name' => $teacher,
                 'status' => $status,
+                'description' => '',
                 'sat' => $daysMap['sat'], 'sun' => $daysMap['sun'], 'mon' => $daysMap['mon'], 'tue' => $daysMap['tue'], 'wed' => $daysMap['wed'], 'thu' => $daysMap['thu'], 'fri' => $daysMap['fri'],
             ];
         }
@@ -269,7 +271,7 @@ if (isset($_GET['export_classes'])) {
         foreach ($rows as $r) {
             fputcsv($out, [
                 $r['class_name'], $r['date_mode'], $r['date_start'], $r['date_end'], $r['class_time'],
-                $r['duration_minutes'], $r['teacher_name'], $r['status'],
+                $r['duration_minutes'], $r['teacher_name'], $r['status'], $r['description'],
                 $r['sat'], $r['sun'], $r['mon'], $r['tue'], $r['wed'], $r['thu'], $r['fri']
             ]);
         }
