@@ -103,7 +103,9 @@ class University_Management {
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         add_action('save_post_um_staff', array($this, 'save_staff_meta'));
         add_action('save_post', array($this, 'debug_save_post'), 5);
+        add_action('wp_insert_post', array($this, 'debug_wp_insert_post'), 5);
         add_action('admin_head', array($this, 'add_staff_nonce_once'));
+        add_action('admin_init', array($this, 'handle_staff_save'));
         add_action('save_post_um_slides', array($this, 'save_slide_meta'));
         add_action('delete_post', array($this, 'maybe_resync_slides_on_delete'), 10, 1);
         
@@ -6692,6 +6694,37 @@ class University_Management {
             add_action('admin_notices', function() {
                 echo '<div class="notice notice-info is-dismissible"><p>Debug: save_post hook executed for um_staff!</p></div>';
             });
+        }
+    }
+
+    /**
+     * Debug function to check if wp_insert_post is being called
+     */
+    public function debug_wp_insert_post($post_id) {
+        if (get_post_type($post_id) === 'um_staff') {
+            error_log('Debug WP Insert Post - wp_insert_post called for um_staff post ID: ' . $post_id);
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-warning is-dismissible"><p>Debug: wp_insert_post hook executed for um_staff!</p></div>';
+            });
+        }
+    }
+
+    /**
+     * Handle staff save in admin_init
+     */
+    public function handle_staff_save() {
+        if (isset($_POST['post_type']) && $_POST['post_type'] === 'um_staff' && 
+            isset($_POST['action']) && $_POST['action'] === 'editpost') {
+            
+            error_log('Handle Staff Save - admin_init triggered for um_staff');
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-success is-dismissible"><p>Debug: admin_init triggered for um_staff save!</p></div>';
+            });
+            
+            // Call save function directly
+            if (isset($_POST['post_ID'])) {
+                $this->save_staff_meta($_POST['post_ID']);
+            }
         }
     }
 
