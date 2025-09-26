@@ -100,6 +100,9 @@ class UM_Elementor_Widgets {
         require_once UM_PLUGIN_DIR . 'includes/widgets/class-timer-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/video-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/seminar-slider-widget.php';
+        if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/staff-carousel-widget.php')) {
+            require_once UM_PLUGIN_DIR . 'includes/widgets/staff-carousel-widget.php';
+        }
         require_once UM_PLUGIN_DIR . 'includes/widgets/azmoon-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/employment-exams-widget.php';
         
@@ -152,6 +155,9 @@ class UM_Elementor_Widgets {
                 if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('UM: Seminar Slider widget registered');
                 }
+            }
+            if (class_exists('UM_Staff_Carousel_Widget')) {
+                \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Staff_Carousel_Widget());
             }
             
             if (class_exists('UM_Azmoon_Widget')) {
@@ -221,6 +227,9 @@ class UM_Elementor_Widgets {
         wp_enqueue_style('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/css/employment-exams-widget.css', array(), UM_VERSION);
         wp_enqueue_style('um-azmoon-widget', UM_PLUGIN_URL . 'assets/css/azmoon-widget.css', array(), UM_VERSION);
         wp_enqueue_style('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', array(), '11');
+        if (file_exists(UM_PLUGIN_DIR . 'assets/css/staff-carousel-widget.css')) {
+            wp_enqueue_style('um-staff-carousel-widget', UM_PLUGIN_URL . 'assets/css/staff-carousel-widget.css', array(), UM_VERSION);
+        }
         
         if (file_exists(UM_PLUGIN_DIR . 'assets/css/elementor-slides-widget.css')) {
             wp_enqueue_style('um-slides-widget', UM_PLUGIN_URL . 'assets/css/elementor-slides-widget.css', array(), UM_VERSION);
@@ -329,6 +338,9 @@ class UM_Elementor_Widgets {
         wp_register_script('um-seminar-slider-widget', UM_PLUGIN_URL . 'assets/js/seminar-slider-widget.js', array('jquery', 'swiper', 'lucide'), UM_VERSION, true);
         wp_register_script('um-azmoon-widget', UM_PLUGIN_URL . 'assets/js/azmoon-widget.js', array('jquery'), UM_VERSION, true);
         wp_register_script('um-employment-exams-widget', UM_PLUGIN_URL . 'assets/js/employment-exams-widget.js', array('jquery'), UM_VERSION, true);
+        if (file_exists(UM_PLUGIN_DIR . 'assets/js/staff-carousel-widget.js')) {
+            wp_register_script('um-staff-carousel-widget', UM_PLUGIN_URL . 'assets/js/staff-carousel-widget.js', array('jquery','swiper'), UM_VERSION, true);
+        }
         
         if (file_exists(UM_PLUGIN_DIR . 'assets/js/hall-booking-widget.js')) {
             wp_register_script('um-hall-booking-widget', UM_PLUGIN_URL . 'assets/js/hall-booking-widget.js', array('jquery'), UM_VERSION, true);

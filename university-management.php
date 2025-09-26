@@ -2000,9 +2000,17 @@ class University_Management {
      * بارگذاری فایل‌های CSS و JS در سمت مدیریت
      */
     public function enqueue_admin_assets($hook) {
-        // بررسی صفحات مدیریت افزونه
-        if (strpos($hook, 'university-management') === false) {
+        // بررسی صفحات مدیریت افزونه یا صفحات ویرایش پرسنل
+        if (strpos($hook, 'university-management') === false && strpos($hook, 'post.php') === false && strpos($hook, 'post-new.php') === false) {
             return;
+        }
+        
+        // اگر در صفحه ویرایش پست هستیم، بررسی کنیم که پست تایپ پرسنل باشد
+        if (strpos($hook, 'post.php') !== false || strpos($hook, 'post-new.php') !== false) {
+            global $post;
+            if (!$post || $post->post_type !== 'um_staff') {
+                return;
+            }
         }
         
         // استایل‌های مدیریت (فقط اگر فایل وجود داشته باشد)
@@ -2022,10 +2030,16 @@ class University_Management {
             wp_enqueue_script(
                 'university-management-admin-script',
                 UM_PLUGIN_URL . 'assets/js/admin.js',
-                array('jquery'),
+                array('jquery', 'wp-media'),
                 UM_VERSION,
                 true
             );
+            
+            // اضافه کردن متغیرهای مورد نیاز برای AJAX
+            wp_localize_script('university-management-admin-script', 'um_admin_ajax', array(
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('um_admin_nonce')
+            ));
         }
         
         // منابع خاص صفحه تنظیمات عمومی
@@ -6539,6 +6553,28 @@ class University_Management {
             $thumb_url = wp_get_attachment_url($thumb_id);
             update_post_meta($post_id, 'staff_thumbnail_url', esc_url_raw($thumb_url));
         }
+
+        // ذخیره زیر مجموعه پرسنل
+        if (isset($_POST['staff_sub_members']) && is_array($_POST['staff_sub_members'])) {
+            $sub_members = [];
+            foreach ($_POST['staff_sub_members'] as $member) {
+                // بررسی اینکه حداقل نام یا نام خانوادگی پر شده باشد
+                if (!empty($member['first_name']) || !empty($member['last_name'])) {
+                    $sub_members[] = [
+                        'first_name' => sanitize_text_field($member['first_name'] ?? ''),
+                        'last_name' => sanitize_text_field($member['last_name'] ?? ''),
+                        'position' => sanitize_text_field($member['position'] ?? ''),
+                        'image_id' => absint($member['image_id'] ?? 0),
+                        'phone' => sanitize_text_field($member['phone'] ?? ''),
+                        'internal' => sanitize_text_field($member['internal'] ?? '')
+                    ];
+                }
+            }
+            update_post_meta($post_id, 'staff_sub_members', $sub_members);
+        } else {
+            // اگر هیچ زیر مجموعه‌ای ارسال نشده، آرایه خالی ذخیره کن
+            update_post_meta($post_id, 'staff_sub_members', []);
+        }
     }
 
     /**
@@ -6649,6 +6685,102 @@ class University_Management {
         }
 
         echo '</table>';
+
+        // بخش زیر مجموعه پرسنل
+        $sub_members = get_post_meta($post->ID, 'staff_sub_members', true);
+        if (!is_array($sub_members)) {
+            $sub_members = [];
+        }
+
+        echo '<h3 style="margin-top: 30px; margin-bottom: 15px; color: #1e2a78;">' . __('زیر مجموعه پرسنل', 'university-management') . '</h3>';
+        echo '<div id="um-sub-members-container">';
+        
+        if (!empty($sub_members)) {
+            foreach ($sub_members as $index => $member) {
+                $this->render_sub_member_row($index, $member);
+            }
+        } else {
+            // نمایش یک ردیف خالی برای شروع
+            $this->render_sub_member_row(0, []);
+        }
+        
+        echo '</div>';
+        echo '<button type="button" id="um-add-sub-member" class="button button-secondary" style="margin-top: 10px;">';
+        echo '<span class="dashicons dashicons-plus" style="vertical-align: middle; margin-left: 5px;"></span>';
+        echo __('افزودن زیر مجموعه جدید', 'university-management');
+        echo '</button>';
+    }
+
+    /**
+     * رندر ردیف زیر مجموعه پرسنل
+     */
+    private function render_sub_member_row($index, $member = []) {
+        $member = wp_parse_args($member, [
+            'first_name' => '',
+            'last_name' => '',
+            'position' => '',
+            'image_id' => '',
+            'phone' => '',
+            'internal' => ''
+        ]);
+
+        echo '<div class="um-sub-member-row" data-index="' . esc_attr($index) . '" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">';
+        
+        echo '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">';
+        echo '<h4 style="margin: 0; color: #1e2a78;">' . sprintf(__('زیر مجموعه %d', 'university-management'), $index + 1) . '</h4>';
+        echo '<button type="button" class="um-remove-sub-member button button-link-delete" style="color: #a00;">';
+        echo '<span class="dashicons dashicons-trash"></span> ' . __('حذف', 'university-management');
+        echo '</button>';
+        echo '</div>';
+
+        echo '<table class="form-table" style="margin: 0;">';
+        
+        // نام
+        echo '<tr><th style="width: 150px;"><label>' . __('نام', 'university-management') . '</label></th>';
+        echo '<td><input type="text" name="staff_sub_members[' . $index . '][first_name]" value="' . esc_attr($member['first_name']) . '" class="regular-text" placeholder="نام"></td></tr>';
+        
+        // نام خانوادگی
+        echo '<tr><th><label>' . __('نام خانوادگی', 'university-management') . '</label></th>';
+        echo '<td><input type="text" name="staff_sub_members[' . $index . '][last_name]" value="' . esc_attr($member['last_name']) . '" class="regular-text" placeholder="نام خانوادگی"></td></tr>';
+        
+        // سمت
+        echo '<tr><th><label>' . __('سمت', 'university-management') . '</label></th>';
+        echo '<td><input type="text" name="staff_sub_members[' . $index . '][position]" value="' . esc_attr($member['position']) . '" class="regular-text" placeholder="سمت"></td></tr>';
+        
+        // تصویر
+        echo '<tr><th><label>' . __('تصویر', 'university-management') . '</label></th>';
+        echo '<td>';
+        echo '<div class="um-sub-member-image-container">';
+        
+        if (!empty($member['image_id'])) {
+            $image_url = wp_get_attachment_image_url($member['image_id'], 'thumbnail');
+            if ($image_url) {
+                echo '<div class="um-sub-member-image-preview" style="margin-bottom: 10px;">';
+                echo '<img src="' . esc_url($image_url) . '" style="max-width: 150px; height: auto; border-radius: 4px;">';
+                echo '</div>';
+            }
+        }
+        
+        echo '<input type="hidden" name="staff_sub_members[' . $index . '][image_id]" value="' . esc_attr($member['image_id']) . '" class="um-sub-member-image-id">';
+        echo '<button type="button" class="um-upload-sub-member-image button" data-index="' . $index . '">';
+        echo '<span class="dashicons dashicons-upload"></span> ' . __('انتخاب تصویر', 'university-management');
+        echo '</button>';
+        echo '<button type="button" class="um-remove-sub-member-image button button-link-delete" data-index="' . $index . '" style="margin-right: 10px;' . (empty($member['image_id']) ? ' display: none;' : '') . '">';
+        echo '<span class="dashicons dashicons-no"></span> ' . __('حذف تصویر', 'university-management');
+        echo '</button>';
+        echo '</div>';
+        echo '</td></tr>';
+        
+        // شماره تماس
+        echo '<tr><th><label>' . __('شماره تماس', 'university-management') . '</label></th>';
+        echo '<td><input type="text" name="staff_sub_members[' . $index . '][phone]" value="' . esc_attr($member['phone']) . '" class="regular-text" placeholder="061-33153125"></td></tr>';
+        
+        // شماره داخلی
+        echo '<tr><th><label>' . __('شماره داخلی', 'university-management') . '</label></th>';
+        echo '<td><input type="text" name="staff_sub_members[' . $index . '][internal]" value="' . esc_attr($member['internal']) . '" class="regular-text" placeholder="123"></td></tr>';
+        
+        echo '</table>';
+        echo '</div>';
     }
 
     /**

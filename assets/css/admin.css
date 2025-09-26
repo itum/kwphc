@@ -73,6 +73,114 @@
     margin-right: 10px;
 }
 
+/* استایل‌های زیر مجموعه پرسنل */
+.um-sub-member-row {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background: #f9f9f9;
+    transition: all 0.3s ease;
+}
+
+.um-sub-member-row:hover {
+    border-color: #1e2a78;
+    box-shadow: 0 2px 8px rgba(30, 42, 120, 0.1);
+}
+
+.um-sub-member-row h4 {
+    margin: 0 0 15px 0;
+    color: #1e2a78;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.um-sub-member-row .form-table {
+    margin: 0;
+}
+
+.um-sub-member-row .form-table th {
+    width: 150px;
+    padding: 8px 10px 8px 0;
+    vertical-align: top;
+}
+
+.um-sub-member-row .form-table td {
+    padding: 8px 0;
+}
+
+.um-sub-member-row .regular-text {
+    width: 100%;
+    max-width: 300px;
+}
+
+.um-sub-member-image-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.um-sub-member-image-preview {
+    margin-bottom: 10px;
+}
+
+.um-sub-member-image-preview img {
+    max-width: 150px;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.um-upload-sub-member-image,
+.um-remove-sub-member-image {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 10px;
+}
+
+.um-remove-sub-member {
+    color: #a00;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.um-remove-sub-member:hover {
+    background: #fbeaea;
+    color: #dc3232;
+}
+
+#um-add-sub-member {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    background: #1e2a78;
+    color: #fff;
+    border: 1px solid #1e2a78;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+#um-add-sub-member:hover {
+    background: #0f1b5f;
+    border-color: #0f1b5f;
+    color: #fff;
+}
+
+#um-add-sub-member .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
 /* پاسخگویی موبایل */
 @media screen and (max-width: 782px) {
     .university-management-admin .card {
@@ -81,5 +189,21 @@
     
     .university-management-admin .card h2 {
         font-size: 1.1em;
+    }
+    
+    .um-sub-member-row {
+        padding: 10px;
+    }
+    
+    .um-sub-member-row .form-table th {
+        width: 120px;
+    }
+    
+    .um-sub-member-row .regular-text {
+        max-width: 100%;
+    }
+    
+    .um-sub-member-image-preview img {
+        max-width: 120px;
     }
 } 

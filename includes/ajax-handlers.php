@@ -113,4 +113,37 @@ function um_admin_export_suggestions_csv() {
     exit;
 }
 
+/**
+ * AJAX handler for getting sub-member row HTML
+ */
+add_action('wp_ajax_um_get_sub_member_row', 'um_handle_get_sub_member_row');
+function um_handle_get_sub_member_row() {
+    // بررسی nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'um_admin_nonce')) {
+        wp_send_json_error('Invalid nonce');
+    }
+    
+    // بررسی دسترسی
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    $index = intval($_POST['index'] ?? 0);
+    
+    // ایجاد instance از کلاس اصلی برای دسترسی به متد render_sub_member_row
+    $university_management = new University_Management();
+    
+    // استفاده از reflection برای دسترسی به متد private
+    $reflection = new ReflectionClass($university_management);
+    $method = $reflection->getMethod('render_sub_member_row');
+    $method->setAccessible(true);
+    
+    // گرفتن HTML ردیف
+    ob_start();
+    $method->invoke($university_management, $index, []);
+    $html = ob_get_clean();
+    
+    wp_send_json_success($html);
+}
+
 
