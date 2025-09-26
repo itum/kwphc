@@ -31,6 +31,9 @@
             }
         });
 
+        // Store swiper instance for global access
+        $root.data('swiper', swiper);
+
         // Filter functionality
         $root.on('click', '.um-staff-filter button', function(e){
             e.preventDefault();
@@ -134,6 +137,48 @@
 
     $(window).on('elementor/frontend/init', function(){
         elementorFrontend.hooks.addAction('frontend/element_ready/um_staff_carousel.default', handler);
+    });
+
+    // Also bind on document ready as fallback
+    $(document).ready(function(){
+        $('.um-staff-carousel-widget').each(function(){
+            var $widget = $(this);
+            if (!$widget.data('initialized')) {
+                $widget.data('initialized', true);
+                handler($widget);
+            }
+        });
+    });
+
+    // Global event delegation for filter buttons
+    $(document).on('click', '.um-staff-carousel-widget .um-staff-filter button', function(e){
+        e.preventDefault();
+        var $button = $(this);
+        var $widget = $button.closest('.um-staff-carousel-widget');
+        var term = $button.data('term');
+        
+        console.log('Global filter clicked:', term);
+        
+        // Update active state
+        $button.addClass('active').siblings().removeClass('active');
+        
+        // Filter slides
+        var $slides = $widget.find('.swiper-slide');
+        console.log('Total slides found:', $slides.length);
+        
+        $slides.each(function(){
+            var $slide = $(this);
+            var terms = ($slide.attr('data-terms') || '').split(' ').filter(function(t) { return t.length > 0; });
+            var show = term === 'all' || terms.indexOf(term) !== -1;
+            console.log('Slide terms:', terms, 'Show:', show, 'Term:', term);
+            $slide.toggle(show);
+        });
+        
+        // Update swiper if exists
+        var swiperInstance = $widget.data('swiper');
+        if (swiperInstance && typeof swiperInstance.update === 'function') {
+            swiperInstance.update();
+        }
     });
 })(jQuery);
 
