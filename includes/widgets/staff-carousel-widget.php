@@ -47,6 +47,22 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'default' => 'yes',
         ]);
 
+        $this->add_control('autoplay', [
+            'label' => um_translate('پخش خودکار', __('پخش خودکار','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'no',
+        ]);
+
+        $this->add_control('autoplay_delay', [
+            'label' => um_translate('تاخیر پخش خودکار (میلی‌ثانیه)', __('تاخیر پخش خودکار (میلی‌ثانیه)','university-management')),
+            'type' => \Elementor\Controls_Manager::NUMBER,
+            'default' => 3000,
+            'min' => 1000,
+            'max' => 10000,
+            'step' => 500,
+            'condition' => ['autoplay' => 'yes'],
+        ]);
+
         $this->end_controls_section();
 
         // Style: Card
@@ -176,6 +192,195 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
         ]);
 
         $this->end_controls_section();
+
+        // Style: Image
+        $this->start_controls_section('style_image', [
+            'label' => um_translate('تصویر پرسنل', __('تصویر پرسنل','university-management')),
+            'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+        ]);
+
+        $this->add_control('image_height', [
+            'label' => um_translate('ارتفاع تصویر', __('ارتفاع تصویر','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 100, 'max' => 400]],
+            'default' => ['size' => 220, 'unit' => 'px'],
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .image img' => 'height: {{SIZE}}{{UNIT}};'
+            ],
+        ]);
+
+        $this->add_control('image_radius', [
+            'label' => um_translate('گردی گوشه‌های تصویر', __('گردی گوشه‌های تصویر','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 50]],
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .image img' => 'border-radius: {{SIZE}}{{UNIT}};'
+            ],
+        ]);
+
+        $this->add_group_control(\Elementor\Group_Control_Border::get_type(), [
+            'name' => 'image_border',
+            'selector' => '{{WRAPPER}} .um-staff-carousel-widget .image img',
+        ]);
+
+        $this->add_group_control(\Elementor\Group_Control_Box_Shadow::get_type(), [
+            'name' => 'image_shadow',
+            'selector' => '{{WRAPPER}} .um-staff-carousel-widget .image img',
+        ]);
+
+        $this->end_controls_section();
+
+        // Style: Filter Buttons
+        $this->start_controls_section('style_filter', [
+            'label' => um_translate('دکمه‌های فیلتر', __('دکمه‌های فیلتر','university-management')),
+            'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+        ]);
+
+        $this->add_group_control(\Elementor\Group_Control_Typography::get_type(), [
+            'name' => 'filter_typo',
+            'selector' => '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button',
+        ]);
+
+        $this->start_controls_tabs('tabs_filter_styles');
+        $this->start_controls_tab('tab_filter_normal', [ 'label' => um_translate('عادی', __('عادی','university-management')) ]);
+        $this->add_control('filter_color', [
+            'label' => um_translate('رنگ متن', __('رنگ متن','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button' => 'color: {{VALUE}};' ],
+        ]);
+        $this->add_control('filter_bg', [
+            'label' => um_translate('رنگ پس‌زمینه', __('رنگ پس‌زمینه','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button' => 'background: {{VALUE}};' ],
+        ]);
+        $this->add_control('filter_border_color', [
+            'label' => um_translate('رنگ حاشیه', __('رنگ حاشیه','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button' => 'border-color: {{VALUE}};' ],
+        ]);
+        $this->end_controls_tab();
+
+        $this->start_controls_tab('tab_filter_active', [ 'label' => um_translate('فعال', __('فعال','university-management')) ]);
+        $this->add_control('filter_color_active', [
+            'label' => um_translate('رنگ متن', __('رنگ متن','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button.active' => 'color: {{VALUE}};' ],
+        ]);
+        $this->add_control('filter_bg_active', [
+            'label' => um_translate('رنگ پس‌زمینه', __('رنگ پس‌زمینه','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button.active' => 'background: {{VALUE}};' ],
+        ]);
+        $this->end_controls_tab();
+        $this->end_controls_tabs();
+
+        $this->add_control('filter_radius', [
+            'label' => um_translate('گردی گوشه‌ها', __('گردی گوشه‌ها','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 40]],
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button' => 'border-radius: {{SIZE}}{{UNIT}};' ],
+        ]);
+
+        $this->add_control('filter_padding', [
+            'label' => um_translate('فاصله داخلی', __('فاصله داخلی','university-management')),
+            'type' => \Elementor\Controls_Manager::DIMENSIONS,
+            'size_units' => ['px'],
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .um-staff-filter button' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ],
+        ]);
+
+        $this->end_controls_section();
+
+        // Style: Navigation Arrows
+        $this->start_controls_section('style_arrows', [
+            'label' => um_translate('فلش‌های ناوبری', __('فلش‌های ناوبری','university-management')),
+            'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+        ]);
+
+        $this->add_control('arrow_size', [
+            'label' => um_translate('اندازه فلش', __('اندازه فلش','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 20, 'max' => 60]],
+            'default' => ['size' => 32, 'unit' => 'px'],
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-button-next, {{WRAPPER}} .um-staff-carousel-widget .swiper-button-prev' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}}; margin-top: calc(-{{SIZE}}{{UNIT}} / 2);'
+            ],
+        ]);
+
+        $this->add_control('arrow_color', [
+            'label' => um_translate('رنگ فلش', __('رنگ فلش','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-button-next, {{WRAPPER}} .um-staff-carousel-widget .swiper-button-prev' => 'color: {{VALUE}};'
+            ],
+        ]);
+
+        $this->add_control('arrow_bg', [
+            'label' => um_translate('رنگ پس‌زمینه فلش', __('رنگ پس‌زمینه فلش','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-button-next, {{WRAPPER}} .um-staff-carousel-widget .swiper-button-prev' => 'background: {{VALUE}};'
+            ],
+        ]);
+
+        $this->add_control('arrow_bg_hover', [
+            'label' => um_translate('رنگ پس‌زمینه فلش (هاور)', __('رنگ پس‌زمینه فلش (هاور)','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-button-next:hover, {{WRAPPER}} .um-staff-carousel-widget .swiper-button-prev:hover' => 'background: {{VALUE}};'
+            ],
+        ]);
+
+        $this->end_controls_section();
+
+        // Style: Pagination Dots
+        $this->start_controls_section('style_pagination', [
+            'label' => um_translate('نقاط pagination', __('نقاط pagination','university-management')),
+            'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
+        ]);
+
+        $this->add_control('pagination_spacing', [
+            'label' => um_translate('فاصله از کارت‌ها', __('فاصله از کارت‌ها','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 50]],
+            'default' => ['size' => 20, 'unit' => 'px'],
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-pagination' => 'margin-top: {{SIZE}}{{UNIT}};'
+            ],
+        ]);
+
+        $this->add_control('pagination_size', [
+            'label' => um_translate('اندازه نقاط', __('اندازه نقاط','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 4, 'max' => 20]],
+            'default' => ['size' => 8, 'unit' => 'px'],
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-pagination-bullet' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};'
+            ],
+        ]);
+
+        $this->add_control('pagination_color', [
+            'label' => um_translate('رنگ نقاط', __('رنگ نقاط','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-pagination-bullet' => 'background: {{VALUE}};'
+            ],
+        ]);
+
+        $this->add_control('pagination_color_active', [
+            'label' => um_translate('رنگ نقطه فعال', __('رنگ نقطه فعال','university-management')),
+            'type' => \Elementor\Controls_Manager::COLOR,
+            'selectors' => [
+                '{{WRAPPER}} .um-staff-carousel-widget .swiper-pagination-bullet-active' => 'background: {{VALUE}};'
+            ],
+        ]);
+
+        $this->end_controls_section();
     }
 
     private function get_staff_categories() {
@@ -206,7 +411,10 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
 
         $all_terms = get_terms(['taxonomy'=>'um_staff_category','hide_empty'=>true]);
 
-        echo '<div class="um-staff-carousel-widget">';
+        echo '<div class="um-staff-carousel-widget" data-settings=\'' . json_encode([
+            'autoplay' => $s['autoplay'] ?? 'no',
+            'autoplay_delay' => $s['autoplay_delay'] ?? 3000,
+        ]) . '\'>';
         if ('yes' === $s['show_filter'] && !is_wp_error($all_terms)) {
             echo '<div class="um-staff-filter">';
             echo '<button class="active" data-term="all">' . esc_html__('همه', 'university-management') . '</button>';
