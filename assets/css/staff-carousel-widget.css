@@ -15,4 +15,44 @@
 /* hover */
 .um-staff-carousel-widget .btn:hover{background:#0f1b5f;border-color:#0f1b5f}
 
+/* Navigation arrows - smaller and simpler */
+.um-staff-carousel-widget .swiper-button-next,
+.um-staff-carousel-widget .swiper-button-prev {
+    width: 32px;
+    height: 32px;
+    margin-top: -16px;
+    background: #1e2a78;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+}
+
+.um-staff-carousel-widget .swiper-button-next:after,
+.um-staff-carousel-widget .swiper-button-prev:after {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.um-staff-carousel-widget .swiper-button-next:hover,
+.um-staff-carousel-widget .swiper-button-prev:hover {
+    background: #0f1b5f;
+}
+
+/* Pagination dots spacing */
+.um-staff-carousel-widget .swiper-pagination {
+    margin-top: 20px;
+    position: relative;
+}
+
+.um-staff-carousel-widget .swiper-pagination-bullet {
+    width: 8px;
+    height: 8px;
+    background: #d1d5db;
+    opacity: 1;
+}
+
+.um-staff-carousel-widget .swiper-pagination-bullet-active {
+    background: #1e2a78;
+}
+
 
