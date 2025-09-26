@@ -6514,6 +6514,8 @@ class University_Management {
      */
     public function save_staff_meta($post_id) {
         error_log('Staff Meta Save Debug - Function called for post ID: ' . $post_id);
+        error_log('Staff Meta Save Debug - POST method: ' . $_SERVER['REQUEST_METHOD']);
+        error_log('Staff Meta Save Debug - POST data keys: ' . implode(', ', array_keys($_POST)));
         
         // جلوگیری از اجرا در حالت اتوسیو یا درخواست‌های سریع
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
@@ -6789,6 +6791,15 @@ class University_Management {
             }
         });
         </script>';
+        
+        // نمایش debug info در صفحه
+        echo '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px;">';
+        echo '<strong>Debug Info:</strong><br>';
+        echo 'Post ID: ' . $post->ID . '<br>';
+        echo 'Post Type: ' . $post->post_type . '<br>';
+        echo 'Current User Can Edit: ' . (current_user_can("edit_post", $post->ID) ? "Yes" : "No") . '<br>';
+        echo 'Nonce Field: ' . wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce', true, false) . '<br>';
+        echo '</div>';
     }
 
     /**
