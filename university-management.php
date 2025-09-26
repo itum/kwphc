@@ -6680,7 +6680,12 @@ class University_Management {
      * نمایش متاباکس جزئیات پرسنل
      */
     public function staff_details_meta_box($post) {
-        wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
+        // فقط یک بار nonce field اضافه کن
+        static $nonce_added = false;
+        if (!$nonce_added) {
+            wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
+            $nonce_added = true;
+        }
 
         $meta = [
             'first_name'          => get_post_meta($post->ID, 'staff_first_name', true),
@@ -6790,6 +6795,21 @@ class University_Management {
                 console.log("Add button not found");
             }
         });
+        
+        // تست ذخیره‌سازی
+        document.addEventListener("DOMContentLoaded", function() {
+            var form = document.getElementById("post");
+            if (form) {
+                form.addEventListener("submit", function() {
+                    console.log("Form submitted - checking for sub-members data");
+                    var subMembers = document.querySelectorAll("input[name^=\"staff_sub_members\"]");
+                    console.log("Found " + subMembers.length + " sub-member input fields");
+                    subMembers.forEach(function(input, index) {
+                        console.log("Input " + index + ":", input.name, "=", input.value);
+                    });
+                });
+            }
+        });
         </script>';
         
         // نمایش debug info در صفحه
@@ -6799,6 +6819,8 @@ class University_Management {
         echo 'Post Type: ' . $post->post_type . '<br>';
         echo 'Current User Can Edit: ' . (current_user_can("edit_post", $post->ID) ? "Yes" : "No") . '<br>';
         echo 'Nonce Field: ' . wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce', true, false) . '<br>';
+        echo 'Nonce Count: ' . substr_count(wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce', true, false), 'um_staff_meta_nonce') . '<br>';
+        echo 'Save Hook: ' . (has_action('save_post_um_staff', array($this, 'save_staff_meta')) ? "Yes" : "No") . '<br>';
         echo '</div>';
     }
 
