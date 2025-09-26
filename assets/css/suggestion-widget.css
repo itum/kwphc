@@ -1,0 +1,105 @@
+/* Suggestion widget styles - inherit theme fonts and basic spacing */
+.um-suggestion-form,
+.um-suggestion-form *,
+.um-suggestion-form input,
+.um-suggestion-form select,
+.um-suggestion-form textarea,
+.um-suggestion-form button,
+.um-suggestion-form label {
+    font: inherit !important;
+    font-family: inherit !important;
+    line-height: inherit !important;
+    color: inherit;
+}
+
+.um-suggestion-form {
+    display: block;
+    direction: rtl;
+}
+
+.um-suggestion-form .um-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.um-suggestion-form .um-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.um-suggestion-form .um-field.um-field--full {
+    grid-column: 1 / -1;
+}
+
+.um-suggestion-form label {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.um-suggestion-form input[type="text"],
+.um-suggestion-form select,
+.um-suggestion-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 6px;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.um-suggestion-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.um-suggestion-form button[type="submit"] {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    margin-top: 12px;
+    align-self: flex-start;
+}
+
+.um-suggestion-form button[type="submit"]:hover {
+    background: #006298;
+}
+
+@media (max-width: 768px) {
+    .um-suggestion-form .um-fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Success modal styles */
+.um-suggestion-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+}
+.um-suggestion-modal.is-open { display: block; }
+.um-suggestion-modal .um-suggestion-modal__backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,.45);
+}
+.um-suggestion-modal .um-suggestion-modal__content {
+    position: relative;
+    max-width: 520px;
+    margin: 10vh auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+.um-suggestion-modal .um-suggestion-modal__body { padding: 20px; text-align: right; direction: rtl; }
+.um-suggestion-modal .um-suggestion-modal__title { font-weight: 700; margin-bottom: 8px; }
+.um-suggestion-modal .um-suggestion-modal__message { margin: 8px 0 16px; }
+.um-suggestion-modal .um-suggestion-modal__actions { text-align: left; }
+.um-suggestion-modal .um-suggestion-modal__ok {
+    background: #0073aa; color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer;
+}
+.um-suggestion-modal .um-suggestion-modal__ok:hover { background: #006298; }
+
+

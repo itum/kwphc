@@ -64,6 +64,8 @@ class University_Management {
         // افزودن منوی مدیریت
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_menu', array($this, 'ensure_hall_settings_group'), 20);
+        // صفحه تنظیم انتخاب برگه جزئیات دوره
+        add_action('admin_menu', array($this, 'add_course_detail_settings_page'));
         
         // اضافه کردن CSS و JS
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
@@ -71,6 +73,11 @@ class University_Management {
         
         // ثبت پست‌تایپ‌ها
         add_action('init', array($this, 'register_post_types'));
+
+        // مسیر صفحه داینامیک جزئیات دوره
+        add_action('init', array($this, 'register_course_detail_route'));
+        add_filter('query_vars', array($this, 'register_query_vars'));
+        add_action('template_redirect', array($this, 'maybe_render_course_detail'));
 
         // بارگذاری ماژول سالن جلسات (CPT + درگاه)
         add_action('plugins_loaded', function() {
@@ -114,6 +121,12 @@ class University_Management {
         add_action('wp_ajax_um_find_or_create_seminar', array($this, 'ajax_find_or_create_seminar'));
         add_action('wp_ajax_nopriv_um_find_or_create_seminar', array($this, 'ajax_find_or_create_seminar'));
         
+        // شورتکد جزئیات دوره
+        add_shortcode('course_details', array($this, 'shortcode_course_details'));
+        // جزئیات داینامیک سمینار
+        add_action('wp_ajax_um_get_seminar_details', array($this, 'ajax_get_seminar_details'));
+        add_action('wp_ajax_nopriv_um_get_seminar_details', array($this, 'ajax_get_seminar_details'));
+        
         // اکشن‌های AJAX برای تنظیمات درگاه پرداخت
         add_action('wp_ajax_um_save_payment_settings', array($this, 'ajax_save_payment_settings'));
         add_action('wp_ajax_um_get_import_logs', array($this, 'ajax_get_import_logs'));
@@ -149,6 +162,386 @@ class University_Management {
         // ثبت شورت‌کدهای داینامیک
         add_action('init', array($this, 'register_shortcodes'));
 
+    }
+
+    /**
+     * ثبت مسیر course-detail.aspx
+     */
+    public function register_course_detail_route() {
+        // تنها مسیر رسمی: /course-detail (با یا بدون اسلش پایانی)
+        add_rewrite_rule('^course-detail/?$', 'index.php?um_course_detail=1', 'top');
+    }
+
+    /**
+     * ثبت query var سفارشی
+     */
+    public function register_query_vars($vars) {
+        $vars[] = 'um_course_detail';
+        return $vars;
+    }
+
+    /**
+     * رندر صفحه جزئیات دوره در صورت تطابق مسیر
+     */
+    public function maybe_render_course_detail() {
+        if (intval(get_query_var('um_course_detail')) !== 1) {
+            return;
+        }
+
+        $code = isset($_GET['Code']) ? sanitize_text_field($_GET['Code']) : '';
+        if (empty($code)) {
+            status_header(400);
+            echo '<div style="padding:40px;text-align:center;">کد دوره ارسال نشده است.</div>';
+            exit;
+        }
+
+        // پیدا کردن پست بر اساس UID (و در صورت عدم وجود، براساس الگوی KW-<id>)
+        $post_id = 0;
+        $query = new \WP_Query(array(
+            'post_type' => 'um_seminars',
+            'meta_key' => '_seminar_uid',
+            'meta_value' => $code,
+            'posts_per_page' => 1,
+            'post_status' => 'publish'
+        ));
+        if ($query->have_posts()) {
+            $query->the_post();
+            $post_id = get_the_ID();
+        }
+        wp_reset_postdata();
+
+        // fallback: اگر UID ذخیره نشده ولی لینک بر پایه KW-<post_id> ساخته شده باشد
+        if (!$post_id && preg_match('/^KW-(\d+)$/', $code, $m)) {
+            $maybe_id = intval($m[1]);
+            $maybe = get_post($maybe_id);
+            if ($maybe && $maybe->post_type === 'um_seminars' && $maybe->post_status === 'publish') {
+                $post_id = $maybe_id;
+                // برای آینده: UID را ذخیره کن تا دفعات بعد سریع‌تر پیدا شود
+                $existing_uid = get_post_meta($post_id, '_seminar_uid', true);
+                if (empty($existing_uid)) {
+                    update_post_meta($post_id, '_seminar_uid', $code);
+                }
+            }
+        }
+
+        if (!$post_id) {
+            status_header(404);
+            echo '<div style="padding:40px;text-align:center;">دوره‌ای با این کد یافت نشد.</div>';
+            exit;
+        }
+
+        // اگر مدیر صفحه هدف را تعیین کرده باشد، به همان برگه (المنتوری) ریدایرکت کن تا شورتکد [course_details] رندر شود
+        $target_page_id = intval(get_option('um_course_detail_page_id', 0));
+        if ($target_page_id > 0) {
+            $url = add_query_arg('Code', urlencode($code), get_permalink($target_page_id));
+            wp_redirect($url, 301);
+            exit;
+        }
+
+        $title = get_the_title($post_id);
+        $desc = apply_filters('the_content', get_post_field('post_content', $post_id));
+        $image = get_the_post_thumbnail_url($post_id, 'large');
+        $teacher = get_post_meta($post_id, '_seminar_teacher', true);
+        $time = get_post_meta($post_id, '_seminar_time', true);
+        $start_time = get_post_meta($post_id, '_seminar_start_time', true);
+        $days = (array) get_post_meta($post_id, '_seminar_days', true);
+        $uid = get_post_meta($post_id, '_seminar_uid', true);
+        $price = get_post_meta($post_id, '_seminar_price', true);
+        $duration = get_post_meta($post_id, '_seminar_duration', true);
+        $capacity = get_post_meta($post_id, '_seminar_capacity', true);
+        $registration_active = get_post_meta($post_id, '_seminar_registration_active', true) === '1';
+
+        $week_days_map = array('sat' => 'شنبه','sun' => 'یکشنبه','mon' => 'دوشنبه','tue' => 'سه‌شنبه','wed' => 'چهارشنبه','thu' => 'پنجشنبه','fri' => 'جمعه');
+        $days_labels = array();
+        foreach ($days as $d) { if (isset($week_days_map[$d])) { $days_labels[] = $week_days_map[$d]; } }
+
+        status_header(200);
+        nocache_headers();
+        echo '<!DOCTYPE html><html lang="fa"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+        echo '<title>' . esc_html($title) . ' | جزئیات دوره</title>';
+        echo '<style>body{font-family:Tahoma,Arial,sans-serif;direction:rtl;margin:0;color:#222;background:#f7f7fb} .container{max-width:1000px;margin:24px auto;padding:16px} .card{background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden} .hero{display:flex;flex-wrap:wrap} .hero img{max-width:100%;height:auto;flex:1 1 320px} .hero .meta{flex:1 1 320px;padding:24px} .meta h1{margin-top:0;font-size:24px} .meta ul{list-style:none;padding:0;margin:12px 0} .meta li{margin:6px 0} .desc{padding:24px;border-top:1px solid #eee} .cta{margin-top:16px} .btn{display:inline-block;background:#1e7e34;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px} .badge{display:inline-block;background:#eef3ff;color:#1e2a78;margin:0 4px 4px 0;padding:4px 8px;border-radius:6px;font-size:12px}</style>';
+        echo '</head><body><div class="container"><div class="card">';
+        echo '<div class="hero">';
+        if ($image) { echo '<img src="' . esc_url($image) . '" alt="' . esc_attr($title) . '">'; }
+        echo '<div class="meta">';
+        echo '<h1>' . esc_html($title) . '</h1>';
+        echo '<ul>';
+        if ($teacher) echo '<li><strong>مدرس:</strong> ' . esc_html($teacher) . '</li>';
+        if ($time) echo '<li><strong>زمان برگزاری:</strong> ' . esc_html($time) . '</li>';
+        if ($start_time) echo '<li><strong>ساعت شروع:</strong> ' . esc_html($start_time) . '</li>';
+        if (!empty($days_labels)) echo '<li><strong>روزهای برگزاری:</strong> ' . esc_html(implode('، ', $days_labels)) . '</li>';
+        if ($duration) echo '<li><strong>مدت زمان (ساعت):</strong> ' . esc_html($duration) . '</li>';
+        if ($capacity) echo '<li><strong>ظرفیت:</strong> ' . esc_html($capacity) . '</li>';
+        echo '<li><strong>شناسه دوره:</strong> <code>' . esc_html($uid) . '</code></li>';
+        echo '<li><strong>هزینه:</strong> ' . (intval($price) > 0 ? number_format_i18n($price) . ' تومان' : 'رایگان') . '</li>';
+        echo '</ul>';
+        if ($registration_active) {
+            echo '<div class="cta"><a class="btn" href="#" onclick="document.getElementById(\'um-register\').scrollIntoView({behavior:\'smooth\'});return false;">ثبت نام اکنون</a></div>';
+        }
+        echo '</div></div>';
+        echo '<div class="desc">' . $desc . '</div>';
+        if ($registration_active) {
+            echo '<div id="um-register" class="desc">';
+            echo do_shortcode('[um_seminar_registration seminar_id=' . intval($post_id) . ' show_title=false]');
+            echo '</div>';
+        }
+        echo '</div></div></body></html>';
+        wp_reset_postdata();
+        exit;
+    }
+
+    /**
+     * ایجاد صفحه تنظیمات ساده برای انتخاب برگه جزئیات دوره (المنتوری)
+     */
+    public function add_course_detail_settings_page() {
+        add_submenu_page(
+            'university-management',
+            __('برگه جزئیات دوره', 'university-management'),
+            __('برگه جزئیات دوره', 'university-management'),
+            'manage_options',
+            'um-course-detail-page',
+            array($this, 'render_course_detail_settings_page')
+        );
+    }
+
+    public function render_course_detail_settings_page() {
+        if (!current_user_can('manage_options')) { return; }
+        if (isset($_POST['um_cdp_nonce']) && wp_verify_nonce($_POST['um_cdp_nonce'], 'um_cdp_save')) {
+            update_option('um_course_detail_page_id', intval($_POST['um_course_detail_page_id'] ?? 0));
+            echo '<div class="updated"><p>' . esc_html__('تنظیمات ذخیره شد.', 'university-management') . '</p></div>';
+        }
+        $selected = intval(get_option('um_course_detail_page_id', 0));
+        echo '<div class="wrap"><h1>' . esc_html__('برگه جزئیات دوره', 'university-management') . '</h1>';
+        echo '<form method="post">';
+        wp_nonce_field('um_cdp_save', 'um_cdp_nonce');
+        echo '<table class="form-table"><tr><th>' . esc_html__('انتخاب برگه', 'university-management') . '</th><td>';
+        echo wp_dropdown_pages(array('echo'=>0,'name'=>'um_course_detail_page_id','selected'=>$selected,'show_option_none'=>__('— انتخاب صفحه —','university-management')));
+        echo '<p class="description">' . esc_html__('در این برگه شورتکد [course_details] را قرار دهید.', 'university-management') . '</p>';
+        echo '</td></tr></table>';
+        submit_button(__('ذخیره', 'university-management'));
+        echo '</form></div>';
+    }
+
+    /**
+     * [course_details] shortcode
+     * Usage: [course_details code="KW-17083"] یا [course_details id="17083"]
+     */
+    public function shortcode_course_details($atts) {
+        $atts = shortcode_atts(array(
+            'code' => '',
+            'id'   => ''
+        ), $atts, 'course_details');
+
+        $post_id = 0;
+        // اول از URL بگیر (Code=...)، اگر نبود از ویژگی shortcode
+        $code = isset($_GET['Code']) ? sanitize_text_field($_GET['Code']) : '';
+        if (empty($code)) {
+            $code = trim($atts['code']);
+        }
+        if (!empty($atts['id'])) {
+            $maybe = get_post(intval($atts['id']));
+            if ($maybe && $maybe->post_type === 'um_seminars') {
+                $post_id = intval($atts['id']);
+            }
+        }
+
+        if (!$post_id && !empty($code)) {
+            $q = new \WP_Query(array(
+                'post_type' => 'um_seminars',
+                'meta_key' => '_seminar_uid',
+                'meta_value' => $code,
+                'posts_per_page' => 1,
+                'post_status' => 'publish'
+            ));
+            if ($q->have_posts()) { $q->the_post(); $post_id = get_the_ID(); }
+            wp_reset_postdata();
+            if (!$post_id && preg_match('/^KW-(\d+)$/', $code, $m)) {
+                $maybe_id = intval($m[1]);
+                $maybe = get_post($maybe_id);
+                if ($maybe && $maybe->post_type === 'um_seminars' && $maybe->post_status === 'publish') {
+                    $post_id = $maybe_id;
+                }
+            }
+        }
+
+        if (!$post_id && function_exists('is_singular') && is_singular('um_seminars')) {
+            global $post;
+            if ($post && $post->post_type === 'um_seminars') {
+                $post_id = intval($post->ID);
+            }
+        }
+
+        if (!$post_id) {
+            return '<p>دوره‌ای با این کد پیدا نشد.</p>';
+        }
+
+        $title = get_the_title($post_id);
+        $desc  = has_excerpt($post_id) ? get_the_excerpt($post_id) : wp_trim_words(get_post_field('post_content', $post_id), 60);
+        $image = get_the_post_thumbnail_url($post_id, 'large');
+        $teacher = get_post_meta($post_id, '_seminar_teacher', true);
+        $time = get_post_meta($post_id, '_seminar_time', true);
+        $start_time = get_post_meta($post_id, '_seminar_start_time', true);
+        $days = (array) get_post_meta($post_id, '_seminar_days', true);
+        $uid = get_post_meta($post_id, '_seminar_uid', true) ?: ('KW-' . $post_id);
+        $price = get_post_meta($post_id, '_seminar_price', true);
+        $duration = get_post_meta($post_id, '_seminar_duration', true);
+        $capacity = get_post_meta($post_id, '_seminar_capacity', true);
+        $registration_active = get_post_meta($post_id, '_seminar_registration_active', true) === '1';
+
+        $week_days_map = array('sat' => 'شنبه','sun' => 'یکشنبه','mon' => 'دوشنبه','tue' => 'سه‌شنبه','wed' => 'چهارشنبه','thu' => 'پنجشنبه','fri' => 'جمعه');
+        $days_labels = array();
+        foreach ($days as $d) { if (isset($week_days_map[$d])) { $days_labels[] = $week_days_map[$d]; } }
+
+        $block_id = 'umcd_' . wp_generate_password(6, false, false);
+        ob_start();
+        ?>
+        <div class="um-course-details" id="<?php echo esc_attr($block_id); ?>">
+            <?php if (!wp_script_is('um-course-details-styles', 'enqueued')): ?>
+                <style id="um-course-details-styles">
+                    .um-course-details{direction:rtl;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.06);overflow:hidden;margin:16px 0}
+                    .um-course-details__hero{display:grid;grid-template-columns: 1.1fr 1.4fr;gap:24px;align-items:start;padding:24px}
+                    @media(max-width:900px){.um-course-details__hero{grid-template-columns:1fr;gap:16px;padding:16px}}
+                    @media(max-width:600px){.um-course-details__hero{padding:12px}}
+                    .um-course-details__image{width:100%;height:auto;border-radius:12px;max-width:100%}
+                    .um-course-details__title{margin:0 0 12px;font-size:22px;color:#1e2a78;line-height:1.3}
+                    @media(max-width:600px){.um-course-details__title{font-size:18px}}
+                    .um-course-details__meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;list-style:none;margin:0;padding:0}
+                    @media(max-width:600px){.um-course-details__meta{grid-template-columns:1fr;gap:8px}}
+                    .um-course-details__meta li{background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:10px 12px;font-size:14px}
+                    @media(max-width:600px){.um-course-details__meta li{padding:8px 10px;font-size:13px}}
+                    .um-course-details__meta strong{color:#38446b;margin-left:6px;display:inline-block}
+                    .um-course-details__badges{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+                    .um-course-details__badge{display:inline-block;background:#eef3ff;color:#1e2a78;padding:4px 8px;border-radius:6px;margin-left:6px;font-size:12px;white-space:nowrap}
+                    .um-course-details__desc{padding:0 24px 20px;color:#334155;line-height:1.9;font-size:15px}
+                    @media(max-width:600px){.um-course-details__desc{padding:0 12px 16px;font-size:14px}}
+                    .um-course-details__desc--inline{padding:0;margin-top:12px}
+                    .um-course-details__desc--clamped{max-height:200px;overflow:hidden;position:relative}
+                    .um-course-details__desc--clamped:after{content:"";position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(to bottom, rgba(255,255,255,0), #fff)}
+                    .um-course-details__cta{display:flex;gap:12px;align-items:center;margin-top:12px;justify-content:flex-start}
+                    @media(max-width:600px){.um-course-details__cta{margin-top:8px;justify-content:center}}
+                    .um-course-details__btn{background:#198754;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;text-align:center;min-width:120px}
+                    @media(max-width:600px){.um-course-details__btn{padding:10px 16px;font-size:13px;min-width:100px}}
+                    .um-course-details__readmore{color:#198754;text-decoration:none;font-size:13px;font-weight:500}
+                    .um-course-details__readmore:hover{text-decoration:underline}
+                </style>
+            <?php endif; ?>
+
+            <div class="um-course-details__hero">
+                <div>
+                    <?php if ($image): ?><img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" class="um-course-details__image" /><?php endif; ?>
+                </div>
+                <div>
+                    <h2 class="um-course-details__title"><?php echo esc_html($title); ?></h2>
+                    <ul class="um-course-details__meta">
+                        <?php if ($teacher): ?><li><strong>مدرس:</strong> <?php echo esc_html($teacher); ?></li><?php endif; ?>
+                        <?php if ($time): ?><li><strong>زمان برگزاری:</strong> <?php echo esc_html($time); ?></li><?php endif; ?>
+                        <?php if ($start_time): ?><li><strong>ساعت شروع:</strong> <?php echo esc_html($start_time); ?></li><?php endif; ?>
+                        <?php if (!empty($days_labels)): ?><li><strong>روزهای برگزاری:</strong> <?php echo esc_html(implode('، ', $days_labels)); ?></li><?php endif; ?>
+                        <?php if ($duration): ?><li><strong>مدت زمان (ساعت):</strong> <?php echo esc_html($duration); ?></li><?php endif; ?>
+                        <?php if ($capacity): ?><li><strong>ظرفیت:</strong> <?php echo esc_html($capacity); ?></li><?php endif; ?>
+                        <li><strong>شناسه دوره:</strong> <code><?php echo esc_html($uid); ?></code></li>
+                        <li><strong>هزینه:</strong> <?php echo (intval($price) > 0 ? number_format_i18n($price) . ' تومان' : 'رایگان'); ?></li>
+                    </ul>
+                    <div class="um-course-details__badges">
+                        <?php if (intval($price) === 0): ?><span class="um-course-details__badge">ثبت‌نام رایگان</span><?php endif; ?>
+                        <?php if ($registration_active): ?><span class="um-course-details__badge">ثبت‌نام فعال</span><?php else: ?><span class="um-course-details__badge" style="background:#ffe9e9;color:#a51d2d">ثبت‌نام غیرفعال</span><?php endif; ?>
+                    </div>
+                    <?php if ($registration_active): ?>
+                        <div class="um-course-details__cta">
+                            <a class="um-course-details__btn um-seminar-cta-register" data-seminar-id="<?php echo intval($post_id); ?>" href="#">ثبت نام</a>
+                        </div>
+                    <?php endif; ?>
+                    <div class="um-course-details__desc um-course-details__desc--inline um-course-details__desc--clamped"><?php echo wp_kses_post(wpautop($desc)); ?></div>
+                    <p style="margin-top:8px"><a href="#" class="um-course-details__readmore">نمایش بیشتر</a></p>
+                </div>
+            </div>
+            
+        </div>
+        <script>
+        (function(){
+            var root = document.getElementById('<?php echo esc_js($block_id); ?>');
+            if(!root) return;
+            var desc = root.querySelector('.um-course-details__desc');
+            var btn = root.querySelector('.um-course-details__readmore');
+            if(!desc || !btn) return;
+            function update(){
+                var collapsed = desc.classList.contains('um-course-details__desc--clamped');
+                // اگر محتوا کوتاه است، دکمه را پنهان کن
+                if(desc.scrollHeight <= 210){ btn.style.display = 'none'; return; }
+                btn.textContent = collapsed ? 'نمایش بیشتر' : 'نمایش کمتر';
+            }
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                desc.classList.toggle('um-course-details__desc--clamped');
+                update();
+            });
+            // مقدار اولیه
+            update();
+
+            // دکمه شناور حذف شد؛ دکمه در کنار پوستر و زیر اطلاعات قرار دارد
+
+            // هندل مودال ثبت نام (فقط اگر اسکریپت سراسری موجود نباشد)
+            var regBtn = root.querySelector('.um-seminar-cta-register');
+            if(regBtn && typeof window.um_seminar_registration_loaded === 'undefined'){
+                regBtn.addEventListener('click', function(e){
+                    e.preventDefault();
+                    // بررسی وجود مودال قبلی
+                    var existingModal = document.querySelector('.um-registration-modal');
+                    if(existingModal) { existingModal.remove(); }
+                    
+                    var sid = this.getAttribute('data-seminar-id');
+                    if(!sid) return;
+                    
+                    // ساخت مودال ساده
+                    var modal = document.createElement('div');
+                    modal.className = 'um-registration-modal';
+                    modal.innerHTML = '<div class="um-modal-content"><div class="um-modal-header"><h3>ثبت نام در سمینار</h3><span class="um-modal-close">×</span></div><div class="um-modal-body"><div id="um-registration-form-container">در حال بارگذاری...</div></div></div>';
+                    document.body.appendChild(modal);
+                    
+                    function close(){ 
+                        if(modal && modal.parentNode) {
+                            modal.parentNode.removeChild(modal); 
+                        }
+                    }
+                    
+                    modal.addEventListener('click', function(ev){ if(ev.target === modal){ close(); } });
+                    modal.querySelector('.um-modal-close').addEventListener('click', close);
+                    
+                    // دریافت فرم از AJAX
+                    var xhr = new XMLHttpRequest();
+                    var formData = new FormData();
+                    formData.append('action','um_get_registration_form');
+                    formData.append('seminar_id', sid);
+                    formData.append('nonce','<?php echo wp_create_nonce('um_seminar_registration'); ?>');
+                    xhr.open('POST','<?php echo admin_url('admin-ajax.php'); ?>');
+                    xhr.onload = function(){
+                        try {
+                            var resp = JSON.parse(xhr.responseText);
+                            if(resp.success){
+                                modal.querySelector('#um-registration-form-container').innerHTML = resp.data;
+                            } else {
+                                modal.querySelector('#um-registration-form-container').innerHTML = '<div class="um-error">'+ (resp.data || 'خطا در بارگذاری فرم') +'</div>';
+                            }
+                        } catch(err){
+                            modal.querySelector('#um-registration-form-container').innerHTML = '<div class="um-error">خطای غیرمنتظره</div>';
+                        }
+                    };
+                    xhr.onerror = function(){ modal.querySelector('#um-registration-form-container').innerHTML = '<div class="um-error">خطا در ارتباط</div>'; };
+                    xhr.send(formData);
+                    
+                    // حداقل استایل مودال
+                    if(!document.getElementById('um-registration-styles')){
+                        var st = document.createElement('style');
+                        st.id = 'um-registration-styles';
+                        st.textContent = '.um-registration-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px}.um-modal-content{background:#fff;border-radius:10px;max-width:680px;width:100%;max-height:90vh;overflow:auto;margin:0 auto}.um-modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee}.um-modal-body{padding:16px}.um-modal-close{cursor:pointer;font-size:22px;padding:4px}.um-modal-close:hover{background:#f5f5f5;border-radius:4px}@media(max-width:600px){.um-modal-content{width:100%;margin:0;border-radius:0;max-height:100vh}.um-modal-header{padding:10px 12px}.um-modal-body{padding:12px}}';
+                        document.head.appendChild(st);
+                    }
+                });
+            }
+        })();
+        </script>
+        <?php
+        return ob_get_clean();
     }
 
     public function ajax_download_classes_sample() {
@@ -3835,6 +4228,14 @@ class University_Management {
     }
 
     /**
+     * هوک‌های AJAX عمومی
+     */
+    public function __construct_extra_ajax_hooks() {
+        add_action('wp_ajax_um_get_seminar_details', array($this, 'ajax_get_seminar_details'));
+        add_action('wp_ajax_nopriv_um_get_seminar_details', array($this, 'ajax_get_seminar_details'));
+    }
+
+    /**
      * متاباکس جزئیات سمینار
      */
     public function seminar_details_meta_box($post) {
@@ -3842,6 +4243,9 @@ class University_Management {
 
         $teacher = get_post_meta($post->ID, '_seminar_teacher', true);
         $time = get_post_meta($post->ID, '_seminar_time', true);
+        $start_time = get_post_meta($post->ID, '_seminar_start_time', true);
+        $days = (array) get_post_meta($post->ID, '_seminar_days', true);
+        $seminar_uid = get_post_meta($post->ID, '_seminar_uid', true);
         $button_text = get_post_meta($post->ID, '_seminar_button_text', true);
         $button_link = get_post_meta($post->ID, '_seminar_button_link', true);
         $active_date = get_post_meta($post->ID, '_seminar_active_date', true);
@@ -3857,6 +4261,36 @@ class University_Management {
 
         echo '<tr><th><label for="seminar_time">' . __('زمان برگزاری', 'university-management') . '</label></th>';
         echo '<td><input type="text" id="seminar_time" name="seminar_time" value="' . esc_attr($time) . '" class="regular-text" placeholder="مثال: ۱۴۰۳/۰۵/۲۰"></td></tr>';
+
+        // ساعت شروع
+        echo '<tr><th><label for="seminar_start_time">' . __('ساعت شروع دوره', 'university-management') . '</label></th>';
+        echo '<td><input type="time" id="seminar_start_time" name="seminar_start_time" value="' . esc_attr($start_time) . '" class="regular-text"></td></tr>';
+
+        // روزهای برگزاری
+        $week_days = array(
+            'sat' => 'شنبه',
+            'sun' => 'یکشنبه',
+            'mon' => 'دوشنبه',
+            'tue' => 'سه‌شنبه',
+            'wed' => 'چهارشنبه',
+            'thu' => 'پنجشنبه',
+            'fri' => 'جمعه',
+        );
+        echo '<tr><th>' . __('روزهای برگزاری دوره', 'university-management') . '</th><td>';
+        foreach ($week_days as $key => $label) {
+            $checked = in_array($key, $days, true) ? ' checked' : '';
+            echo '<label style="margin-left:10px;"><input type="checkbox" name="seminar_days[]" value="' . esc_attr($key) . '"' . $checked . '> ' . esc_html($label) . '</label>';
+        }
+        echo '<p class="description" style="margin-top:8px;">' . __('روزهایی که دوره برگزار می‌شود را انتخاب کنید.', 'university-management') . '</p>';
+        echo '</td></tr>';
+
+        // شناسه اتوماتیک
+        if (empty($seminar_uid)) {
+            $seminar_uid = 'KW-' . $post->ID;
+            update_post_meta($post->ID, '_seminar_uid', $seminar_uid);
+        }
+        echo '<tr><th>' . __('شناسه دوره', 'university-management') . '</th>';
+        echo '<td><code>' . esc_html($seminar_uid) . '</code><p class="description">' . __('این شناسه به‌صورت خودکار تولید می‌شود.', 'university-management') . '</p></td></tr>';
 
         echo '<tr><th><label for="seminar_active_date">' . __('تاریخ فعال', 'university-management') . '</label></th>';
         echo '<td><input type="date" id="seminar_active_date" name="seminar_active_date" value="' . esc_attr($active_date) . '" class="regular-text"></td></tr>';
@@ -3957,6 +4391,20 @@ class University_Management {
 
         if (isset($_POST['seminar_time'])) {
             update_post_meta($post_id, '_seminar_time', sanitize_text_field($_POST['seminar_time']));
+            if (isset($_POST['seminar_start_time'])) {
+                update_post_meta($post_id, '_seminar_start_time', sanitize_text_field($_POST['seminar_start_time']));
+            }
+            if (isset($_POST['seminar_days']) && is_array($_POST['seminar_days'])) {
+                $days_clean = array_values(array_map('sanitize_text_field', (array) $_POST['seminar_days']));
+                update_post_meta($post_id, '_seminar_days', $days_clean);
+            } else {
+                delete_post_meta($post_id, '_seminar_days');
+            }
+            // Generate UID if missing
+            $existing_uid = get_post_meta($post_id, '_seminar_uid', true);
+            if (empty($existing_uid)) {
+                update_post_meta($post_id, '_seminar_uid', 'KW-' . $post_id);
+            }
         }
 
         if (isset($_POST['seminar_active_date'])) {
@@ -3988,6 +4436,66 @@ class University_Management {
         if (isset($_POST['seminar_button_link'])) {
             update_post_meta($post_id, '_seminar_button_link', esc_url_raw($_POST['seminar_button_link']));
         }
+    }
+
+    /**
+     * AJAX: دریافت جزئیات سمینار برای نمایش داینامیک
+     */
+    public function ajax_get_seminar_details() {
+        check_ajax_referer('um_seminar_registration', 'nonce');
+
+        $seminar_id = intval($_POST['seminar_id'] ?? 0);
+        if (!$seminar_id) {
+            wp_send_json_error('شناسه سمینار نامعتبر است.');
+        }
+
+        $post = get_post($seminar_id);
+        if (!$post || $post->post_type !== 'um_seminars') {
+            wp_send_json_error('سمینار یافت نشد.');
+        }
+
+        $title = get_the_title($seminar_id);
+        $desc = has_excerpt($seminar_id) ? get_the_excerpt($seminar_id) : wp_trim_words($post->post_content, 50);
+        $image = get_the_post_thumbnail_url($seminar_id, 'large');
+        $teacher = get_post_meta($seminar_id, '_seminar_teacher', true);
+        $time = get_post_meta($seminar_id, '_seminar_time', true);
+        $start_time = get_post_meta($seminar_id, '_seminar_start_time', true);
+        $days = (array) get_post_meta($seminar_id, '_seminar_days', true);
+        $uid = get_post_meta($seminar_id, '_seminar_uid', true);
+        $registration_active = get_post_meta($seminar_id, '_seminar_registration_active', true);
+
+        $week_days_map = array(
+            'sat' => 'شنبه', 'sun' => 'یکشنبه', 'mon' => 'دوشنبه', 'tue' => 'سه‌شنبه', 'wed' => 'چهارشنبه', 'thu' => 'پنجشنبه', 'fri' => 'جمعه'
+        );
+        $days_labels = array();
+        foreach ($days as $d) {
+            if (isset($week_days_map[$d])) { $days_labels[] = $week_days_map[$d]; }
+        }
+
+        ob_start();
+        ?>
+        <div class="um-seminar-details">
+            <div class="um-seminar-details__media">
+                <?php if ($image): ?><img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" /><?php endif; ?>
+            </div>
+            <div class="um-seminar-details__content">
+                <h3><?php echo esc_html($title); ?></h3>
+                <p class="um-seminar-details__desc"><?php echo esc_html($desc); ?></p>
+                <ul class="um-seminar-details__meta">
+                    <li><strong><?php echo esc_html(__('مدرس', 'university-management')); ?>:</strong> <?php echo esc_html($teacher); ?></li>
+                    <li><strong><?php echo esc_html(__('زمان برگزاری', 'university-management')); ?>:</strong> <?php echo esc_html($time); ?></li>
+                    <?php if ($start_time): ?><li><strong><?php echo esc_html(__('ساعت شروع', 'university-management')); ?>:</strong> <?php echo esc_html($start_time); ?></li><?php endif; ?>
+                    <?php if (!empty($days_labels)): ?><li><strong><?php echo esc_html(__('روزهای برگزاری', 'university-management')); ?>:</strong> <?php echo esc_html(implode('، ', $days_labels)); ?></li><?php endif; ?>
+                    <?php if ($uid): ?><li><strong><?php echo esc_html(__('شناسه دوره', 'university-management')); ?>:</strong> <code><?php echo esc_html($uid); ?></code></li><?php endif; ?>
+                </ul>
+                <?php if ($registration_active === '1'): ?>
+                    <a href="#" class="btn um-seminar-cta-register" data-seminar-id="<?php echo intval($seminar_id); ?>"><?php echo esc_html(__('ثبت نام اکنون', 'university-management')); ?></a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
+        $html = ob_get_clean();
+        wp_send_json_success($html);
     }
 
     /**

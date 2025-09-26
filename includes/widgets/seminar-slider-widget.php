@@ -383,9 +383,11 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                         
                                         if ($can_register['can_register']) {
                                             $seminar_price = intval(get_post_meta($seminar_id, '_seminar_price', true));
-                                            $button_text = $seminar_price > 0 ? 'ثبت نام و پرداخت' : 'ثبت نام رایگان';
+                                            $button_text = $seminar_price > 0 ? 'اطلاعات بیشتر و ثبت‌نام' : 'اطلاعات بیشتر و ثبت‌نام';
+                                            $uid = get_post_meta($seminar_id, '_seminar_uid', true) ?: ('KW-' . $seminar_id);
+                                            $detail_url = home_url('/course-detail?Code=' . urlencode($uid));
                                             ?>
-                                            <a href="#" class="btn-start um-seminar-register-btn" data-seminar-id="<?php echo $seminar_id; ?>">
+                                            <a href="<?php echo esc_url($detail_url); ?>" class="btn-start">
                                                 <span><?php echo esc_html($button_text); ?></span>
                                                 <i data-lucide="arrow-left"></i>
                                             </a>
@@ -420,9 +422,17 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
                                         }
                                     } else {
                                         // برای سمینارهای دستی، همیشه دکمه ثبت نام رایگان نمایش بده
-                                        $button_text = 'ثبت نام رایگان';
+                                        $button_text = 'اطلاعات بیشتر و ثبت‌نام';
+                                        $detail_url = '#';
+                                        if (!empty($item['seminar_title'])) {
+                                            $seminar_post = get_page_by_title($item['seminar_title'], OBJECT, 'um_seminars');
+                                            if ($seminar_post) {
+                                                $uid = get_post_meta($seminar_post->ID, '_seminar_uid', true) ?: ('KW-' . $seminar_post->ID);
+                                                $detail_url = home_url('/course-detail?Code=' . urlencode($uid));
+                                            }
+                                        }
                                         ?>
-                                        <a href="#" class="btn-start um-seminar-register-btn" data-seminar-title="<?php echo esc_attr($item['seminar_title']); ?>">
+                                        <a href="<?php echo esc_url($detail_url); ?>" class="btn-start">
                                             <span><?php echo esc_html($button_text); ?></span>
                                             <i data-lucide="arrow-left"></i>
                                         </a>

@@ -228,6 +228,9 @@ class UM_Elementor_Widgets {
         if (file_exists(UM_PLUGIN_DIR . 'assets/css/hall-booking-widget.css')) {
             wp_enqueue_style('um-hall-booking-widget', UM_PLUGIN_URL . 'assets/css/hall-booking-widget.css', array(), UM_VERSION);
         }
+        if (file_exists(UM_PLUGIN_DIR . 'assets/css/suggestion-widget.css')) {
+            wp_enqueue_style('um-suggestion-widget', UM_PLUGIN_URL . 'assets/css/suggestion-widget.css', array(), UM_VERSION);
+        }
     }
     
     /**
@@ -332,6 +335,11 @@ class UM_Elementor_Widgets {
         }
         if (file_exists(UM_PLUGIN_DIR . 'assets/js/suggestion-widget.js')) {
             wp_register_script('um-suggestion-widget', UM_PLUGIN_URL . 'assets/js/suggestion-widget.js', array('jquery'), UM_VERSION, true);
+            wp_enqueue_script('um-suggestion-widget');
+            wp_localize_script('um-suggestion-widget', 'um_suggestion_vars', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('university-management-nonce')
+            ));
         }
         if (file_exists(UM_PLUGIN_DIR . 'assets/js/slides-widget.js')) {
             wp_register_script('um-slides-widget', UM_PLUGIN_URL . 'assets/js/slides-widget.js', array('jquery','swiper'), UM_VERSION, true);

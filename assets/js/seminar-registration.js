@@ -4,13 +4,14 @@
 
 jQuery(document).ready(function($) {
     
-    // مدیریت کلیک روی دکمه ثبت نام
-    $(document).on('click', '.um-seminar-register-btn', function(e) {
+    // نمایش جزئیات به‌صورت داینامیک به جای مودال مستقیم
+    $(document).on('click', '.um-seminar-details-btn', function(e) {
         e.preventDefault();
         
         var seminarId = $(this).data('seminar-id');
         var seminarTitle = $(this).data('seminar-title');
-        
+        var $card = $(this).closest('.swiper-slide');
+
         if (!seminarId && !seminarTitle) {
             alert('اطلاعات سمینار نامعتبر است.');
             return;
@@ -18,15 +19,15 @@ jQuery(document).ready(function($) {
         
         // اگر فقط عنوان سمینار داریم، ابتدا سمینار را پیدا یا ایجاد کن
         if (!seminarId && seminarTitle) {
-            findOrCreateSeminar(seminarTitle);
+            findOrCreateSeminar(seminarTitle, $card);
         } else {
-            // نمایش مودال ثبت نام
-            showRegistrationModal(seminarId);
+            // بارگذاری جزئیات و نمایش در کارت
+            loadSeminarDetails(seminarId, $card);
         }
     });
     
     // پیدا کردن یا ایجاد سمینار بر اساس عنوان
-    function findOrCreateSeminar(seminarTitle) {
+    function findOrCreateSeminar(seminarTitle, $context) {
         $.ajax({
             url: um_ajax.ajax_url,
             type: 'POST',
@@ -36,12 +37,11 @@ jQuery(document).ready(function($) {
                 nonce: um_ajax.nonce
             },
             beforeSend: function() {
-                // نمایش لودینگ
-                $('.um-seminar-register-btn').prop('disabled', true).text('در حال پردازش...');
+                $('.um-seminar-details-btn').prop('disabled', true).text('در حال پردازش...');
             },
             success: function(response) {
                 if (response.success) {
-                    showRegistrationModal(response.data.seminar_id);
+                    loadSeminarDetails(response.data.seminar_id, $context);
                 } else {
                     alert('خطا: ' + response.data);
                 }
@@ -50,12 +50,42 @@ jQuery(document).ready(function($) {
                 alert('خطا در ارتباط با سرور');
             },
             complete: function() {
-                $('.um-seminar-register-btn').prop('disabled', false).text('ثبت نام رایگان');
+                $('.um-seminar-details-btn').prop('disabled', false).text('اطلاعات بیشتر و ثبت‌نام');
+            }
+        });
+    }
+
+    // بارگذاری و رندر جزئیات سمینار در همان کارت
+    function loadSeminarDetails(seminarId, $context) {
+        $.ajax({
+            url: um_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'um_get_seminar_details',
+                seminar_id: seminarId,
+                nonce: um_ajax.nonce
+            },
+            beforeSend: function() {
+                $context.find('.content-wrapper').after('<div class="um-loading">در حال بارگذاری جزئیات...</div>');
+            },
+            success: function(response) {
+                $context.find('.um-loading').remove();
+                if (response.success) {
+                    // اگر قبلا جزئیات وجود دارد، جایگزین کن
+                    $context.find('.um-seminar-details').remove();
+                    $context.append(response.data);
+                } else {
+                    alert('خطا: ' + response.data);
+                }
+            },
+            error: function() {
+                $context.find('.um-loading').remove();
+                alert('خطا در ارتباط با سرور');
             }
         });
     }
     
-    // نمایش مودال ثبت نام
+    // نمایش مودال ثبت نام (برای CTA نهایی)
     function showRegistrationModal(seminarId) {
         // ایجاد مودال
         var modal = $('<div class="um-registration-modal">' +
@@ -88,6 +118,13 @@ jQuery(document).ready(function($) {
             e.stopPropagation();
         });
     }
+    // کلیک روی CTA ثبت نام اکنون داخل جزئیات
+    $(document).on('click', '.um-seminar-cta-register', function(e) {
+        e.preventDefault();
+        var seminarId = $(this).data('seminar-id');
+        if (!seminarId) return;
+        showRegistrationModal(seminarId);
+    });
     
     // بارگذاری فرم ثبت نام
     function loadRegistrationForm(seminarId) {
