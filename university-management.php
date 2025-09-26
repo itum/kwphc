@@ -102,6 +102,7 @@ class University_Management {
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         add_action('save_post_um_staff', array($this, 'save_staff_meta'));
+        add_action('admin_head', array($this, 'add_staff_nonce_once'));
         add_action('save_post_um_slides', array($this, 'save_slide_meta'));
         add_action('delete_post', array($this, 'maybe_resync_slides_on_delete'), 10, 1);
         
@@ -6677,15 +6678,27 @@ class University_Management {
     }
 
     /**
+     * اضافه کردن nonce فقط یک بار در صفحه پرسنل
+     */
+    public function add_staff_nonce_once() {
+        global $pagenow, $post;
+        if (($pagenow === 'post.php' || $pagenow === 'post-new.php') && 
+            (($post && $post->post_type === 'um_staff') || 
+             (isset($_GET['post_type']) && $_GET['post_type'] === 'um_staff'))) {
+            static $nonce_added = false;
+            if (!$nonce_added) {
+                echo '<script>console.log("Adding staff nonce field");</script>';
+                wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
+                $nonce_added = true;
+            }
+        }
+    }
+
+    /**
      * نمایش متاباکس جزئیات پرسنل
      */
     public function staff_details_meta_box($post) {
-        // فقط یک بار nonce field اضافه کن
-        static $nonce_added = false;
-        if (!$nonce_added) {
-            wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
-            $nonce_added = true;
-        }
+        // nonce در add_staff_nonce_once اضافه می‌شود
 
         $meta = [
             'first_name'          => get_post_meta($post->ID, 'staff_first_name', true),
@@ -6818,9 +6831,8 @@ class University_Management {
         echo 'Post ID: ' . $post->ID . '<br>';
         echo 'Post Type: ' . $post->post_type . '<br>';
         echo 'Current User Can Edit: ' . (current_user_can("edit_post", $post->ID) ? "Yes" : "No") . '<br>';
-        echo 'Nonce Field: ' . wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce', true, false) . '<br>';
-        echo 'Nonce Count: ' . substr_count(wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce', true, false), 'um_staff_meta_nonce') . '<br>';
         echo 'Save Hook: ' . (has_action('save_post_um_staff', array($this, 'save_staff_meta')) ? "Yes" : "No") . '<br>';
+        echo 'Global Nonce Added: ' . (isset($GLOBALS['um_nonce_added']) ? "Yes" : "No") . '<br>';
         echo '</div>';
     }
 
