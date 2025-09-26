@@ -63,8 +63,9 @@
             
             // بررسی وجود متغیرهای AJAX
             if (typeof um_admin_ajax === 'undefined') {
-                console.error('um_admin_ajax is not defined');
-                alert('خطا در تنظیمات AJAX');
+                console.error('um_admin_ajax is not defined, trying to use fallback');
+                // استفاده از fallback - ایجاد ردیف جدید بدون AJAX
+                createNewMemberRow(subMemberIndex);
                 return;
             }
             
@@ -251,6 +252,59 @@
                 console.log('Button clicked:', $btn.attr('class'), $btn.attr('id'));
             }
         });
+    }
+    
+    // تابع fallback برای ایجاد ردیف جدید بدون AJAX
+    function createNewMemberRow(index) {
+        console.log('Creating new member row with fallback method, index:', index);
+        
+        var $container = $('#um-sub-members-container');
+        if ($container.length === 0) {
+            console.error('Container not found');
+            return;
+        }
+        
+        // ایجاد HTML ردیف جدید
+        var newRowHtml = '<div class="um-sub-member-row" data-index="' + index + '" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">' +
+            '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">' +
+            '<h4 style="margin: 0; color: #1e2a78;">کارمند ' + (index + 1) + '</h4>' +
+            '<button type="button" class="um-remove-sub-member button button-link-delete" style="color: #a00;">' +
+            '<span class="dashicons dashicons-trash"></span> حذف' +
+            '</button>' +
+            '</div>' +
+            '<table class="form-table" style="margin: 0;">' +
+            '<tr><th style="width: 150px;"><label>نام</label></th>' +
+            '<td><input type="text" name="staff_sub_members[' + index + '][first_name]" value="" class="regular-text" placeholder="نام"></td></tr>' +
+            '<tr><th><label>نام خانوادگی</label></th>' +
+            '<td><input type="text" name="staff_sub_members[' + index + '][last_name]" value="" class="regular-text" placeholder="نام خانوادگی"></td></tr>' +
+            '<tr><th><label>سمت</label></th>' +
+            '<td><input type="text" name="staff_sub_members[' + index + '][position]" value="" class="regular-text" placeholder="سمت"></td></tr>' +
+            '<tr><th><label>تصویر</label></th>' +
+            '<td>' +
+            '<div class="um-sub-member-image-container">' +
+            '<input type="hidden" name="staff_sub_members[' + index + '][image_id]" value="" class="um-sub-member-image-id">' +
+            '<button type="button" class="um-upload-sub-member-image button" data-index="' + index + '">' +
+            '<span class="dashicons dashicons-upload"></span> انتخاب تصویر' +
+            '</button>' +
+            '<button type="button" class="um-remove-sub-member-image button button-link-delete" data-index="' + index + '" style="margin-right: 10px; display: none;">' +
+            '<span class="dashicons dashicons-no"></span> حذف تصویر' +
+            '</button>' +
+            '</div>' +
+            '</td></tr>' +
+            '<tr><th><label>شماره تماس</label></th>' +
+            '<td><input type="text" name="staff_sub_members[' + index + '][phone]" value="" class="regular-text" placeholder="061-33153125"></td></tr>' +
+            '<tr><th><label>شماره داخلی</label></th>' +
+            '<td><input type="text" name="staff_sub_members[' + index + '][internal]" value="" class="regular-text" placeholder="123"></td></tr>' +
+            '</table>' +
+            '</div>';
+        
+        // اضافه کردن ردیف جدید
+        $container.append(newRowHtml);
+        
+        // به‌روزرسانی شماره ردیف‌ها
+        updateRowNumbers();
+        
+        console.log('New member row created successfully');
     }
 
 })(jQuery); 

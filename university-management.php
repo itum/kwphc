@@ -6755,6 +6755,13 @@ class University_Management {
         echo '<script>
         console.log("Sub-members section loaded");
         
+        // تعریف متغیرهای AJAX
+        window.um_admin_ajax = {
+            ajaxurl: "' . admin_url('admin-ajax.php') . '",
+            nonce: "' . wp_create_nonce('um_admin_nonce') . '"
+        };
+        console.log("AJAX variables defined:", window.um_admin_ajax);
+        
         // تست ساده برای دکمه افزودن
         document.addEventListener("DOMContentLoaded", function() {
             console.log("DOM loaded, looking for add button");
