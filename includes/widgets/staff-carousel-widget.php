@@ -524,6 +524,8 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                     if (!is_array($sub_members)) {
                         $sub_members = [];
                     }
+                    // Debug: Log sub-members data
+                    error_log('Staff Widget Debug - Post ID: ' . $post->ID . ', Sub-members: ' . print_r($sub_members, true));
                 }
             }
         }
@@ -561,12 +563,20 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'show_sub_members' => $show_sub_members,
         ]) . '\'>';
         
+        // Debug information
+        echo '<!-- Debug Info: show_sub_members=' . ($show_sub_members ? 'true' : 'false') . ', sub_members_count=' . count($sub_members) . ', is_singular=' . (is_singular('um_staff') ? 'true' : 'false') . ' -->';
+        
         // Show appropriate filter section based on the display mode
         if ($show_sub_members && !empty($sub_members)) {
             // Show sub-members info
             echo '<div class="um-staff-filter-info" style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: #2d5a2d;">';
             echo '<strong>' . esc_html__('کارمندان زیر مجموعه:', 'university-management') . '</strong> ';
             echo esc_html(count($sub_members)) . ' ' . esc_html__('نفر', 'university-management');
+            echo '</div>';
+        } elseif ($show_sub_members && empty($sub_members)) {
+            // Show message when sub-members is enabled but no sub-members found
+            echo '<div class="um-staff-filter-info" style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: #856404;">';
+            echo '<strong>' . esc_html__('هیچ کارمند زیر مجموعه‌ای یافت نشد', 'university-management') . '</strong>';
             echo '</div>';
         } elseif ('yes' === $s['show_filter'] && !is_wp_error($all_terms) && !$filter_by_current_category) {
             // Show normal filter buttons
