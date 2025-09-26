@@ -10,6 +10,7 @@
         var autoplayDelay = parseInt(settings.autoplay_delay) || 3000;
         var filterByCurrentCategory = settings.filter_by_current_category === true;
         var currentStaffCategories = settings.current_staff_categories || [];
+        var subMembers = settings.sub_members || [];
 
         var swiper = new Swiper($root.find('.swiper')[0], {
             slidesPerView: 1,
@@ -36,8 +37,23 @@
         // Store swiper instance for global access
         $root.data('swiper', swiper);
 
-        // Filter functionality - only if not filtering by current staff category
-        if (!filterByCurrentCategory) {
+        // Filter functionality based on the filtering method
+        if (subMembers.length > 0) {
+            // When sub-members are selected, show only those specific staff members
+            var $slides = $root.find('.swiper-slide');
+            $slides.each(function(){
+                var $slide = $(this);
+                var slideId = $slide.data('post-id') || $slide.find('[data-post-id]').data('post-id');
+                var show = slideId && subMembers.indexOf(parseInt(slideId)) !== -1;
+                $slide.toggle(show);
+            });
+            
+            // Update swiper after filtering
+            if (swiper && typeof swiper.update === 'function') {
+                swiper.update();
+            }
+        } else if (!filterByCurrentCategory) {
+            // Normal category filtering
             $root.on('click', '.um-staff-filter button', function(e){
                 e.preventDefault();
                 var $button = $(this);
@@ -184,9 +200,10 @@
         var $widget = $button.closest('.um-staff-carousel-widget');
         var settings = $widget.data('settings') || {};
         var filterByCurrentCategory = settings.filter_by_current_category === true;
+        var subMembers = settings.sub_members || [];
         
-        // Only handle filter clicks if not filtering by current staff category
-        if (filterByCurrentCategory) {
+        // Only handle filter clicks if not filtering by current staff category or sub-members
+        if (filterByCurrentCategory || subMembers.length > 0) {
             return;
         }
         

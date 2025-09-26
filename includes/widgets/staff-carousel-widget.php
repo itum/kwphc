@@ -42,6 +42,14 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'description' => um_translate('وقتی در صفحه پرسنل هستید، فقط پرسنل با دسته‌بندی مشابه نمایش داده می‌شود', __('وقتی در صفحه پرسنل هستید، فقط پرسنل با دسته‌بندی مشابه نمایش داده می‌شود','university-management')),
         ]);
 
+        $this->add_control('sub_members', [
+            'label' => um_translate('زیر مجموعه (اختیاری)', __('زیر مجموعه (اختیاری)','university-management')),
+            'type' => \Elementor\Controls_Manager::SELECT2,
+            'multiple' => true,
+            'options' => $this->get_staff_members(),
+            'description' => um_translate('پرسنل زیر مجموعه را انتخاب کنید تا در لیست مشابه نمایش داده شوند', __('پرسنل زیر مجموعه را انتخاب کنید تا در لیست مشابه نمایش داده شوند','university-management')),
+        ]);
+
         $this->add_control('show_internal', [
             'label' => um_translate('نمایش داخلی', __('نمایش داخلی','university-management')),
             'type' => \Elementor\Controls_Manager::SWITCHER,
@@ -487,6 +495,36 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
         return $opts;
     }
 
+    private function get_staff_members() {
+        $args = [
+            'post_type' => 'um_staff',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'title',
+            'order' => 'ASC'
+        ];
+        
+        $query = new WP_Query($args);
+        $staff_members = [];
+        
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $id = get_the_ID();
+                $first_name = get_post_meta($id, 'staff_first_name', true);
+                $last_name = get_post_meta($id, 'staff_last_name', true);
+                $name = trim($first_name . ' ' . $last_name);
+                if (empty($name)) {
+                    $name = get_the_title();
+                }
+                $staff_members[$id] = $name;
+            }
+            wp_reset_postdata();
+        }
+        
+        return $staff_members;
+    }
+
     protected function render() {
         $s = $this->get_settings_for_display();
 
@@ -510,8 +548,12 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        // Apply category filtering
-        if (!empty($s['categories'])) {
+        // Apply category filtering or sub-members filtering
+        if (!empty($s['sub_members'])) {
+            // If sub-members are selected, show only those specific staff members
+            $args['post__in'] = (array)$s['sub_members'];
+            $args['orderby'] = 'post__in'; // Maintain the order as selected
+        } elseif (!empty($s['categories'])) {
             $args['tax_query'] = [[
                 'taxonomy' => 'um_staff_category',
                 'field' => 'slug',
@@ -535,10 +577,28 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'autoplay_delay' => $s['autoplay_delay'] ?? 3000,
             'filter_by_current_category' => $filter_by_current_category,
             'current_staff_categories' => $current_staff_categories,
+            'sub_members' => !empty($s['sub_members']) ? (array)$s['sub_members'] : [],
         ]) . '\'>';
         
-        // Show filter buttons only if not filtering by current staff category
-        if ('yes' === $s['show_filter'] && !is_wp_error($all_terms) && !$filter_by_current_category) {
+        // Show appropriate filter section based on the filtering method
+        if (!empty($s['sub_members'])) {
+            // Show sub-members info
+            $sub_member_names = [];
+            foreach ((array)$s['sub_members'] as $member_id) {
+                $first_name = get_post_meta($member_id, 'staff_first_name', true);
+                $last_name = get_post_meta($member_id, 'staff_last_name', true);
+                $name = trim($first_name . ' ' . $last_name);
+                if (empty($name)) {
+                    $name = get_the_title($member_id);
+                }
+                $sub_member_names[] = $name;
+            }
+            echo '<div class="um-staff-filter-info" style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: #2d5a2d;">';
+            echo '<strong>' . esc_html__('نمایش زیر مجموعه انتخاب شده:', 'university-management') . '</strong> ';
+            echo esc_html(implode('، ', $sub_member_names));
+            echo '</div>';
+        } elseif ('yes' === $s['show_filter'] && !is_wp_error($all_terms) && !$filter_by_current_category) {
+            // Show normal filter buttons
             echo '<div class="um-staff-filter">';
             echo '<button class="active" data-term="all">' . esc_html__('همه', 'university-management') . '</button>';
             foreach ($all_terms as $t) {
@@ -579,7 +639,7 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                 }
 
                 // Debug: Add data attribute for debugging
-                echo '<div class="swiper-slide" data-terms="' . esc_attr($term_attr) . '" data-debug-terms="' . esc_attr($term_attr) . '">';
+                echo '<div class="swiper-slide" data-terms="' . esc_attr($term_attr) . '" data-debug-terms="' . esc_attr($term_attr) . '" data-post-id="' . esc_attr($id) . '">';
                 echo '<div class="card">';
                 echo '<div class="image"><img src="' . esc_url($img) . '" alt="' . esc_attr($name) . '"></div>';
                 echo '<div class="content">';
