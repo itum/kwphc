@@ -8,6 +8,8 @@
         var settings = $root.data('settings') || {};
         var autoplay = settings.autoplay === 'yes';
         var autoplayDelay = parseInt(settings.autoplay_delay) || 3000;
+        var filterByCurrentCategory = settings.filter_by_current_category === true;
+        var currentStaffCategories = settings.current_staff_categories || [];
 
         var swiper = new Swiper($root.find('.swiper')[0], {
             slidesPerView: 1,
@@ -34,34 +36,59 @@
         // Store swiper instance for global access
         $root.data('swiper', swiper);
 
-        // Filter functionality
-        $root.on('click', '.um-staff-filter button', function(e){
-            e.preventDefault();
-            var $button = $(this);
-            var term = $button.data('term');
-            
-            console.log('Filter clicked:', term); // Debug log
-            
-            // Update active state
-            $button.addClass('active').siblings().removeClass('active');
-            
-            // Filter slides
+        // Filter functionality - only if not filtering by current staff category
+        if (!filterByCurrentCategory) {
+            $root.on('click', '.um-staff-filter button', function(e){
+                e.preventDefault();
+                var $button = $(this);
+                var term = $button.data('term');
+                
+                console.log('Filter clicked:', term); // Debug log
+                
+                // Update active state
+                $button.addClass('active').siblings().removeClass('active');
+                
+                // Filter slides
+                var $slides = $root.find('.swiper-slide');
+                console.log('Total slides:', $slides.length); // Debug log
+                
+                $slides.each(function(){
+                    var $slide = $(this);
+                    var terms = ($slide.attr('data-terms') || '').split(' ');
+                    var show = term === 'all' || terms.indexOf(term) !== -1;
+                    console.log('Slide terms:', terms, 'Show:', show); // Debug log
+                    $slide.toggle(show);
+                });
+                
+                // Update swiper
+                if (swiper && typeof swiper.update === 'function') {
+                    swiper.update();
+                }
+            });
+        } else {
+            // When filtering by current staff category, ensure only matching slides are shown
             var $slides = $root.find('.swiper-slide');
-            console.log('Total slides:', $slides.length); // Debug log
-            
             $slides.each(function(){
                 var $slide = $(this);
-                var terms = ($slide.attr('data-terms') || '').split(' ');
-                var show = term === 'all' || terms.indexOf(term) !== -1;
-                console.log('Slide terms:', terms, 'Show:', show); // Debug log
+                var terms = ($slide.attr('data-terms') || '').split(' ').filter(function(t) { return t.length > 0; });
+                var show = false;
+                
+                // Check if any of the slide's terms match current staff categories
+                for (var i = 0; i < terms.length; i++) {
+                    if (currentStaffCategories.indexOf(terms[i]) !== -1) {
+                        show = true;
+                        break;
+                    }
+                }
+                
                 $slide.toggle(show);
             });
             
-            // Update swiper
+            // Update swiper after filtering
             if (swiper && typeof swiper.update === 'function') {
                 swiper.update();
             }
-        });
+        }
     };
 
     // Global functions for import/export
@@ -155,6 +182,14 @@
         e.preventDefault();
         var $button = $(this);
         var $widget = $button.closest('.um-staff-carousel-widget');
+        var settings = $widget.data('settings') || {};
+        var filterByCurrentCategory = settings.filter_by_current_category === true;
+        
+        // Only handle filter clicks if not filtering by current staff category
+        if (filterByCurrentCategory) {
+            return;
+        }
+        
         var term = $button.data('term');
         
         console.log('Global filter clicked:', term);

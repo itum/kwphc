@@ -35,6 +35,13 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'default' => 'yes',
         ]);
 
+        $this->add_control('filter_by_current_staff_category', [
+            'label' => um_translate('فیلتر بر اساس دسته‌بندی پرسنل فعلی', __('فیلتر بر اساس دسته‌بندی پرسنل فعلی','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'no',
+            'description' => um_translate('وقتی در صفحه پرسنل هستید، فقط پرسنل با دسته‌بندی مشابه نمایش داده می‌شود', __('وقتی در صفحه پرسنل هستید، فقط پرسنل با دسته‌بندی مشابه نمایش داده می‌شود','university-management')),
+        ]);
+
         $this->add_control('show_internal', [
             'label' => um_translate('نمایش داخلی', __('نمایش داخلی','university-management')),
             'type' => \Elementor\Controls_Manager::SWITCHER,
@@ -488,11 +495,34 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'posts_per_page' => !empty($s['posts_per_page']) ? intval($s['posts_per_page']) : 12,
             'post_status' => 'publish',
         ];
+
+        // Check if we should filter by current staff member's category
+        $filter_by_current_category = !empty($s['filter_by_current_staff_category']) && $s['filter_by_current_staff_category'] === 'yes';
+        $current_staff_categories = [];
+        
+        if ($filter_by_current_category && is_singular('um_staff')) {
+            global $post;
+            if ($post && $post->post_type === 'um_staff') {
+                $current_terms = wp_get_post_terms($post->ID, 'um_staff_category');
+                if (!is_wp_error($current_terms) && !empty($current_terms)) {
+                    $current_staff_categories = wp_list_pluck($current_terms, 'slug');
+                }
+            }
+        }
+
+        // Apply category filtering
         if (!empty($s['categories'])) {
             $args['tax_query'] = [[
                 'taxonomy' => 'um_staff_category',
                 'field' => 'slug',
                 'terms' => (array)$s['categories'],
+            ]];
+        } elseif ($filter_by_current_category && !empty($current_staff_categories)) {
+            // If filtering by current staff category is enabled and we have categories
+            $args['tax_query'] = [[
+                'taxonomy' => 'um_staff_category',
+                'field' => 'slug',
+                'terms' => $current_staff_categories,
             ]];
         }
 
@@ -503,14 +533,28 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
         echo '<div class="um-staff-carousel-widget" data-settings=\'' . json_encode([
             'autoplay' => $s['autoplay'] ?? 'no',
             'autoplay_delay' => $s['autoplay_delay'] ?? 3000,
+            'filter_by_current_category' => $filter_by_current_category,
+            'current_staff_categories' => $current_staff_categories,
         ]) . '\'>';
-        if ('yes' === $s['show_filter'] && !is_wp_error($all_terms)) {
+        
+        // Show filter buttons only if not filtering by current staff category
+        if ('yes' === $s['show_filter'] && !is_wp_error($all_terms) && !$filter_by_current_category) {
             echo '<div class="um-staff-filter">';
             echo '<button class="active" data-term="all">' . esc_html__('همه', 'university-management') . '</button>';
             foreach ($all_terms as $t) {
                 echo '<button data-term="' . esc_attr($t->slug) . '" data-debug-term="' . esc_attr($t->slug) . '">' . esc_html($t->name) . '</button>';
             }
             echo '</div>';
+        } elseif ($filter_by_current_category && !empty($current_staff_categories)) {
+            // Show a message indicating filtering by current staff category
+            $current_terms = wp_get_post_terms(get_the_ID(), 'um_staff_category');
+            if (!is_wp_error($current_terms) && !empty($current_terms)) {
+                $category_names = wp_list_pluck($current_terms, 'name');
+                echo '<div class="um-staff-filter-info" style="background: #f0f8ff; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: #1e2a78;">';
+                echo '<strong>' . esc_html__('نمایش پرسنل با دسته‌بندی مشابه:', 'university-management') . '</strong> ';
+                echo esc_html(implode('، ', $category_names));
+                echo '</div>';
+            }
         }
 
         echo '<div class="swiper"><div class="swiper-wrapper">';
