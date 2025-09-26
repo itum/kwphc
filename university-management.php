@@ -102,6 +102,7 @@ class University_Management {
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         add_action('save_post_um_staff', array($this, 'save_staff_meta'));
+        add_action('save_post', array($this, 'debug_save_post'), 5);
         add_action('admin_head', array($this, 'add_staff_nonce_once'));
         add_action('save_post_um_slides', array($this, 'save_slide_meta'));
         add_action('delete_post', array($this, 'maybe_resync_slides_on_delete'), 10, 1);
@@ -6679,6 +6680,18 @@ class University_Management {
         }
         if ($target_page) {
             list($updated,) = $this->export_slides_to_elementor_page($target_page);
+        }
+    }
+
+    /**
+     * Debug function to check if save_post is being called
+     */
+    public function debug_save_post($post_id) {
+        if (get_post_type($post_id) === 'um_staff') {
+            error_log('Debug Save Post - save_post called for um_staff post ID: ' . $post_id);
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-info is-dismissible"><p>Debug: save_post hook executed for um_staff!</p></div>';
+            });
         }
     }
 
