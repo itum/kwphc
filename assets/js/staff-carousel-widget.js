@@ -31,15 +31,33 @@
             }
         });
 
-        $root.on('click', '.um-staff-filter button', function(){
-            var term = $(this).data('term');
-            $(this).addClass('active').siblings().removeClass('active');
-            swiper.slides.each(function(idx, el){
-                var terms = (el.getAttribute('data-terms')||'').split(' ');
+        // Filter functionality
+        $root.on('click', '.um-staff-filter button', function(e){
+            e.preventDefault();
+            var $button = $(this);
+            var term = $button.data('term');
+            
+            console.log('Filter clicked:', term); // Debug log
+            
+            // Update active state
+            $button.addClass('active').siblings().removeClass('active');
+            
+            // Filter slides
+            var $slides = $root.find('.swiper-slide');
+            console.log('Total slides:', $slides.length); // Debug log
+            
+            $slides.each(function(){
+                var $slide = $(this);
+                var terms = ($slide.attr('data-terms') || '').split(' ');
                 var show = term === 'all' || terms.indexOf(term) !== -1;
-                el.style.display = show ? '' : 'none';
+                console.log('Slide terms:', terms, 'Show:', show); // Debug log
+                $slide.toggle(show);
             });
-            swiper.update();
+            
+            // Update swiper
+            if (swiper && typeof swiper.update === 'function') {
+                swiper.update();
+            }
         });
     };
 
