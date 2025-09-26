@@ -71,6 +71,9 @@ class University_Management {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         
+        // اضافه کردن script برای صفحات پرسنل
+        add_action('admin_head', array($this, 'add_staff_page_scripts'));
+        
         // ثبت پست‌تایپ‌ها
         add_action('init', array($this, 'register_post_types'));
 
@@ -1997,6 +2000,24 @@ class University_Management {
     }
 
     /**
+     * اضافه کردن script برای صفحات پرسنل
+     */
+    public function add_staff_page_scripts() {
+        global $pagenow, $post;
+        
+        // بررسی اینکه آیا در صفحه ویرایش پرسنل هستیم
+        if (($pagenow === 'post.php' || $pagenow === 'post-new.php') && 
+            (($post && $post->post_type === 'um_staff') || 
+             (isset($_GET['post_type']) && $_GET['post_type'] === 'um_staff'))) {
+            
+            // اضافه کردن script مستقیماً
+            $admin_js_url = UM_PLUGIN_URL . 'assets/js/admin.js';
+            echo '<script src="' . esc_url($admin_js_url) . '?v=' . UM_VERSION . '"></script>';
+            echo '<script>console.log("Staff page script loaded directly");</script>';
+        }
+    }
+
+    /**
      * بارگذاری فایل‌های CSS و JS در سمت مدیریت
      */
     public function enqueue_admin_assets($hook) {
@@ -2007,9 +2028,19 @@ class University_Management {
         
         // اگر در صفحه ویرایش پست هستیم، بررسی کنیم که پست تایپ پرسنل باشد
         if (strpos($hook, 'post.php') !== false || strpos($hook, 'post-new.php') !== false) {
-            global $post;
-            if (!$post || $post->post_type !== 'um_staff') {
-                return;
+            // بررسی از طریق GET parameter
+            $post_id = isset($_GET['post']) ? intval($_GET['post']) : 0;
+            if ($post_id > 0) {
+                $post_type = get_post_type($post_id);
+                if ($post_type !== 'um_staff') {
+                    return;
+                }
+            } elseif (strpos($hook, 'post-new.php') !== false) {
+                // برای پست جدید، بررسی کنیم که post_type در URL باشد
+                $post_type = isset($_GET['post_type']) ? sanitize_text_field($_GET['post_type']) : 'post';
+                if ($post_type !== 'um_staff') {
+                    return;
+                }
             }
         }
         
@@ -2040,6 +2071,16 @@ class University_Management {
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('um_admin_nonce')
             ));
+            
+            // Debug: اضافه کردن script برای تست
+            add_action('admin_footer', function() {
+                echo '<script>console.log("University Management Admin Script Enqueued Successfully");</script>';
+            });
+        } else {
+            // Debug: اگر فایل وجود نداشته باشد
+            add_action('admin_footer', function() {
+                echo '<script>console.error("Admin JS file not found: ' . $admin_js . '");</script>';
+            });
         }
         
         // منابع خاص صفحه تنظیمات عمومی
@@ -6709,6 +6750,27 @@ class University_Management {
         echo '<span class="dashicons dashicons-plus" style="vertical-align: middle; margin-left: 5px;"></span>';
         echo __('افزودن کارمند جدید', 'university-management');
         echo '</button>';
+        
+        // اضافه کردن script مستقیماً در HTML
+        echo '<script>
+        console.log("Sub-members section loaded");
+        
+        // تست ساده برای دکمه افزودن
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("DOM loaded, looking for add button");
+            var addBtn = document.getElementById("um-add-sub-member");
+            if (addBtn) {
+                console.log("Add button found, adding click listener");
+                addBtn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    console.log("Add button clicked!");
+                    alert("دکمه افزودن کار کرد!");
+                });
+            } else {
+                console.log("Add button not found");
+            }
+        });
+        </script>';
     }
 
     /**
