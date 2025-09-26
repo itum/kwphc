@@ -54,10 +54,19 @@
             return maxIndex + 1;
         }
         
-        // افزودن ردیف جدید زیر مجموعه
+        // افزودن ردیف جدید کارمند
         $(document).on('click', '#um-add-sub-member', function(e) {
             e.preventDefault();
+            console.log('Add button clicked'); // Debug log
             subMemberIndex = getNextIndex();
+            console.log('Next index:', subMemberIndex); // Debug log
+            
+            // بررسی وجود متغیرهای AJAX
+            if (typeof um_admin_ajax === 'undefined') {
+                console.error('um_admin_ajax is not defined');
+                alert('خطا در تنظیمات AJAX');
+                return;
+            }
             
             // درخواست AJAX برای دریافت HTML ردیف جدید
             $.ajax({
@@ -68,24 +77,32 @@
                     index: subMemberIndex,
                     nonce: um_admin_ajax.nonce
                 },
+                beforeSend: function() {
+                    console.log('Sending AJAX request...');
+                },
                 success: function(response) {
+                    console.log('AJAX response:', response); // Debug log
                     if (response.success) {
                         $('#um-sub-members-container').append(response.data);
                         updateRowNumbers();
+                        console.log('Row added successfully');
                     } else {
+                        console.error('AJAX error:', response.data);
                         alert('خطا در افزودن ردیف جدید: ' + response.data);
                     }
                 },
-                error: function() {
-                    alert('خطا در ارتباط با سرور');
+                error: function(xhr, status, error) {
+                    console.error('AJAX request failed:', status, error);
+                    console.error('Response:', xhr.responseText);
+                    alert('خطا در ارتباط با سرور: ' + error);
                 }
             });
         });
         
-        // حذف ردیف زیر مجموعه
+        // حذف ردیف کارمند
         $(document).on('click', '.um-remove-sub-member', function(e) {
             e.preventDefault();
-            if (confirm('آیا از حذف این زیر مجموعه اطمینان دارید؟')) {
+            if (confirm('آیا از حذف این کارمند اطمینان دارید؟')) {
                 $(this).closest('.um-sub-member-row').remove();
                 updateRowNumbers();
             }
@@ -144,7 +161,7 @@
         // به‌روزرسانی شماره ردیف‌ها
         function updateRowNumbers() {
             $('.um-sub-member-row').each(function(index) {
-                $(this).find('h4').text('زیر مجموعه ' + (index + 1));
+                $(this).find('h4').text('کارمند ' + (index + 1));
             });
         }
     }

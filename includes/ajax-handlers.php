@@ -133,14 +133,9 @@ function um_handle_get_sub_member_row() {
     // ایجاد instance از کلاس اصلی برای دسترسی به متد render_sub_member_row
     $university_management = new University_Management();
     
-    // استفاده از reflection برای دسترسی به متد private
-    $reflection = new ReflectionClass($university_management);
-    $method = $reflection->getMethod('render_sub_member_row');
-    $method->setAccessible(true);
-    
     // گرفتن HTML ردیف
     ob_start();
-    $method->invoke($university_management, $index, []);
+    $university_management->render_sub_member_row($index, []);
     $html = ob_get_clean();
     
     wp_send_json_success($html);

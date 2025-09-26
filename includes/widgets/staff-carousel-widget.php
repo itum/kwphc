@@ -43,10 +43,10 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
         ]);
 
         $this->add_control('show_sub_members', [
-            'label' => um_translate('نمایش زیر مجموعه پرسنل', __('نمایش زیر مجموعه پرسنل','university-management')),
+            'label' => um_translate('نمایش کارمندان زیر مجموعه', __('نمایش کارمندان زیر مجموعه','university-management')),
             'type' => \Elementor\Controls_Manager::SWITCHER,
             'default' => 'no',
-            'description' => um_translate('زیر مجموعه پرسنل فعلی را نمایش می‌دهد', __('زیر مجموعه پرسنل فعلی را نمایش می‌دهد','university-management')),
+            'description' => um_translate('کارمندان زیر مجموعه پرسنل فعلی را نمایش می‌دهد', __('کارمندان زیر مجموعه پرسنل فعلی را نمایش می‌دهد','university-management')),
         ]);
 
         $this->add_control('show_internal', [
@@ -565,7 +565,7 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
         if ($show_sub_members && !empty($sub_members)) {
             // Show sub-members info
             echo '<div class="um-staff-filter-info" style="background: #e8f5e8; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; color: #2d5a2d;">';
-            echo '<strong>' . esc_html__('زیر مجموعه پرسنل:', 'university-management') . '</strong> ';
+            echo '<strong>' . esc_html__('کارمندان زیر مجموعه:', 'university-management') . '</strong> ';
             echo esc_html(count($sub_members)) . ' ' . esc_html__('نفر', 'university-management');
             echo '</div>';
         } elseif ('yes' === $s['show_filter'] && !is_wp_error($all_terms) && !$filter_by_current_category) {

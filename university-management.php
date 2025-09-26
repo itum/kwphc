@@ -6692,7 +6692,7 @@ class University_Management {
             $sub_members = [];
         }
 
-        echo '<h3 style="margin-top: 30px; margin-bottom: 15px; color: #1e2a78;">' . __('زیر مجموعه پرسنل', 'university-management') . '</h3>';
+        echo '<h3 style="margin-top: 30px; margin-bottom: 15px; color: #1e2a78;">' . __('کارمندان زیر مجموعه', 'university-management') . '</h3>';
         echo '<div id="um-sub-members-container">';
         
         if (!empty($sub_members)) {
@@ -6707,14 +6707,14 @@ class University_Management {
         echo '</div>';
         echo '<button type="button" id="um-add-sub-member" class="button button-secondary" style="margin-top: 10px;">';
         echo '<span class="dashicons dashicons-plus" style="vertical-align: middle; margin-left: 5px;"></span>';
-        echo __('افزودن زیر مجموعه جدید', 'university-management');
+        echo __('افزودن کارمند جدید', 'university-management');
         echo '</button>';
     }
 
     /**
      * رندر ردیف زیر مجموعه پرسنل
      */
-    private function render_sub_member_row($index, $member = []) {
+    public function render_sub_member_row($index, $member = []) {
         $member = wp_parse_args($member, [
             'first_name' => '',
             'last_name' => '',
@@ -6727,7 +6727,7 @@ class University_Management {
         echo '<div class="um-sub-member-row" data-index="' . esc_attr($index) . '" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">';
         
         echo '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">';
-        echo '<h4 style="margin: 0; color: #1e2a78;">' . sprintf(__('زیر مجموعه %d', 'university-management'), $index + 1) . '</h4>';
+        echo '<h4 style="margin: 0; color: #1e2a78;">' . sprintf(__('کارمند %d', 'university-management'), $index + 1) . '</h4>';
         echo '<button type="button" class="um-remove-sub-member button button-link-delete" style="color: #a00;">';
         echo '<span class="dashicons dashicons-trash"></span> ' . __('حذف', 'university-management');
         echo '</button>';
