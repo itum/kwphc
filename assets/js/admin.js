@@ -7,6 +7,8 @@
 
     // آماده شدن DOM
     $(document).ready(function() {
+        console.log('University Management Admin JS loaded');
+        
         // اضافه کردن کلاس برای استایل‌دهی
         $('.wrap').addClass('university-management-admin');
         
@@ -32,9 +34,7 @@
             }
         });
         
-        console.log('University Management Admin JS loaded');
-        
-        // مدیریت زیر مجموعه پرسنل
+        // مدیریت کارمندان زیر مجموعه
         initSubMembersManagement();
     });
 
@@ -102,18 +102,37 @@
         // حذف ردیف کارمند
         $(document).on('click', '.um-remove-sub-member', function(e) {
             e.preventDefault();
+            console.log('Remove member button clicked'); // Debug log
+            
             if (confirm('آیا از حذف این کارمند اطمینان دارید؟')) {
-                $(this).closest('.um-sub-member-row').remove();
+                var $row = $(this).closest('.um-sub-member-row');
+                console.log('Removing row:', $row.length); // Debug log
+                
+                $row.remove();
                 updateRowNumbers();
+                
+                console.log('Member removed successfully'); // Debug log
             }
         });
         
-        // آپلود تصویر زیر مجموعه
+        // آپلود تصویر کارمند
         $(document).on('click', '.um-upload-sub-member-image', function(e) {
             e.preventDefault();
+            console.log('Upload image button clicked'); // Debug log
+            
             var index = $(this).data('index');
+            console.log('Image index:', index); // Debug log
+            
+            // بررسی وجود wp.media
+            if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
+                console.error('wp.media is not available, using fallback');
+                // استفاده از fallback - ایجاد input file
+                createFileInput(index);
+                return;
+            }
+            
             var frame = wp.media({
-                title: 'انتخاب تصویر زیر مجموعه',
+                title: 'انتخاب تصویر کارمند',
                 button: {
                     text: 'انتخاب تصویر'
                 },
@@ -121,32 +140,72 @@
             });
             
             frame.on('select', function() {
+                console.log('Image selected'); // Debug log
                 var attachment = frame.state().get('selection').first().toJSON();
-                var $row = $('.um-sub-member-row[data-index="' + index + '"]');
+                console.log('Selected attachment:', attachment); // Debug log
                 
-                // به‌روزرسانی hidden input
-                $row.find('.um-sub-member-image-id').val(attachment.id);
-                
-                // نمایش تصویر
-                var $preview = $row.find('.um-sub-member-image-preview');
-                if ($preview.length === 0) {
-                    $preview = $('<div class="um-sub-member-image-preview" style="margin-bottom: 10px;"></div>');
-                    $row.find('.um-sub-member-image-container').prepend($preview);
-                }
-                $preview.html('<img src="' + attachment.sizes.thumbnail.url + '" style="max-width: 150px; height: auto; border-radius: 4px;">');
-                
-                // نمایش دکمه حذف تصویر
-                $row.find('.um-remove-sub-member-image').show();
+                updateImagePreview(index, attachment.id, attachment.url);
             });
             
             frame.open();
         });
         
-        // حذف تصویر زیر مجموعه
+        // تابع fallback برای آپلود فایل
+        function createFileInput(index) {
+            var $row = $('.um-sub-member-row[data-index="' + index + '"]');
+            var $container = $row.find('.um-sub-member-image-container');
+            
+            // حذف input قبلی اگر وجود داشته باشد
+            $container.find('input[type="file"]').remove();
+            
+            // ایجاد input file جدید
+            var $fileInput = $('<input type="file" accept="image/*" style="margin-top: 10px;">');
+            $fileInput.on('change', function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        updateImagePreview(index, 0, e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            $container.append($fileInput);
+        }
+        
+        // تابع مشترک برای به‌روزرسانی پیش‌نمایش تصویر
+        function updateImagePreview(index, imageId, imageUrl) {
+            var $row = $('.um-sub-member-row[data-index="' + index + '"]');
+            console.log('Target row found:', $row.length); // Debug log
+            
+            // به‌روزرسانی hidden input
+            $row.find('.um-sub-member-image-id').val(imageId);
+            
+            // نمایش تصویر
+            var $preview = $row.find('.um-sub-member-image-preview');
+            if ($preview.length === 0) {
+                $preview = $('<div class="um-sub-member-image-preview" style="margin-bottom: 10px;"></div>');
+                $row.find('.um-sub-member-image-container').prepend($preview);
+            }
+            
+            $preview.html('<img src="' + imageUrl + '" style="max-width: 150px; height: auto; border-radius: 4px;">');
+            
+            // نمایش دکمه حذف تصویر
+            $row.find('.um-remove-sub-member-image').show();
+            console.log('Image preview updated'); // Debug log
+        }
+        
+        // حذف تصویر کارمند
         $(document).on('click', '.um-remove-sub-member-image', function(e) {
             e.preventDefault();
+            console.log('Remove image button clicked'); // Debug log
+            
             var index = $(this).data('index');
+            console.log('Remove image index:', index); // Debug log
+            
             var $row = $('.um-sub-member-row[data-index="' + index + '"]');
+            console.log('Target row for removal:', $row.length); // Debug log
             
             // پاک کردن hidden input
             $row.find('.um-sub-member-image-id').val('');
@@ -156,6 +215,8 @@
             
             // مخفی کردن دکمه حذف تصویر
             $(this).hide();
+            
+            console.log('Image removed successfully'); // Debug log
         });
         
         // به‌روزرسانی شماره ردیف‌ها
@@ -163,7 +224,33 @@
             $('.um-sub-member-row').each(function(index) {
                 $(this).find('h4').text('کارمند ' + (index + 1));
             });
+            console.log('Row numbers updated. Total rows:', $('.um-sub-member-row').length);
         }
+        
+        // تابع تست برای بررسی عملکرد
+        function testSubMembersFunctionality() {
+            console.log('=== Testing Sub-Members Functionality ===');
+            console.log('jQuery version:', $.fn.jquery);
+            console.log('wp.media available:', typeof wp !== 'undefined' && typeof wp.media !== 'undefined');
+            console.log('um_admin_ajax available:', typeof um_admin_ajax !== 'undefined');
+            console.log('Total sub-member rows:', $('.um-sub-member-row').length);
+            console.log('Add button exists:', $('#um-add-sub-member').length);
+            console.log('Container exists:', $('#um-sub-members-container').length);
+        }
+        
+        // اجرای تست پس از لود شدن صفحه
+        setTimeout(testSubMembersFunctionality, 1000);
+        
+        // تست کلیک روی دکمه‌ها
+        $(document).on('click', 'button', function() {
+            var $btn = $(this);
+            if ($btn.hasClass('um-upload-sub-member-image') || 
+                $btn.hasClass('um-remove-sub-member-image') || 
+                $btn.hasClass('um-remove-sub-member') ||
+                $btn.attr('id') === 'um-add-sub-member') {
+                console.log('Button clicked:', $btn.attr('class'), $btn.attr('id'));
+            }
+        });
     }
 
 })(jQuery); 
