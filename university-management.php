@@ -6518,6 +6518,11 @@ class University_Management {
         error_log('Staff Meta Save Debug - POST method: ' . $_SERVER['REQUEST_METHOD']);
         error_log('Staff Meta Save Debug - POST data keys: ' . implode(', ', array_keys($_POST)));
         
+        // اضافه کردن alert برای تست
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success is-dismissible"><p>Staff Meta Save Function Executed!</p></div>';
+        });
+        
         // جلوگیری از اجرا در حالت اتوسیو یا درخواست‌های سریع
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             error_log('Staff Meta Save Debug - Autosave detected, skipping');
@@ -6690,6 +6695,7 @@ class University_Management {
                 echo '<script>console.log("Adding staff nonce field");</script>';
                 wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
                 $nonce_added = true;
+                $GLOBALS['um_nonce_added'] = true;
             }
         }
     }
@@ -6820,6 +6826,14 @@ class University_Management {
                     subMembers.forEach(function(input, index) {
                         console.log("Input " + index + ":", input.name, "=", input.value);
                     });
+                    
+                    // بررسی nonce
+                    var nonceField = document.querySelector("input[name=\"um_staff_meta_nonce\"]");
+                    if (nonceField) {
+                        console.log("Nonce field found:", nonceField.value);
+                    } else {
+                        console.log("Nonce field NOT found!");
+                    }
                 });
             }
         });
