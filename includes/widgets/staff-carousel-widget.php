@@ -47,6 +47,24 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'default' => 'yes',
         ]);
 
+        $this->add_control('show_name', [
+            'label' => um_translate('نمایش نام', __('نمایش نام','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'yes',
+        ]);
+
+        $this->add_control('show_position', [
+            'label' => um_translate('نمایش سمت', __('نمایش سمت','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'yes',
+        ]);
+
+        $this->add_control('show_button', [
+            'label' => um_translate('نمایش دکمه', __('نمایش دکمه','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'yes',
+        ]);
+
         $this->add_control('autoplay', [
             'label' => um_translate('پخش خودکار', __('پخش خودکار','university-management')),
             'type' => \Elementor\Controls_Manager::SWITCHER,
@@ -520,8 +538,12 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                 echo '<div class="card">';
                 echo '<div class="image"><img src="' . esc_url($img) . '" alt="' . esc_attr($name) . '"></div>';
                 echo '<div class="content">';
-                echo '<h3 class="name">' . esc_html($name ?: get_the_title()) . '</h3>';
-                if (!empty($position)) { echo '<div class="position">' . esc_html($position) . '</div>'; }
+                if ('yes' === $s['show_name']) {
+                    echo '<h3 class="name">' . esc_html($name ?: get_the_title()) . '</h3>';
+                }
+                if ('yes' === $s['show_position'] && !empty($position)) { 
+                    echo '<div class="position">' . esc_html($position) . '</div>'; 
+                }
                 echo '<div class="meta">';
                 if ('yes' === $s['show_phone'] && !empty($phone)) {
                     echo '<div class="row"><span>تلفن:</span><a href="tel:' . esc_attr($phone) . '">' . esc_html($phone) . '</a></div>';
@@ -530,14 +552,16 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                     echo '<div class="row"><span>داخلی:</span><span>' . esc_html($internal) . '</span></div>';
                 }
                 echo '</div>';
-                $button_text = !empty($s['button_text']) ? $s['button_text'] : 'اطلاعات بیشتر';
-                $button_icon = !empty($s['button_icon']['value']) ? \Elementor\Icons_Manager::render_icon($s['button_icon'], ['aria-hidden' => 'true']) : '';
-                echo '<a class="btn" href="' . esc_url($link) . '">';
-                if ($button_icon) {
-                    echo '<span class="btn-icon">' . $button_icon . '</span>';
+                if ('yes' === $s['show_button']) {
+                    $button_text = !empty($s['button_text']) ? $s['button_text'] : 'اطلاعات بیشتر';
+                    $button_icon = !empty($s['button_icon']['value']) ? \Elementor\Icons_Manager::render_icon($s['button_icon'], ['aria-hidden' => 'true']) : '';
+                    echo '<a class="btn" href="' . esc_url($link) . '">';
+                    if ($button_icon) {
+                        echo '<span class="btn-icon">' . $button_icon . '</span>';
+                    }
+                    echo '<span class="btn-text">' . esc_html($button_text) . '</span>';
+                    echo '</a>';
                 }
-                echo '<span class="btn-text">' . esc_html($button_text) . '</span>';
-                echo '</a>';
                 echo '</div></div>';
                 echo '</div>';
             }
