@@ -523,11 +523,11 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                 echo '<h3 class="name">' . esc_html($name ?: get_the_title()) . '</h3>';
                 if (!empty($position)) { echo '<div class="position">' . esc_html($position) . '</div>'; }
                 echo '<div class="meta">';
-                if ('yes' === $s['show_internal'] && !empty($internal)) {
-                    echo '<div class="row"><span>داخلی:</span><span>' . esc_html($internal) . '</span></div>';
-                }
                 if ('yes' === $s['show_phone'] && !empty($phone)) {
                     echo '<div class="row"><span>تلفن:</span><a href="tel:' . esc_attr($phone) . '">' . esc_html($phone) . '</a></div>';
+                }
+                if ('yes' === $s['show_internal'] && !empty($internal)) {
+                    echo '<div class="row"><span>داخلی:</span><span>' . esc_html($internal) . '</span></div>';
                 }
                 echo '</div>';
                 $button_text = !empty($s['button_text']) ? $s['button_text'] : 'اطلاعات بیشتر';

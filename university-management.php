@@ -2505,6 +2505,35 @@ class University_Management {
 
         register_post_type( 'um_staff', $staff_args );
 
+        // ثبت تاکسونومی دسته‌بندی پرسنل
+        $staff_cat_labels = array(
+            'name'              => __( 'دسته‌بندی‌های پرسنل', 'university-management' ),
+            'singular_name'     => __( 'دسته‌بندی پرسنل', 'university-management' ),
+            'search_items'      => __( 'جستجوی دسته‌ها', 'university-management' ),
+            'all_items'         => __( 'همه دسته‌ها', 'university-management' ),
+            'parent_item'       => __( 'دسته والد', 'university-management' ),
+            'parent_item_colon' => __( 'دسته والد:', 'university-management' ),
+            'edit_item'         => __( 'ویرایش دسته', 'university-management' ),
+            'update_item'       => __( 'به‌روزرسانی دسته', 'university-management' ),
+            'add_new_item'      => __( 'افزودن دسته جدید', 'university-management' ),
+            'new_item_name'     => __( 'نام دسته جدید', 'university-management' ),
+            'menu_name'         => __( 'دسته‌بندی پرسنل', 'university-management' ),
+        );
+
+        register_taxonomy(
+            'um_staff_category',
+            array('um_staff'),
+            array(
+                'hierarchical'      => true,
+                'labels'            => $staff_cat_labels,
+                'show_ui'           => true,
+                'show_admin_column' => true,
+                'query_var'         => true,
+                'show_in_rest'      => true,
+                'rewrite'           => array('slug' => 'staff-category'),
+            )
+        );
+
         /* ثبت کلیدهای متای پرسنل برای REST و استفاده در زمینه‌های دلخواه */
         $staff_meta_keys = [
             'staff_first_name'          => 'string',
@@ -2521,6 +2550,10 @@ class University_Management {
             'staff_total_projects'      => 'integer',
             'staff_successful_projects' => 'integer',
             'staff_thumbnail_url'       => 'string',
+            // کلیدهای متداول برای هماهنگی با ویجت پرسنل
+            'staff_phone'               => 'string',
+            'staff_internal'            => 'string',
+            'staff_position'            => 'string',
         ];
 
         foreach ($staff_meta_keys as $meta_key => $type) {
@@ -6473,6 +6506,8 @@ class University_Management {
         $text_fields = [
             'staff_first_name'  => 'staff_first_name',
             'staff_last_name'   => 'staff_last_name',
+            'staff_phone'       => 'staff_phone',
+            'staff_internal'    => 'staff_internal',
         ];
 
         for ($i = 1; $i <= 4; $i++) {
@@ -6560,6 +6595,8 @@ class University_Management {
         $meta = [
             'first_name'          => get_post_meta($post->ID, 'staff_first_name', true),
             'last_name'           => get_post_meta($post->ID, 'staff_last_name', true),
+            'phone'               => get_post_meta($post->ID, 'staff_phone', true),
+            'internal'            => get_post_meta($post->ID, 'staff_internal', true),
             'title_1'             => get_post_meta($post->ID, 'staff_title_1', true),
             'subtitle_1'          => get_post_meta($post->ID, 'staff_subtitle_1', true),
             'title_2'             => get_post_meta($post->ID, 'staff_title_2', true),
@@ -6580,6 +6617,12 @@ class University_Management {
 
         echo '<tr><th><label for="staff_last_name">' . __('نام خانوادگی', 'university-management') . '</label></th>';
         echo '<td><input type="text" id="staff_last_name" name="staff_last_name" value="' . esc_attr($meta['last_name']) . '" class="regular-text"></td></tr>';
+
+        echo '<tr><th><label for="staff_phone">' . __('شماره تماس', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="staff_phone" name="staff_phone" value="' . esc_attr($meta['phone']) . '" class="regular-text" placeholder="061-33153125"></td></tr>';
+
+        echo '<tr><th><label for="staff_internal">' . __('شماره داخلی', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="staff_internal" name="staff_internal" value="' . esc_attr($meta['internal']) . '" class="regular-text" placeholder="123"></td></tr>';
 
         for ($i = 1; $i <= 4; $i++) {
             echo '<tr><th><label for="staff_title_' . $i . '">' . sprintf(__('عنوان %d', 'university-management'), $i) . '</label></th>';
