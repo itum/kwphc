@@ -508,7 +508,7 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             echo '<div class="um-staff-filter">';
             echo '<button class="active" data-term="all">' . esc_html__('همه', 'university-management') . '</button>';
             foreach ($all_terms as $t) {
-                echo '<button data-term="' . esc_attr($t->slug) . '">' . esc_html($t->name) . '</button>';
+                echo '<button data-term="' . esc_attr($t->slug) . '" data-debug-term="' . esc_attr($t->slug) . '">' . esc_html($t->name) . '</button>';
             }
             echo '</div>';
         }
@@ -534,7 +534,8 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                     $position = $terms[0]->name; // first category as position
                 }
 
-                echo '<div class="swiper-slide" data-terms="' . esc_attr($term_attr) . '">';
+                // Debug: Add data attribute for debugging
+                echo '<div class="swiper-slide" data-terms="' . esc_attr($term_attr) . '" data-debug-terms="' . esc_attr($term_attr) . '">';
                 echo '<div class="card">';
                 echo '<div class="image"><img src="' . esc_url($img) . '" alt="' . esc_attr($name) . '"></div>';
                 echo '<div class="content">';
