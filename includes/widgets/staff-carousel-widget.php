@@ -415,6 +415,43 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
         ]);
 
         $this->end_controls_section();
+
+        // Import/Export Section
+        $this->start_controls_section('import_export', [
+            'label' => um_translate('کپی تنظیمات', __('کپی تنظیمات','university-management')),
+            'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
+        ]);
+
+        $this->add_control('export_settings', [
+            'label' => um_translate('کپی تنظیمات فعلی', __('کپی تنظیمات فعلی','university-management')),
+            'type' => \Elementor\Controls_Manager::RAW_HTML,
+            'raw' => '<button type="button" class="elementor-button elementor-button-success" onclick="umExportStaffCarouselSettings(this)">کپی تنظیمات</button>',
+        ]);
+
+        $this->add_control('import_settings', [
+            'label' => um_translate('وارد کردن تنظیمات', __('وارد کردن تنظیمات','university-management')),
+            'type' => \Elementor\Controls_Manager::TEXTAREA,
+            'placeholder' => 'تنظیمات کپی شده را اینجا قرار دهید...',
+            'rows' => 4,
+        ]);
+
+        $this->add_control('import_button', [
+            'label' => um_translate('اعمال تنظیمات', __('اعمال تنظیمات','university-management')),
+            'type' => \Elementor\Controls_Manager::RAW_HTML,
+            'raw' => '<button type="button" class="elementor-button elementor-button-default" onclick="umImportStaffCarouselSettings(this)">اعمال تنظیمات</button>',
+        ]);
+
+        $this->add_control('import_help', [
+            'type' => \Elementor\Controls_Manager::RAW_HTML,
+            'raw' => '<div style="background: #f0f0f1; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                <strong>راهنمای استفاده:</strong><br>
+                1. تنظیمات ویجت را کپی کنید<br>
+                2. در ویجت جدید، تنظیمات کپی شده را در فیلد بالا قرار دهید<br>
+                3. روی "اعمال تنظیمات" کلیک کنید
+            </div>',
+        ]);
+
+        $this->end_controls_section();
     }
 
     private function get_staff_categories() {
