@@ -35,6 +35,18 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'default' => 'yes',
         ]);
 
+        $this->add_control('show_internal', [
+            'label' => um_translate('نمایش داخلی', __('نمایش داخلی','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'yes',
+        ]);
+
+        $this->add_control('show_phone', [
+            'label' => um_translate('نمایش شماره تماس', __('نمایش شماره تماس','university-management')),
+            'type' => \Elementor\Controls_Manager::SWITCHER,
+            'default' => 'yes',
+        ]);
+
         $this->end_controls_section();
 
         // Style: Card
@@ -210,29 +222,32 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                 $id = get_the_ID();
                 $first = get_post_meta($id, 'staff_first_name', true);
                 $last = get_post_meta($id, 'staff_last_name', true);
-                $position = get_post_meta($id, 'staff_position', true);
+                // Get position from first assigned category name
+                $position = '';
                 $internal = get_post_meta($id, 'staff_internal', true);
                 $phone = get_post_meta($id, 'staff_phone', true);
                 $name = trim($first . ' ' . $last);
                 $img = get_the_post_thumbnail_url($id, 'medium_large');
                 if (!$img) { $img = plugins_url('assets/images/video-placeholder.jpg', dirname(__FILE__,2)); }
                 $link = get_permalink($id);
-                $terms = wp_get_post_terms($id, 'um_staff_category', ['fields'=>'slugs']);
-                $term_attr = !is_wp_error($terms) ? implode(' ', $terms) : '';
+                $terms = wp_get_post_terms($id, 'um_staff_category');
+                $term_attr = '';
+                if (!is_wp_error($terms) && !empty($terms)) {
+                    $term_attr = implode(' ', wp_list_pluck($terms, 'slug'));
+                    $position = $terms[0]->name; // first category as position
+                }
 
                 echo '<div class="swiper-slide" data-terms="' . esc_attr($term_attr) . '">';
                 echo '<div class="card">';
                 echo '<div class="image"><img src="' . esc_url($img) . '" alt="' . esc_attr($name) . '"></div>';
                 echo '<div class="content">';
                 echo '<h3 class="name">' . esc_html($name ?: get_the_title()) . '</h3>';
-                if (!empty($position)) {
-                    echo '<div class="position">' . esc_html($position) . '</div>';
-                }
+                if (!empty($position)) { echo '<div class="position">' . esc_html($position) . '</div>'; }
                 echo '<div class="meta">';
-                if (!empty($internal)) {
+                if ('yes' === $s['show_internal'] && !empty($internal)) {
                     echo '<div class="row"><span>داخلی:</span><span>' . esc_html($internal) . '</span></div>';
                 }
-                if (!empty($phone)) {
+                if ('yes' === $s['show_phone'] && !empty($phone)) {
                     echo '<div class="row"><span>تلفن:</span><a href="tel:' . esc_attr($phone) . '">' . esc_html($phone) . '</a></div>';
                 }
                 echo '</div>';
