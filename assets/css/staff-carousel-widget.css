@@ -10,7 +10,10 @@
 .um-staff-carousel-widget .position{color:#6b7280;font-size:13px;text-align:center}
 .um-staff-carousel-widget .meta{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .um-staff-carousel-widget .row{display:flex;justify-content:space-between;color:#555;font-size:14px}
-.um-staff-carousel-widget .btn{margin-top:8px;background:#1e2a78;color:#fff;border:1px solid #1e2a78;text-decoration:none;padding:10px 14px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center}
+.um-staff-carousel-widget .btn{margin-top:8px;background:#1e2a78;color:#fff;border:1px solid #1e2a78;text-decoration:none;padding:10px 14px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+
+.um-staff-carousel-widget .btn-icon{display:inline-flex;align-items:center;font-size:14px}
+.um-staff-carousel-widget .btn-text{display:inline-block}
 
 /* hover */
 .um-staff-carousel-widget .btn:hover{background:#0f1b5f;border-color:#0f1b5f}

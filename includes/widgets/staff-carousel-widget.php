@@ -63,6 +63,22 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'condition' => ['autoplay' => 'yes'],
         ]);
 
+        $this->add_control('button_text', [
+            'label' => um_translate('متن دکمه', __('متن دکمه','university-management')),
+            'type' => \Elementor\Controls_Manager::TEXT,
+            'default' => 'اطلاعات بیشتر',
+            'placeholder' => 'اطلاعات بیشتر',
+        ]);
+
+        $this->add_control('button_icon', [
+            'label' => um_translate('آیکون دکمه', __('آیکون دکمه','university-management')),
+            'type' => \Elementor\Controls_Manager::ICONS,
+            'default' => [
+                'value' => '',
+                'library' => 'solid',
+            ],
+        ]);
+
         $this->end_controls_section();
 
         // Style: Card
@@ -189,6 +205,24 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
             'size_units' => ['px'],
             'range' => ['px' => ['min' => 0, 'max' => 40]],
             'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .btn' => 'border-radius: {{SIZE}}{{UNIT}};' ],
+        ]);
+
+        $this->add_control('button_icon_size', [
+            'label' => um_translate('اندازه آیکون', __('اندازه آیکون','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 10, 'max' => 30]],
+            'default' => ['size' => 14, 'unit' => 'px'],
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .btn-icon' => 'font-size: {{SIZE}}{{UNIT}};' ],
+        ]);
+
+        $this->add_control('button_icon_spacing', [
+            'label' => um_translate('فاصله آیکون از متن', __('فاصله آیکون از متن','university-management')),
+            'type' => \Elementor\Controls_Manager::SLIDER,
+            'size_units' => ['px'],
+            'range' => ['px' => ['min' => 0, 'max' => 20]],
+            'default' => ['size' => 6, 'unit' => 'px'],
+            'selectors' => [ '{{WRAPPER}} .um-staff-carousel-widget .btn' => 'gap: {{SIZE}}{{UNIT}};' ],
         ]);
 
         $this->end_controls_section();
@@ -459,7 +493,14 @@ class UM_Staff_Carousel_Widget extends \Elementor\Widget_Base {
                     echo '<div class="row"><span>تلفن:</span><a href="tel:' . esc_attr($phone) . '">' . esc_html($phone) . '</a></div>';
                 }
                 echo '</div>';
-                echo '<a class="btn" href="' . esc_url($link) . '">' . esc_html__('اطلاعات بیشتر', 'university-management') . '</a>';
+                $button_text = !empty($s['button_text']) ? $s['button_text'] : 'اطلاعات بیشتر';
+                $button_icon = !empty($s['button_icon']['value']) ? \Elementor\Icons_Manager::render_icon($s['button_icon'], ['aria-hidden' => 'true']) : '';
+                echo '<a class="btn" href="' . esc_url($link) . '">';
+                if ($button_icon) {
+                    echo '<span class="btn-icon">' . $button_icon . '</span>';
+                }
+                echo '<span class="btn-text">' . esc_html($button_text) . '</span>';
+                echo '</a>';
                 echo '</div></div>';
                 echo '</div>';
             }
