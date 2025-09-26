@@ -6513,15 +6513,21 @@ class University_Management {
      * ایجاد کلیدهای متای پیشفرض برای پرسنل تا در بخش "زمینه‌های دلخواه" قابل انتخاب باشند
      */
     public function save_staff_meta($post_id) {
+        error_log('Staff Meta Save Debug - Function called for post ID: ' . $post_id);
+        
         // جلوگیری از اجرا در حالت اتوسیو یا درخواست‌های سریع
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            error_log('Staff Meta Save Debug - Autosave detected, skipping');
             return;
         }
 
         // بررسی nonce
         if (!isset($_POST['um_staff_meta_nonce']) || !wp_verify_nonce($_POST['um_staff_meta_nonce'], 'um_save_staff_meta')) {
+            error_log('Staff Meta Save Debug - Nonce verification failed');
             return;
         }
+        
+        error_log('Staff Meta Save Debug - Nonce verification passed');
 
         // دسترسی کاربر
         if (!current_user_can('edit_post', $post_id)) {
@@ -6596,6 +6602,8 @@ class University_Management {
         }
 
         // ذخیره زیر مجموعه پرسنل
+        error_log('Staff Meta Save Debug - POST data: ' . print_r($_POST, true));
+        
         if (isset($_POST['staff_sub_members']) && is_array($_POST['staff_sub_members'])) {
             $sub_members = [];
             foreach ($_POST['staff_sub_members'] as $member) {
@@ -6611,9 +6619,12 @@ class University_Management {
                     ];
                 }
             }
-            update_post_meta($post_id, 'staff_sub_members', $sub_members);
+            error_log('Staff Meta Save Debug - Sub-members to save: ' . print_r($sub_members, true));
+            $result = update_post_meta($post_id, 'staff_sub_members', $sub_members);
+            error_log('Staff Meta Save Debug - Update result: ' . ($result ? 'success' : 'failed'));
         } else {
             // اگر هیچ زیر مجموعه‌ای ارسال نشده، آرایه خالی ذخیره کن
+            error_log('Staff Meta Save Debug - No sub-members in POST data');
             update_post_meta($post_id, 'staff_sub_members', []);
         }
     }
