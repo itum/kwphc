@@ -164,6 +164,55 @@
                 }
             }
         });
+
+        // عملکرد مودال تصویر
+        window.umOpenImageModal = function(imageSrc, imageAlt) {
+            var modal = document.getElementById('um-image-modal');
+            var modalImg = document.getElementById('um-modal-image');
+            
+            if (modal && modalImg) {
+                modalImg.src = imageSrc;
+                modalImg.alt = imageAlt || 'تصویر آزمون';
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // جلوگیری از اسکرول صفحه
+            }
+        };
+
+        // بستن مودال با کلیک روی دکمه ضربدر
+        $(document).on('click', '.um-modal-close', function() {
+            $('#um-image-modal').hide();
+            document.body.style.overflow = 'auto';
+        });
+
+        // بستن مودال با کلیک روی پس‌زمینه
+        $(document).on('click', '.um-modal-overlay', function() {
+            $('#um-image-modal').hide();
+            document.body.style.overflow = 'auto';
+        });
+
+        // بستن مودال با کلید ESC
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && $('#um-image-modal').is(':visible')) {
+                $('#um-image-modal').hide();
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // جلوگیری از بستن مودال با کلیک روی تصویر
+        $(document).on('click', '.um-modal-content img', function(e) {
+            e.stopPropagation();
+        });
+
+        // عملکرد لمسی برای موبایل
+        if ('ontouchstart' in window) {
+            // اضافه کردن کلاس لمسی برای استایل‌های بهتر در موبایل
+            $('.exam-thumbnail, .exam-thumbnail-small, .exam-thumbnail-list').addClass('touch-device');
+            
+            // نمایش آیکون زوم در موبایل بدون نیاز به hover
+            $('.exam-thumbnail, .exam-thumbnail-small, .exam-thumbnail-list').on('touchstart', function() {
+                $(this).find('.zoom-overlay, .zoom-overlay-small, .zoom-overlay-list').css('opacity', '1');
+            });
+        }
     });
 
 })(jQuery); 

@@ -116,6 +116,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             pll_register_string('um_employment_exams_widget_show_exam_time_manual', 'نمایش زمان آزمون', 'University Management');
             pll_register_string('um_employment_exams_widget_show_service_location', 'نمایش محل خدمت', 'University Management');
             pll_register_string('um_employment_exams_widget_show_contact_manual', 'نمایش شماره تماس', 'University Management');
+            pll_register_string('um_employment_exams_widget_show_featured_image', 'نمایش تصویر شاخص', 'University Management');
             
             // رشته‌های خروجی فیلدهای جدید
             pll_register_string('um_employment_exams_widget_company_label', 'شرکت:', 'University Management');
@@ -126,6 +127,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             pll_register_string('um_employment_exams_widget_service_location_label', 'محل خدمت:', 'University Management');
             pll_register_string('um_employment_exams_widget_contact_manual_label', 'شماره تماس:', 'University Management');
             pll_register_string('um_employment_exams_widget_exam_results_button', 'نتیجه آزمون', 'University Management');
+            pll_register_string('um_employment_exams_widget_image_label', 'تصویر', 'University Management');
         }
     }
 
@@ -338,6 +340,18 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                 'label_off' => um_translate('مخفی', __('مخفی', 'university-management')),
                 'return_value' => 'yes',
                 'default' => 'no',
+            ]
+        );
+
+        $this->add_control(
+            'show_featured_image',
+            [
+                'label' => um_translate('نمایش تصویر شاخص', __('نمایش تصویر شاخص', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SWITCHER,
+                'label_on' => um_translate('نمایش', __('نمایش', 'university-management')),
+                'label_off' => um_translate('مخفی', __('مخفی', 'university-management')),
+                'return_value' => 'yes',
+                'default' => 'yes',
             ]
         );
 
@@ -1077,6 +1091,15 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                 <?php $this->render_cards_view($query); ?>
             <?php endif; ?>
         </div>
+        
+        <!-- مودال تصویر شاخص -->
+        <div id="um-image-modal" class="um-image-modal">
+            <div class="um-modal-overlay"></div>
+            <div class="um-modal-content">
+                <span class="um-modal-close">&times;</span>
+                <img id="um-modal-image" src="" alt="">
+            </div>
+        </div>
         <?php
 
         wp_reset_postdata();
@@ -1138,9 +1161,12 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             
             ?>
             <div class="um-exam-card">
-                <?php if (has_post_thumbnail()) : ?>
-                    <div class="exam-thumbnail">
+                <?php if (has_post_thumbnail() && $settings['show_featured_image'] === 'yes') : ?>
+                    <div class="exam-thumbnail" onclick="umOpenImageModal('<?php echo esc_url(get_the_post_thumbnail_url(get_the_ID(), 'large')); ?>', '<?php echo esc_attr(get_the_title()); ?>')">
                         <?php the_post_thumbnail('medium'); ?>
+                        <div class="zoom-overlay">
+                            <span class="zoom-icon">🔍</span>
+                        </div>
                     </div>
                 <?php endif; ?>
                 
@@ -1397,6 +1423,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
         <table class="um-exams-table">
             <thead>
                 <tr>
+                    <?php if ($settings['show_featured_image'] === 'yes') : ?><th><?php echo esc_html(um_translate('تصویر', __('تصویر', 'university-management'))); ?></th><?php endif; ?>
                     <?php if ($settings['show_exam_title'] === 'yes') : ?><th><?php echo esc_html(um_translate('عنوان آزمون', __('عنوان آزمون', 'university-management'))); ?></th><?php endif; ?>
                     <?php if ($settings['show_exam_position'] === 'yes') : ?><th><?php echo esc_html(um_translate('موقعیت شغلی', __('موقعیت شغلی', 'university-management'))); ?></th><?php endif; ?>
                     <?php if ($settings['show_city'] === 'yes') : ?><th><?php echo esc_html(um_translate('محل خدمت', __('محل خدمت', 'university-management'))); ?></th><?php endif; ?>
@@ -1447,16 +1474,23 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                     
                     $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : um_translate('تاریخ نامعلوم', __('تاریخ نامعلوم', 'university-management'));
                     
-                    $status_labels = array(
-                        'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
-                        'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
-                        'closed' => um_translate('بسته', __('بسته', 'university-management')),
-                        'completed' => um_translate('برگزار شده', __('برگزار شده', 'university-management'))
-                    );
-                    $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
+                    // استفاده از وضعیت سفارشی برای نمایش صحیح
+                    $status_display = $exam_status_custom ?: $exam_status;
                     
                     ?>
                     <tr>
+                        <?php if ($settings['show_featured_image'] === 'yes') : ?><td>
+                            <?php if (has_post_thumbnail()) : ?>
+                                <div class="exam-thumbnail-small" onclick="umOpenImageModal('<?php echo esc_url(get_the_post_thumbnail_url(get_the_ID(), 'large')); ?>', '<?php echo esc_attr(get_the_title()); ?>')">
+                                    <?php the_post_thumbnail('thumbnail'); ?>
+                                    <div class="zoom-overlay-small">
+                                        <span class="zoom-icon-small">🔍</span>
+                                    </div>
+                                </div>
+                            <?php else : ?>
+                                <span class="no-image">-</span>
+                            <?php endif; ?>
+                        </td><?php endif; ?>
                         <?php if ($settings['show_exam_title'] === 'yes') : ?><td><?php the_title(); ?></td><?php endif; ?>
                         <?php if ($settings['show_exam_position'] === 'yes') : ?><td><?php echo esc_html($exam_position); ?></td><?php endif; ?>
                         <?php if ($settings['show_city'] === 'yes') : ?><td><?php echo esc_html($city); ?></td><?php endif; ?>
@@ -1516,7 +1550,7 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
                                 <span class="btn-disabled">-</span>
                             <?php endif; ?>
                         </td><?php endif; ?>
-                        <?php if ($settings['show_status'] === 'yes') : ?><td class="status-<?php echo esc_attr($exam_status); ?>"><?php echo esc_html($status_display); ?></td><?php endif; ?>
+                        <?php if ($settings['show_status'] === 'yes') : ?><td class="status-<?php echo esc_attr(sanitize_title($exam_status_custom ?: $exam_status)); ?>"><?php echo esc_html($status_display); ?></td><?php endif; ?>
                     </tr>
                     <?php
                 }
@@ -1566,16 +1600,19 @@ class UM_Employment_Exams_Widget extends \Elementor\Widget_Base {
             
             $date_display = ($exam_date && $exam_time) ? date_i18n('Y/m/d H:i', strtotime($exam_date . ' ' . $exam_time)) : '';
             
-            $status_labels = array(
-                'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
-                'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
-                'closed' => um_translate('بسته', __('بسته', 'university-management')),
-                'results_announced' => um_translate('اعلام نتایج', __('اعلام نتایج', 'university-management'))
-            );
-            $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
+            // استفاده از وضعیت سفارشی برای نمایش صحیح
+            $status_display = $exam_status_custom ?: $exam_status;
             
             ?>
-            <li class="um-exam-item status-<?php echo esc_attr($exam_status); ?>">
+            <li class="um-exam-item status-<?php echo esc_attr(sanitize_title($exam_status_custom ?: $exam_status)); ?>">
+                <?php if (has_post_thumbnail() && $settings['show_featured_image'] === 'yes') : ?>
+                    <div class="exam-thumbnail-list" onclick="umOpenImageModal('<?php echo esc_url(get_the_post_thumbnail_url(get_the_ID(), 'large')); ?>', '<?php echo esc_attr(get_the_title()); ?>')">
+                        <?php the_post_thumbnail('thumbnail'); ?>
+                        <div class="zoom-overlay-list">
+                            <span class="zoom-icon-list">🔍</span>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <div class="exam-title"><?php the_title(); ?></div>
                 <?php if ($exam_position && $settings['show_exam_position'] === 'yes') : ?>
                     <div class="exam-position"><?php echo esc_html($exam_position); ?></div>

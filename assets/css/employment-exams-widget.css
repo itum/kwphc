@@ -80,6 +80,7 @@
     position: relative;
     overflow: hidden;
     height: 200px;
+    cursor: pointer;
 }
 
 .um-exam-card .exam-thumbnail img {
@@ -91,6 +92,155 @@
 
 .um-exam-card:hover .exam-thumbnail img {
     transform: scale(1.05);
+}
+
+/* آیکون زوم برای کارت */
+.zoom-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.exam-thumbnail:hover .zoom-overlay {
+    opacity: 1;
+}
+
+.zoom-icon {
+    font-size: 24px;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.exam-thumbnail:hover .zoom-icon {
+    transform: scale(1.1);
+}
+
+/* استایل تصویر شاخص کوچک در جدول */
+.exam-thumbnail-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    overflow: hidden;
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+}
+
+.exam-thumbnail-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.exam-thumbnail-small:hover img {
+    transform: scale(1.1);
+}
+
+/* آیکون زوم برای تصاویر کوچک */
+.zoom-overlay-small {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.exam-thumbnail-small:hover .zoom-overlay-small {
+    opacity: 1;
+}
+
+.zoom-icon-small {
+    font-size: 12px;
+    color: white;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4px;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.exam-thumbnail-small:hover .zoom-icon-small {
+    transform: scale(1.2);
+}
+
+.no-image {
+    color: #999;
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* استایل تصویر شاخص در لیست */
+.exam-thumbnail-list {
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    overflow: hidden;
+    display: inline-block;
+    margin-left: 15px;
+    float: right;
+    margin-top: -5px;
+    position: relative;
+    cursor: pointer;
+}
+
+.exam-thumbnail-list img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.exam-thumbnail-list:hover img {
+    transform: scale(1.1);
+}
+
+/* آیکون زوم برای تصاویر لیست */
+.zoom-overlay-list {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.exam-thumbnail-list:hover .zoom-overlay-list {
+    opacity: 1;
+}
+
+.zoom-icon-list {
+    font-size: 14px;
+    color: white;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 5px;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.exam-thumbnail-list:hover .zoom-icon-list {
+    transform: scale(1.2);
 }
 
 .um-exam-card .exam-content {
@@ -406,6 +556,35 @@
     border-radius: 4px;
 }
 
+/* استایل‌های وضعیت سفارشی */
+.um-exams-table .status-در-انتظار-برگزاری {
+    color: #17a2b8;
+    font-weight: bold;
+}
+
+.um-exams-table .status-در-حال-ثبت-نام {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.um-exams-table .status-بسته {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.um-exams-table .status-برگزار-شده {
+    color: #6c757d;
+    font-weight: bold;
+}
+
+.um-exams-table .status-اعلام-نتایج {
+    color: #28a745;
+    font-weight: bold;
+    background-color: rgba(40, 167, 69, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
 /* نمایش لیستی */
 .um-exams-list {
     list-style: none;
@@ -674,6 +853,30 @@
     box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
 }
 
+/* استایل‌های وضعیت سفارشی برای لیست */
+.um-exam-item.status-در-انتظار-برگزاری .exam-status {
+    background-color: #17a2b8;
+}
+
+.um-exam-item.status-در-حال-ثبت-نام .exam-status {
+    background-color: #28a745;
+}
+
+.um-exam-item.status-بسته .exam-status {
+    background-color: #dc3545;
+}
+
+.um-exam-item.status-برگزار-شده .exam-status {
+    background-color: #6c757d;
+}
+
+.um-exam-item.status-اعلام-نتایج .exam-status {
+    background-color: #28a745;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
 /* پیام عدم وجود آزمون */
 .um-no-exams {
     text-align: center;
@@ -720,6 +923,17 @@
         left: 12px;
         font-size: 10px;
     }
+    
+    .exam-thumbnail-small {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .exam-thumbnail-list {
+        width: 50px;
+        height: 50px;
+        margin-left: 10px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -746,6 +960,37 @@
         position: static;
         display: inline-block;
         margin-top: 8px;
+    }
+    
+    .exam-thumbnail-small {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .exam-thumbnail-list {
+        width: 45px;
+        height: 45px;
+        margin-left: 8px;
+        margin-top: -3px;
+    }
+    
+    /* استایل‌های مودال برای موبایل */
+    .um-modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 10px;
+    }
+    
+    .um-modal-content img {
+        max-height: 70vh;
+    }
+    
+    .um-modal-close {
+        top: 5px;
+        right: 10px;
+        font-size: 30px;
+        width: 40px;
+        height: 40px;
     }
 }
 
@@ -844,4 +1089,113 @@
     background: transparent;
     border: none;
     font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
+}
+
+/* استایل‌های مودال تصویر */
+.um-image-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.9);
+    animation: fadeIn 0.3s ease;
+}
+
+.um-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.um-modal-content {
+    position: relative;
+    margin: 5% auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 800px;
+    text-align: center;
+    animation: slideIn 0.3s ease;
+}
+
+.um-modal-content img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.um-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    color: #fff;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.7);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.um-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* انیمیشن‌ها */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* استایل‌های اضافی برای دستگاه‌های لمسی */
+.touch-device .zoom-overlay,
+.touch-device .zoom-overlay-small,
+.touch-device .zoom-overlay-list {
+    opacity: 0.7 !important;
+}
+
+.touch-device:hover .zoom-overlay,
+.touch-device:hover .zoom-overlay-small,
+.touch-device:hover .zoom-overlay-list {
+    opacity: 1 !important;
+}
+
+/* بهبود عملکرد لمسی در موبایل */
+@media (hover: none) and (pointer: coarse) {
+    .exam-thumbnail:hover .zoom-overlay,
+    .exam-thumbnail-small:hover .zoom-overlay-small,
+    .exam-thumbnail-list:hover .zoom-overlay-list {
+        opacity: 0.8;
+    }
+    
+    .zoom-overlay,
+    .zoom-overlay-small,
+    .zoom-overlay-list {
+        opacity: 0.6;
+    }
 } 
