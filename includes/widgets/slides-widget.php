@@ -92,6 +92,498 @@ class UM_Slides_Widget extends \Elementor\Widget_Base {
         ]);
 
         $this->end_controls_section();
+
+		// بخش استایل - Container
+		$this->start_controls_section(
+			'section_style_container',
+			[
+				'label' => um_translate('استایل کانتینر', __('استایل کانتینر', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'container_background',
+				'label' => um_translate('پس‌زمینه کانتینر', __('پس‌زمینه کانتینر', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-slides-widget',
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			[
+				'name' => 'container_border',
+				'label' => um_translate('حاشیه کانتینر', __('حاشیه کانتینر', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-slides-widget',
+			]
+		);
+
+		$this->add_control(
+			'container_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌ها', __('گردی گوشه‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slides-widget' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			[
+				'name' => 'container_box_shadow',
+				'label' => um_translate('سایه کانتینر', __('سایه کانتینر', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-slides-widget',
+			]
+		);
+
+		$this->add_responsive_control(
+			'container_padding',
+			[
+				'label' => um_translate('فاصله داخلی', __('فاصله داخلی', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slides-widget' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'container_margin',
+			[
+				'label' => um_translate('فاصله خارجی', __('فاصله خارجی', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slides-widget' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Slide Content
+		$this->start_controls_section(
+			'section_style_slide_content',
+			[
+				'label' => um_translate('استایل محتوای اسلاید', __('استایل محتوای اسلاید', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'slide_content_background',
+				'label' => um_translate('پس‌زمینه محتوا', __('پس‌زمینه محتوا', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-slide-content',
+			]
+		);
+
+		$this->add_responsive_control(
+			'slide_content_padding',
+			[
+				'label' => um_translate('فاصله داخلی محتوا', __('فاصله داخلی محتوا', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'slide_content_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌های محتوا', __('گردی گوشه‌های محتوا', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Slide Title
+		$this->start_controls_section(
+			'section_style_slide_title',
+			[
+				'label' => um_translate('استایل عنوان اسلاید', __('استایل عنوان اسلاید', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			[
+				'name' => 'slide_title_typography',
+				'label' => um_translate('تایپوگرافی عنوان', __('تایپوگرافی عنوان', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-slide-content h3',
+			]
+		);
+
+		$this->add_control(
+			'slide_title_text_color',
+			[
+				'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content h3' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'slide_title_background',
+				'label' => um_translate('پس‌زمینه عنوان', __('پس‌زمینه عنوان', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-slide-content h3',
+			]
+		);
+
+		$this->add_responsive_control(
+			'slide_title_padding',
+			[
+				'label' => um_translate('فاصله داخلی عنوان', __('فاصله داخلی عنوان', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content h3' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'slide_title_margin',
+			[
+				'label' => um_translate('فاصله خارجی عنوان', __('فاصله خارجی عنوان', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content h3' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'slide_title_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌های عنوان', __('گردی گوشه‌های عنوان', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content h3' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Slide Description
+		$this->start_controls_section(
+			'section_style_slide_description',
+			[
+				'label' => um_translate('استایل توضیحات اسلاید', __('استایل توضیحات اسلاید', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			[
+				'name' => 'slide_description_typography',
+				'label' => um_translate('تایپوگرافی توضیحات', __('تایپوگرافی توضیحات', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-slide-content p',
+			]
+		);
+
+		$this->add_control(
+			'slide_description_text_color',
+			[
+				'label' => um_translate('رنگ توضیحات', __('رنگ توضیحات', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content p' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'slide_description_margin',
+			[
+				'label' => um_translate('فاصله توضیحات', __('فاصله توضیحات', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-content p' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Slide Button
+		$this->start_controls_section(
+			'section_style_slide_button',
+			[
+				'label' => um_translate('استایل دکمه اسلاید', __('استایل دکمه اسلاید', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			[
+				'name' => 'slide_button_typography',
+				'label' => um_translate('تایپوگرافی دکمه', __('تایپوگرافی دکمه', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-slide-btn',
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'slide_button_background',
+				'label' => um_translate('پس‌زمینه دکمه', __('پس‌زمینه دکمه', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-slide-btn',
+			]
+		);
+
+		$this->add_control(
+			'slide_button_text_color',
+			[
+				'label' => um_translate('رنگ متن دکمه', __('رنگ متن دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-btn' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			[
+				'name' => 'slide_button_border',
+				'label' => um_translate('حاشیه دکمه', __('حاشیه دکمه', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-slide-btn',
+			]
+		);
+
+		$this->add_control(
+			'slide_button_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌های دکمه', __('گردی گوشه‌های دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-btn' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'slide_button_padding',
+			[
+				'label' => um_translate('فاصله داخلی دکمه', __('فاصله داخلی دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'slide_button_margin',
+			[
+				'label' => um_translate('فاصله خارجی دکمه', __('فاصله خارجی دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-btn' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		// Hover state
+		$this->add_control(
+			'slide_button_hover_heading',
+			[
+				'label' => um_translate('حالت هاور', __('حالت هاور', 'university-management')),
+				'type' => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'slide_button_hover_text_color',
+			[
+				'label' => um_translate('رنگ متن دکمه (هاور)', __('رنگ متن دکمه (هاور)', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-slide-btn:hover' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'slide_button_hover_background',
+				'label' => um_translate('پس‌زمینه دکمه (هاور)', __('پس‌زمینه دکمه (هاور)', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-slide-btn:hover',
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Navigation Arrows
+		$this->start_controls_section(
+			'section_style_navigation',
+			[
+				'label' => um_translate('استایل ناوبری', __('استایل ناوبری', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_control(
+			'navigation_arrow_size',
+			[
+				'label' => um_translate('اندازه فلش‌ها', __('اندازه فلش‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => ['px'],
+				'range' => [
+					'px' => [
+						'min' => 10,
+						'max' => 100,
+						'step' => 1,
+					],
+				],
+				'selectors' => [
+					'{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'font-size: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'navigation_arrow_color',
+			[
+				'label' => um_translate('رنگ فلش‌ها', __('رنگ فلش‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'navigation_arrow_background',
+			[
+				'label' => um_translate('پس‌زمینه فلش‌ها', __('پس‌زمینه فلش‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'background-color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'navigation_arrow_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌های فلش‌ها', __('گردی گوشه‌های فلش‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Pagination Dots
+		$this->start_controls_section(
+			'section_style_pagination',
+			[
+				'label' => um_translate('استایل نقاط صفحه‌بندی', __('استایل نقاط صفحه‌بندی', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_control(
+			'pagination_dot_size',
+			[
+				'label' => um_translate('اندازه نقاط', __('اندازه نقاط', 'university-management')),
+				'type' => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => ['px'],
+				'range' => [
+					'px' => [
+						'min' => 5,
+						'max' => 30,
+						'step' => 1,
+					],
+				],
+				'selectors' => [
+					'{{WRAPPER}} .swiper-pagination-bullet' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'pagination_dot_color',
+			[
+				'label' => um_translate('رنگ نقاط', __('رنگ نقاط', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .swiper-pagination-bullet' => 'background-color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'pagination_dot_active_color',
+			[
+				'label' => um_translate('رنگ نقطه فعال', __('رنگ نقطه فعال', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .swiper-pagination-bullet-active' => 'background-color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'pagination_dot_spacing',
+			[
+				'label' => um_translate('فاصله بین نقاط', __('فاصله بین نقاط', 'university-management')),
+				'type' => \Elementor\Controls_Manager::SLIDER,
+				'size_units' => ['px'],
+				'range' => [
+					'px' => [
+						'min' => 0,
+						'max' => 50,
+						'step' => 1,
+					],
+				],
+				'selectors' => [
+					'{{WRAPPER}} .swiper-pagination-bullet' => 'margin: 0 {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
     }
 
     private function get_cpt_slides($limit = 5) {

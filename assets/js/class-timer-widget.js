@@ -30,14 +30,37 @@
             "جمعه",
             "شنبه"
         ];
-        const weekDaysEl = document.getElementById('weekDays');
-        const goToTodayText = document.getElementById('goToToday');
-        const liveInfo = document.getElementById("liveClassInfo");
 
-        if (!weekDaysEl || !goToTodayText || !liveInfo) {
-            console.error('Required elements not found');
-            return;
-        }
+        // تابع برای اجرای کد اصلی پس از بارگذاری عناصر
+        function initializeClassTimer(retryCount = 0) {
+            const weekDaysEl = $('#weekDays')[0];
+            const goToTodayText = $('#goToToday')[0];
+            const liveInfo = $('#liveClassInfo')[0];
+
+            if (!weekDaysEl || !goToTodayText || !liveInfo) {
+                // محدود کردن تعداد تلاش‌ها برای جلوگیری از حلقه بی‌نهایت
+                if (retryCount < 100) { // حداکثر 20 ثانیه انتظار در المنتور ادیتور
+                    if (retryCount % 20 === 0) { // هر 4 ثانیه یک بار لاگ کن
+                        console.log(`Elements not ready yet, retrying... (${retryCount + 1}/100)`);
+                    }
+                    setTimeout(() => initializeClassTimer(retryCount + 1), 200);
+                } else {
+                    console.warn('Class timer widget: Elements not found after maximum retries. Widget may not be properly rendered.');
+                }
+                return;
+            }
+
+            console.log('All required elements found, initializing class timer...');
+
+            // بررسی اینکه آیا در المنتور ادیتور هستیم یا نه
+            if (typeof elementor !== 'undefined' && elementor.config && elementor.config.isEditMode) {
+                console.log('Running in Elementor editor mode');
+                console.log('Found elements:', {
+                    weekDays: !!weekDaysEl,
+                    goToToday: !!goToTodayText,
+                    liveInfo: !!liveInfo
+                });
+            }
 
         const today = moment().startOf('day');
         let current = moment(today);
@@ -320,17 +343,45 @@
             </svg>
             امروز ${today.jDate()} ${monthName} ${today.jYear()}`;
 
-        goToTodayText.addEventListener('click', () => {
-            current = moment();
-            selectedDate = moment(today);
-            renderWeek(current);
-            renderClassesFor(today);
-        });
+            goToTodayText.addEventListener('click', () => {
+                current = moment();
+                selectedDate = moment(today);
+                renderWeek(current);
+                renderClassesFor(today);
+            });
 
-        // شروع رندر: امروز را انتخاب و نمایش بده
-        selectedDate = moment(today);
-        current = moment(today);
-        renderWeek(today);
-        renderClassesFor(today);
+            // شروع رندر: امروز را انتخاب و نمایش بده
+            selectedDate = moment(today);
+            current = moment(today);
+            renderWeek(today);
+            renderClassesFor(today);
+        }
+
+        // شروع فرآیند بارگذاری
+        // اگر در المنتور ادیتور هستیم، منتظر رویدادهای المنتور بمانیم
+        if (typeof elementor !== 'undefined' && elementor.config && elementor.config.isEditMode) {
+            console.log('Elementor editor detected, waiting for preview to load...');
+            
+            // منتظر رویداد preview:loaded بمانیم
+            elementor.hooks.addAction('frontend/element_ready/um_class_timer', function($scope) {
+                console.log('Elementor widget ready, initializing...');
+                setTimeout(() => initializeClassTimer(), 500);
+            });
+            
+            // همچنین منتظر رویداد کلی preview:loaded بمانیم
+            elementor.hooks.addAction('preview:loaded', function() {
+                console.log('Elementor preview loaded, initializing...');
+                setTimeout(() => initializeClassTimer(), 1000);
+            });
+            
+            // اگر رویدادها کار نکردند، پس از 3 ثانیه تلاش کن
+            setTimeout(() => {
+                console.log('Fallback: Initializing after timeout...');
+                initializeClassTimer();
+            }, 3000);
+        } else {
+            // در حالت عادی، با تاخیر کوتاه شروع کن
+            setTimeout(() => initializeClassTimer(), 100);
+        }
     });
 })(jQuery); 

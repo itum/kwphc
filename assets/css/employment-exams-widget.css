@@ -9,6 +9,10 @@
     padding: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
+    /* ارث‌بری فونت از قالب */
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
 }
 
 .um-employment-exams-widget .um-widget-title {
@@ -19,6 +23,35 @@
     color: #333;
     border-bottom: 2px solid #0073aa;
     padding-bottom: 10px;
+    /* ارث‌بری فونت از قالب */
+    font-family: inherit;
+}
+
+/* ارث‌بری فونت برای تمام عناصر */
+.um-employment-exams-widget *, 
+.um-employment-exams-widget *::before, 
+.um-employment-exams-widget *::after {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    font-weight: inherit;
+}
+
+/* تنظیم فونت پیش‌فرض peyda برای جدول‌ها */
+.um-employment-exams-widget .um-exams-table,
+.um-employment-exams-widget .um-exams-table th,
+.um-employment-exams-widget .um-exams-table td {
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
+}
+
+.um-exam-card .exam-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #0073aa;
+    line-height: 1.4;
+    /* ارث‌بری فونت از قالب */
+    font-family: inherit;
 }
 
 /* نمایش کارتی */
@@ -72,11 +105,10 @@
     line-height: 1.4;
 }
 
-.um-exam-card .exam-position,
-.um-exam-card .exam-department,
-.um-exam-card .exam-date,
-.um-exam-card .exam-location,
-.um-exam-card .exam-deadline {
+.um-exam-card .exam-registration-period,
+.um-exam-card .exam-employment-link,
+.um-exam-card .exam-time-custom,
+.um-exam-card .exam-status-custom {
     margin-bottom: 8px;
     font-size: 14px;
     line-height: 1.5;
@@ -86,9 +118,198 @@
 .um-exam-card .exam-department strong,
 .um-exam-card .exam-date strong,
 .um-exam-card .exam-location strong,
-.um-exam-card .exam-deadline strong {
+.um-exam-card .exam-deadline strong,
+.um-exam-card .exam-city strong,
+.um-exam-card .exam-contact strong,
+.um-exam-card .exam-job-title strong,
+.um-exam-card .exam-education strong,
+.um-exam-card .exam-type strong,
+.um-exam-card .exam-registration-period strong,
+.um-exam-card .exam-employment-link strong,
+.um-exam-card .exam-time-custom strong,
+.um-exam-card .exam-status-custom strong {
     color: #333;
     font-weight: 600;
+}
+
+/* استایل‌های خاص برای فیلدهای جدید */
+.um-exam-card .exam-city {
+    color: #059669;
+}
+
+.um-exam-card .exam-contact {
+    color: #dc3545;
+}
+
+.um-exam-card .exam-job-title {
+    color: #6f42c1;
+}
+
+.um-exam-card .exam-education {
+    color: #fd7e14;
+}
+
+.um-exam-card .exam-type {
+    color: #20c997;
+}
+
+.um-exam-card .exam-registration-period {
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+/* استایل‌های فیلدهای جدید برای حالت دستی */
+.um-exam-card .exam-company {
+    color: #e83e8c;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-company strong {
+    color: #e83e8c;
+}
+
+.um-exam-card .exam-contractor {
+    color: #fd7e14;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-contractor strong {
+    color: #fd7e14;
+}
+
+.um-exam-card .exam-registration-start-manual {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-registration-start-manual strong {
+    color: #28a745;
+}
+
+.um-exam-card .exam-registration-end-manual {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-registration-end-manual strong {
+    color: #dc3545;
+}
+
+.um-exam-card .exam-time-manual {
+    color: #6f42c1;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-time-manual strong {
+    color: #6f42c1;
+}
+
+.um-exam-card .exam-service-location {
+    color: #17a2b8;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-service-location strong {
+    color: #17a2b8;
+}
+
+.um-exam-card .exam-contact-manual {
+    color: #20c997;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-contact-manual strong {
+    color: #20c997;
+}
+
+/* استایل دکمه لینک استخدام */
+.employment-link-btn {
+    display: inline-block;
+    background: #0073aa;
+    color: #fff !important;
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
+    line-height: inherit;
+}
+
+.employment-link-btn:hover {
+    background: #005a87;
+    color: #fff !important;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 115, 170, 0.3);
+}
+
+.um-exam-card .exam-employment-link {
+    color: #0073aa;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-employment-link strong {
+    color: #0073aa;
+}
+
+.um-exam-card .exam-time-custom {
+    color: #e83e8c;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-time-custom strong {
+    color: #e83e8c;
+}
+
+.um-exam-card .exam-date-custom {
+    color: #ff9800;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-date-custom strong {
+    color: #ff9800;
+}
+
+.um-exam-card .exam-status-custom {
+    color: #6f42c1;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-status-custom strong {
+    color: #6f42c1;
+}
+
+/* استایل دکمه فعال/غیرفعال کردن لینک استخدام */
+.employment-link-toggle {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.employment-link-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.employment-link-toggle input[type="checkbox"] {
+    margin: 0;
+    transform: scale(1.1);
+}
+
+.employment-link-toggle small {
+    color: #6c757d;
+    font-style: italic;
 }
 
 .um-exam-card .exam-status {
@@ -114,8 +335,10 @@
     background-color: #dc3545;
 }
 
-.um-exam-card .exam-status.status-completed {
-    background-color: #6c757d;
+.um-exam-card .exam-status.status-results-announced {
+    background-color: #28a745;
+    color: white;
+    font-weight: 600;
 }
 
 .um-exam-card .exam-excerpt {
@@ -134,6 +357,7 @@
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
 }
 
 .um-exams-table thead {
@@ -146,6 +370,7 @@
     padding: 12px 15px;
     text-align: right;
     border-bottom: 1px solid #e1e5e9;
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
 }
 
 .um-exams-table th {
@@ -173,9 +398,12 @@
     font-weight: bold;
 }
 
-.um-exams-table .status-completed {
-    color: #6c757d;
+.um-exams-table .status-results-announced {
+    color: #28a745;
     font-weight: bold;
+    background-color: rgba(40, 167, 69, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 /* نمایش لیستی */
@@ -208,7 +436,15 @@
     margin-bottom: 5px;
 }
 
-.um-exam-item .exam-position {
+.um-exam-item .exam-position,
+.um-exam-item .exam-city,
+.um-exam-item .exam-contact,
+.um-exam-item .exam-job-title,
+.um-exam-item .exam-education,
+.um-exam-item .exam-type,
+.um-exam-item .exam-employment-link,
+.um-exam-item .exam-time-custom,
+.um-exam-item .exam-status-custom {
     font-size: 14px;
     color: #666;
     margin-bottom: 3px;
@@ -217,6 +453,194 @@
 .um-exam-item .exam-date {
     font-size: 13px;
     color: #888;
+}
+
+/* استایل‌های خاص برای فیلدهای جدید در لیست */
+.um-exam-item .exam-city {
+    color: #059669;
+}
+
+.um-exam-item .exam-contact {
+    color: #dc3545;
+}
+
+.um-exam-item .exam-job-title {
+    color: #6f42c1;
+}
+
+.um-exam-item .exam-education {
+    color: #fd7e14;
+}
+
+.um-exam-item .exam-type {
+    color: #20c997;
+}
+
+.um-exam-item .exam-employment-link {
+    color: #0073aa;
+}
+
+.um-exam-item .exam-employment-link .employment-link-btn {
+    margin-right: 5px;
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.um-exam-item .exam-time-custom {
+    color: #e83e8c;
+}
+
+.um-exam-item .exam-date-custom {
+    color: #ff9800;
+}
+
+.um-exam-item .exam-status-custom {
+    color: #6f42c1;
+}
+
+/* استایل‌های فیلدهای جدید برای حالت دستی در لیست */
+.um-exam-item .exam-company {
+    color: #e83e8c;
+    font-weight: 500;
+}
+
+.um-exam-item .exam-contractor {
+    color: #fd7e14;
+    font-weight: 500;
+}
+
+.um-exam-item .exam-registration-start-manual {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.um-exam-item .exam-registration-end-manual {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.um-exam-item .exam-time-manual {
+    color: #6f42c1;
+    font-weight: 500;
+}
+
+.um-exam-item .exam-service-location {
+    color: #17a2b8;
+    font-weight: 500;
+}
+
+.um-exam-item .exam-contact-manual {
+    color: #20c997;
+    font-weight: 500;
+}
+
+/* Dynamic Button Styles */
+.dynamic-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
+    line-height: inherit;
+}
+
+.dynamic-btn.btn-register {
+    background-color: #28a745;
+    color: white;
+}
+
+.dynamic-btn.btn-register:hover {
+    background-color: #218838;
+    color: white;
+}
+
+.dynamic-btn.btn-results {
+    background-color: #28a745;
+    color: white;
+    font-weight: 600;
+    border: none;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.dynamic-btn.btn-results:hover {
+    background-color: #218838;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+}
+
+.dynamic-btn.btn-closed {
+    background-color: #6c757d;
+    color: white;
+    cursor: not-allowed;
+}
+
+.dynamic-btn.btn-default {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.dynamic-btn.btn-default:hover {
+    background-color: #138496;
+    color: white;
+}
+
+.dynamic-btn.btn-manual {
+    background-color: #6f42c1;
+    color: white;
+}
+
+.dynamic-btn.btn-manual:hover {
+    background-color: #5a32a3;
+    color: white;
+}
+
+/* Dynamic Sidebar Styles */
+.exam-status-sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    border-radius: 0 8px 8px 0;
+}
+
+.exam-status-sidebar.status-pending {
+    background-color: #ffc107;
+}
+
+.exam-status-sidebar.status-registering {
+    background-color: #28a745;
+}
+
+.exam-status-sidebar.status-closed {
+    background-color: #dc3545;
+}
+
+.exam-status-sidebar.status-results-announced {
+    background-color: #28a745;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.exam-status-sidebar.status-default {
+    background-color: #007bff;
+}
+
+.exam-status-sidebar.status-manual {
+    background-color: #6f42c1;
 }
 
 .um-exam-item .exam-status {
@@ -243,8 +667,11 @@
     background-color: #dc3545;
 }
 
-.um-exam-item.status-completed .exam-status {
-    background-color: #6c757d;
+.um-exam-item.status-results-announced .exam-status {
+    background-color: #28a745;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
 }
 
 /* پیام عدم وجود آزمون */
@@ -320,4 +747,101 @@
         display: inline-block;
         margin-top: 8px;
     }
+}
+
+/* Results Link Styling */
+.um-exam-card .exam-results-link,
+.um-exam-item .exam-results-link {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+}
+
+.um-exam-card .exam-results-link strong,
+.um-exam-item .exam-results-link strong {
+    color: white;
+}
+
+.um-exam-card .results-link-btn,
+.um-exam-item .results-link-btn {
+    display: inline-block;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    margin-right: 8px;
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
+    line-height: inherit;
+}
+
+.um-exam-card .results-link-btn:hover,
+.um-exam-item .results-link-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Visibility Controls Styling */
+.um-form-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.um-form-section h3 {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.um-form-section .um-form-row {
+    margin-bottom: 10px;
+}
+
+.um-form-section label {
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.um-form-section input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* Table view results link styling */
+.um-exams-table .btn-results {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    border: none;
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
+    line-height: inherit;
+}
+
+.um-exams-table .btn-results:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+    color: white;
+}
+
+.um-exams-table .btn-disabled {
+    color: #999;
+    font-style: italic;
+    font-size: 14px;
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif !important;
 } 

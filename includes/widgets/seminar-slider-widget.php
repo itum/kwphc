@@ -253,6 +253,652 @@ class UM_Seminar_Slider_Widget extends \Elementor\Widget_Base {
         );
 
         $this->end_controls_section();
+
+        // بخش استایل - Container
+        $this->start_controls_section(
+            'section_style_container',
+            [
+                'label' => um_translate('استایل کانتینر', __('استایل کانتینر', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'container_background',
+                'label' => um_translate('پس‌زمینه کانتینر', __('پس‌زمینه کانتینر', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .um-seminar-slider-widget',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'container_border',
+                'label' => um_translate('حاشیه کانتینر', __('حاشیه کانتینر', 'university-management')),
+                'selector' => '{{WRAPPER}} .um-seminar-slider-widget',
+            ]
+        );
+
+        $this->add_control(
+            'container_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌ها', __('گردی گوشه‌ها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-seminar-slider-widget' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'container_box_shadow',
+                'label' => um_translate('سایه کانتینر', __('سایه کانتینر', 'university-management')),
+                'selector' => '{{WRAPPER}} .um-seminar-slider-widget',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_padding',
+            [
+                'label' => um_translate('فاصله داخلی', __('فاصله داخلی', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-seminar-slider-widget' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_margin',
+            [
+                'label' => um_translate('فاصله خارجی', __('فاصله خارجی', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-seminar-slider-widget' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Main Title
+        $this->start_controls_section(
+            'section_style_main_title',
+            [
+                'label' => um_translate('استایل عنوان اصلی', __('استایل عنوان اصلی', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'main_title_typography',
+                'label' => um_translate('تایپوگرافی عنوان', __('تایپوگرافی عنوان', 'university-management')),
+                'selector' => '{{WRAPPER}} .main-title',
+            ]
+        );
+
+        $this->add_control(
+            'main_title_text_color',
+            [
+                'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'main_title_background',
+                'label' => um_translate('پس‌زمینه عنوان', __('پس‌زمینه عنوان', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .main-title',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'main_title_padding',
+            [
+                'label' => um_translate('فاصله داخلی عنوان', __('فاصله داخلی عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'main_title_margin',
+            [
+                'label' => um_translate('فاصله خارجی عنوان', __('فاصله خارجی عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'main_title_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های عنوان', __('گردی گوشه‌های عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Seminar Cards
+        $this->start_controls_section(
+            'section_style_seminar_cards',
+            [
+                'label' => um_translate('استایل کارت‌های سمینار', __('استایل کارت‌های سمینار', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'seminar_card_background',
+                'label' => um_translate('پس‌زمینه کارت', __('پس‌زمینه کارت', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .seminar-card',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'seminar_card_border',
+                'label' => um_translate('حاشیه کارت', __('حاشیه کارت', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-card',
+            ]
+        );
+
+        $this->add_control(
+            'seminar_card_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های کارت', __('گردی گوشه‌های کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-card' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'seminar_card_box_shadow',
+                'label' => um_translate('سایه کارت', __('سایه کارت', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-card',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'seminar_card_padding',
+            [
+                'label' => um_translate('فاصله داخلی کارت', __('فاصله داخلی کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'seminar_card_margin',
+            [
+                'label' => um_translate('فاصله خارجی کارت', __('فاصله خارجی کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-card' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Seminar Image
+        $this->start_controls_section(
+            'section_style_seminar_image',
+            [
+                'label' => um_translate('استایل تصویر سمینار', __('استایل تصویر سمینار', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'seminar_image_height',
+            [
+                'label' => um_translate('ارتفاع تصویر', __('ارتفاع تصویر', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px', 'vh'],
+                'range' => [
+                    'px' => [
+                        'min' => 100,
+                        'max' => 500,
+                        'step' => 10,
+                    ],
+                    'vh' => [
+                        'min' => 10,
+                        'max' => 100,
+                        'step' => 1,
+                    ],
+                ],
+                'default' => [
+                    'unit' => 'px',
+                    'size' => 200,
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-image img' => 'height: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'seminar_image_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های تصویر', __('گردی گوشه‌های تصویر', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-image img' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'seminar_image_border',
+                'label' => um_translate('حاشیه تصویر', __('حاشیه تصویر', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-image img',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'seminar_image_box_shadow',
+                'label' => um_translate('سایه تصویر', __('سایه تصویر', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-image img',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Seminar Title
+        $this->start_controls_section(
+            'section_style_seminar_title',
+            [
+                'label' => um_translate('استایل عنوان سمینار', __('استایل عنوان سمینار', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'seminar_title_typography',
+                'label' => um_translate('تایپوگرافی عنوان', __('تایپوگرافی عنوان', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-title',
+            ]
+        );
+
+        $this->add_control(
+            'seminar_title_text_color',
+            [
+                'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-title' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'seminar_title_margin',
+            [
+                'label' => um_translate('فاصله عنوان', __('فاصله عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-title' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Seminar Details
+        $this->start_controls_section(
+            'section_style_seminar_details',
+            [
+                'label' => um_translate('استایل جزئیات سمینار', __('استایل جزئیات سمینار', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'seminar_details_typography',
+                'label' => um_translate('تایپوگرافی جزئیات', __('تایپوگرافی جزئیات', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-details',
+            ]
+        );
+
+        $this->add_control(
+            'seminar_details_text_color',
+            [
+                'label' => um_translate('رنگ جزئیات', __('رنگ جزئیات', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-details' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'seminar_details_margin',
+            [
+                'label' => um_translate('فاصله جزئیات', __('فاصله جزئیات', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-details' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Seminar Button
+        $this->start_controls_section(
+            'section_style_seminar_button',
+            [
+                'label' => um_translate('استایل دکمه سمینار', __('استایل دکمه سمینار', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'seminar_button_typography',
+                'label' => um_translate('تایپوگرافی دکمه', __('تایپوگرافی دکمه', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-button',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'seminar_button_background',
+                'label' => um_translate('پس‌زمینه دکمه', __('پس‌زمینه دکمه', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .seminar-button',
+            ]
+        );
+
+        $this->add_control(
+            'seminar_button_text_color',
+            [
+                'label' => um_translate('رنگ متن دکمه', __('رنگ متن دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-button' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'seminar_button_border',
+                'label' => um_translate('حاشیه دکمه', __('حاشیه دکمه', 'university-management')),
+                'selector' => '{{WRAPPER}} .seminar-button',
+            ]
+        );
+
+        $this->add_control(
+            'seminar_button_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های دکمه', __('گردی گوشه‌های دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-button' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'seminar_button_padding',
+            [
+                'label' => um_translate('فاصله داخلی دکمه', __('فاصله داخلی دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-button' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'seminar_button_margin',
+            [
+                'label' => um_translate('فاصله خارجی دکمه', __('فاصله خارجی دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-button' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        // Hover state
+        $this->add_control(
+            'seminar_button_hover_heading',
+            [
+                'label' => um_translate('حالت هاور', __('حالت هاور', 'university-management')),
+                'type' => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'seminar_button_hover_text_color',
+            [
+                'label' => um_translate('رنگ متن دکمه (هاور)', __('رنگ متن دکمه (هاور)', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .seminar-button:hover' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'seminar_button_hover_background',
+                'label' => um_translate('پس‌زمینه دکمه (هاور)', __('پس‌زمینه دکمه (هاور)', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .seminar-button:hover',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Navigation Arrows
+        $this->start_controls_section(
+            'section_style_navigation',
+            [
+                'label' => um_translate('استایل ناوبری', __('استایل ناوبری', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'navigation_arrow_size',
+            [
+                'label' => um_translate('اندازه فلش', __('اندازه فلش', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px'],
+                'range' => [
+                    'px' => [
+                        'min' => 20,
+                        'max' => 60,
+                        'step' => 2,
+                    ],
+                ],
+                'default' => [
+                    'unit' => 'px',
+                    'size' => 32,
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'navigation_arrow_color',
+            [
+                'label' => um_translate('رنگ فلش', __('رنگ فلش', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'navigation_arrow_background',
+            [
+                'label' => um_translate('پس‌زمینه فلش', __('پس‌زمینه فلش', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'navigation_arrow_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های فلش', __('گردی گوشه‌های فلش', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-button-next, {{WRAPPER}} .swiper-button-prev' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Pagination Dots
+        $this->start_controls_section(
+            'section_style_pagination',
+            [
+                'label' => um_translate('استایل نقاط pagination', __('استایل نقاط pagination', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'pagination_dot_size',
+            [
+                'label' => um_translate('اندازه نقاط', __('اندازه نقاط', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px'],
+                'range' => [
+                    'px' => [
+                        'min' => 4,
+                        'max' => 20,
+                        'step' => 1,
+                    ],
+                ],
+                'default' => [
+                    'unit' => 'px',
+                    'size' => 8,
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-pagination-bullet' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'pagination_dot_color',
+            [
+                'label' => um_translate('رنگ نقاط', __('رنگ نقاط', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-pagination-bullet' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'pagination_dot_active_color',
+            [
+                'label' => um_translate('رنگ نقطه فعال', __('رنگ نقطه فعال', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-pagination-bullet-active' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'pagination_dot_spacing',
+            [
+                'label' => um_translate('فاصله نقاط', __('فاصله نقاط', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px'],
+                'range' => [
+                    'px' => [
+                        'min' => 0,
+                        'max' => 20,
+                        'step' => 1,
+                    ],
+                ],
+                'default' => [
+                    'unit' => 'px',
+                    'size' => 5,
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .swiper-pagination-bullet' => 'margin: 0 {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
     }
 
     private function get_seminar_categories() {

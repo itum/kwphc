@@ -33,6 +33,21 @@ if (isset($_POST['um_add_exam_nonce']) && wp_verify_nonce($_POST['um_add_exam_no
         $exam_requirements = wp_kses_post($_POST['exam_requirements']);
         $exam_description = wp_kses_post($_POST['exam_description']);
         
+        // دریافت فیلدهای سفارشی جدید
+        $city = sanitize_text_field($_POST['city']);
+        $contact_number = sanitize_text_field($_POST['contact_number']);
+        $job_title = sanitize_text_field($_POST['job_title']);
+        $education_level = sanitize_text_field($_POST['education_level']);
+        $exam_type = sanitize_text_field($_POST['exam_type']);
+        $registration_start_date = sanitize_text_field($_POST['registration_start_date']);
+        $registration_end_date = sanitize_text_field($_POST['registration_end_date']);
+        $employment_link = esc_url_raw($_POST['employment_link']);
+        $employment_link_enabled = isset($_POST['employment_link_enabled']) ? 1 : 0;
+        $exam_time_custom = sanitize_text_field($_POST['exam_time_custom']);
+        $exam_date_custom = sanitize_text_field($_POST['exam_date_custom']);
+        $exam_status_custom = sanitize_text_field($_POST['exam_status_custom']);
+        $exam_results_link = esc_url_raw($_POST['exam_results_link']);
+        
         // بررسی داده‌های الزامی
         if (!empty($exam_title) && !empty($exam_date) && !empty($exam_time)) {
             // تبدیل تاریخ به فرمت مناسب
@@ -65,6 +80,24 @@ if (isset($_POST['um_add_exam_nonce']) && wp_verify_nonce($_POST['um_add_exam_no
                     update_post_meta($post_id, '_exam_application_deadline', $exam_application_deadline);
                     update_post_meta($post_id, '_exam_status', $exam_status ?: 'upcoming');
                     update_post_meta($post_id, '_exam_requirements', $exam_requirements);
+                    
+                    // ذخیره فیلدهای سفارشی جدید
+                    update_post_meta($post_id, 'city', $city);
+                    update_post_meta($post_id, 'contact_number', $contact_number);
+                    update_post_meta($post_id, 'job_title', $job_title);
+                    update_post_meta($post_id, 'education_level', $education_level);
+                    update_post_meta($post_id, 'exam_type', $exam_type);
+                    update_post_meta($post_id, 'registration_start_date', $registration_start_date);
+                    update_post_meta($post_id, 'registration_end_date', $registration_end_date);
+                    update_post_meta($post_id, 'employment_link', $employment_link);
+                    update_post_meta($post_id, 'employment_link_enabled', $employment_link_enabled);
+                    update_post_meta($post_id, 'exam_time', $exam_time_custom);
+                    update_post_meta($post_id, 'exam_date_custom', $exam_date_custom);
+                    update_post_meta($post_id, 'exam_status_custom', $exam_status_custom);
+                    update_post_meta($post_id, 'exam_results_link', $exam_results_link);
+                    
+                    update_post_meta($post_id, 'end_date', $exam_application_deadline); // برای سازگاری با فیلدهای موجود
+                    update_post_meta($post_id, 'exam_date', $exam_date); // برای سازگاری با فیلدهای موجود
                     
                     // اضافه کردن تصویر شاخص (اگر آپلود شده باشد)
                     if (isset($_FILES['exam_image']) && !empty($_FILES['exam_image']['name'])) {
@@ -173,6 +206,7 @@ $exams = new WP_Query($args);
                         <option value="registration"><?php _e('در حال ثبت‌نام', 'university-management'); ?></option>
                         <option value="closed"><?php _e('بسته', 'university-management'); ?></option>
                         <option value="completed"><?php _e('برگزار شده', 'university-management'); ?></option>
+                        <option value="results_announced"><?php _e('اعلام نتایج', 'university-management'); ?></option>
                     </select>
                 </div>
                 
@@ -191,10 +225,150 @@ $exams = new WP_Query($args);
                     <input type="file" id="exam_image" name="exam_image" accept="image/*">
                 </div>
                 
+                <!-- فیلدهای سفارشی جدید -->
+                <div style="border-top: 2px solid #e1e5e9; margin: 20px 0; padding-top: 20px;">
+                    <h3 style="color: #1e2a78; margin-bottom: 15px;"><?php _e('اطلاعات تکمیلی', 'university-management'); ?></h3>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="city" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نام شهر خدمت', 'university-management'); ?></label>
+                        <input type="text" id="city" name="city" class="regular-text" style="width: 100%;" placeholder="مثال: اهواز">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="contact_number" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('شماره تماس', 'university-management'); ?></label>
+                        <input type="tel" id="contact_number" name="contact_number" class="regular-text" style="width: 100%;" placeholder="مثال: 0999184394">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="job_title" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('عنوان شغلی مورد نیاز', 'university-management'); ?></label>
+                        <input type="text" id="job_title" name="job_title" class="regular-text" style="width: 100%;" placeholder="مثال: سیمبان، سیمبان خط گرم">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="education_level" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('مقطع تحصیلی مورد نیاز', 'university-management'); ?></label>
+                        <input type="text" id="education_level" name="education_level" class="regular-text" style="width: 100%;" placeholder="مثال: دیپلم، فوق دیپلم برق">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="exam_type" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('نوع آزمون', 'university-management'); ?></label>
+                        <select id="exam_type" name="exam_type" class="regular-text" style="width: 100%;">
+                            <option value=""><?php _e('انتخاب کنید...', 'university-management'); ?></option>
+                            <option value="آزمون بکارگیری نیروی انسانی"><?php _e('آزمون بکارگیری نیروی انسانی', 'university-management'); ?></option>
+                            <option value="آگهی جذب نیروی حجمی"><?php _e('آگهی جذب نیروی حجمی', 'university-management'); ?></option>
+                            <option value="آزمون استخدامی عمومی"><?php _e('آزمون استخدامی عمومی', 'university-management'); ?></option>
+                        </select>
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="registration_start_date" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('شروع ثبت نام', 'university-management'); ?></label>
+                        <input type="text" id="registration_start_date" name="registration_start_date" class="regular-text" style="width: 100%;" placeholder="مثال: 1404/07/27">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="registration_end_date" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('پایان ثبت نام', 'university-management'); ?></label>
+                        <input type="text" id="registration_end_date" name="registration_end_date" class="regular-text" style="width: 100%;" placeholder="مثال: 1404/08/06">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="exam_date_custom" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('تاریخ آزمون', 'university-management'); ?></label>
+                        <input type="text" id="exam_date_custom" name="exam_date_custom" class="regular-text" style="width: 100%;" placeholder="مثال: 1404/08/22">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="exam_time_custom" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('زمان آزمون', 'university-management'); ?></label>
+                        <input type="text" id="exam_time_custom" name="exam_time_custom" class="regular-text" style="width: 100%;" placeholder="مثال: 08:00">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="employment_link" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('لینک استخدام', 'university-management'); ?></label>
+                        <input type="url" id="employment_link" name="employment_link" class="regular-text" style="width: 100%;" placeholder="مثال: https://example.com/employment">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="exam_results_link" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('لینک نتایج آزمون', 'university-management'); ?></label>
+                        <input type="url" id="exam_results_link" name="exam_results_link" class="regular-text" style="width: 100%;" placeholder="مثال: https://example.com/results">
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('وضعیت لینک استخدام', 'university-management'); ?></label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="employment_link_enabled" name="employment_link_enabled" value="1" checked>
+                            <span><?php _e('لینک استخدام فعال باشد', 'university-management'); ?></span>
+                        </label>
+                        <small style="color: #666; margin-top: 5px; display: block;"><?php _e('اگر این گزینه فعال باشد، لینک استخدام در ویجت نمایش داده می‌شود', 'university-management'); ?></small>
+                    </div>
+                    
+                    <div class="um-form-row" style="margin-bottom: 15px;">
+                        <label for="exam_status_custom" style="display: block; margin-bottom: 5px; font-weight: bold;"><?php _e('وضعیت آزمون', 'university-management'); ?></label>
+                        <select id="exam_status_custom" name="exam_status_custom" class="regular-text" style="width: 100%;">
+                            <option value="در انتظار برگزاری"><?php _e('در انتظار برگزاری', 'university-management'); ?></option>
+                            <option value="در حال ثبت نام"><?php _e('در حال ثبت نام', 'university-management'); ?></option>
+                            <option value="بسته"><?php _e('بسته', 'university-management'); ?></option>
+                            <option value="برگزار شده"><?php _e('برگزار شده', 'university-management'); ?></option>
+                            <option value="اعلام نتایج"><?php _e('اعلام نتایج', 'university-management'); ?></option>
+                        </select>
+                    </div>
+                </div>
+                
                 <div class="um-form-row">
                     <input type="submit" class="button button-primary" value="<?php _e('افزودن آزمون استخدامی', 'university-management'); ?>">
                 </div>
             </form>
+            
+            <script>
+            // فرمت کردن تاریخ‌ها به صورت خودکار
+            document.addEventListener('DOMContentLoaded', function() {
+                const startDateInput = document.getElementById('registration_start_date');
+                const endDateInput = document.getElementById('registration_end_date');
+                
+                // فرمت کردن تاریخ هنگام تایپ
+                function formatDate(input) {
+                    let value = input.value.replace(/\D/g, ''); // حذف تمام کاراکترهای غیر عددی
+                    
+                    if (value.length >= 4) {
+                        value = value.substring(0, 4) + '/' + value.substring(4);
+                    }
+                    if (value.length >= 7) {
+                        value = value.substring(0, 7) + '/' + value.substring(7, 9);
+                    }
+                    
+                    input.value = value;
+                }
+                
+                startDateInput.addEventListener('input', function() {
+                    formatDate(this);
+                });
+                
+                endDateInput.addEventListener('input', function() {
+                    formatDate(this);
+                });
+                
+                // اعتبارسنجی فرمت تاریخ
+                function validateDate(dateString) {
+                    const regex = /^\d{4}\/\d{2}\/\d{2}$/;
+                    return regex.test(dateString);
+                }
+                
+                // اعتبارسنجی هنگام ارسال فرم
+                const form = document.querySelector('form');
+                form.addEventListener('submit', function(e) {
+                    const startDate = startDateInput.value.trim();
+                    const endDate = endDateInput.value.trim();
+                    
+                    if (startDate && !validateDate(startDate)) {
+                        alert('فرمت تاریخ شروع ثبت نام صحیح نیست. لطفاً از فرمت YYYY/MM/DD استفاده کنید.');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (endDate && !validateDate(endDate)) {
+                        alert('فرمت تاریخ پایان ثبت نام صحیح نیست. لطفاً از فرمت YYYY/MM/DD استفاده کنید.');
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            });
+            </script>
         </div>
         
         <!-- لیست آزمون‌های موجود -->
@@ -235,7 +409,8 @@ $exams = new WP_Query($args);
                                 'upcoming' => __('در انتظار برگزاری', 'university-management'),
                                 'registration' => __('در حال ثبت‌نام', 'university-management'),
                                 'closed' => __('بسته', 'university-management'),
-                                'completed' => __('برگزار شده', 'university-management')
+                                'completed' => __('برگزار شده', 'university-management'),
+                                'results_announced' => __('اعلام نتایج', 'university-management')
                             );
                             $status_display = isset($status_labels[$exam_status]) ? $status_labels[$exam_status] : $exam_status;
                         ?>

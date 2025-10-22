@@ -102,10 +102,10 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
             [
                 'label' => um_translate('منبع آزمون‌ها', __('منبع آزمون‌ها', 'university-management')),
                 'type' => \Elementor\Controls_Manager::SELECT,
-                'default' => 'manual',
+                'default' => 'database',
                 'options' => [
+                    'database' => um_translate('خودکار (از پایگاه داده)', __('خودکار (از پایگاه داده)', 'university-management')),
                     'manual' => um_translate('دستی', __('دستی', 'university-management')),
-                    'auto' => um_translate('خودکار (از API)', __('خودکار (از API)', 'university-management')),
                 ],
             ]
         );
@@ -119,7 +119,27 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
                 'min' => 1,
                 'max' => 20,
                 'condition' => [
-                    'azmoon_source' => 'auto',
+                    'azmoon_source' => 'database',
+                ],
+            ]
+        );
+
+        // فیلتر وضعیت برای نمایش از پایگاه داده
+        $this->add_control(
+            'status_filter',
+            [
+                'label' => um_translate('فیلتر وضعیت', __('فیلتر وضعیت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SELECT,
+                'default' => 'all',
+                'options' => [
+                    'all' => um_translate('همه', __('همه', 'university-management')),
+                    'upcoming' => um_translate('در انتظار برگزاری', __('در انتظار برگزاری', 'university-management')),
+                    'registration' => um_translate('در حال ثبت‌نام', __('در حال ثبت‌نام', 'university-management')),
+                    'closed' => um_translate('بسته', __('بسته', 'university-management')),
+                    'completed' => um_translate('برگزار شده', __('برگزار شده', 'university-management')),
+                ],
+                'condition' => [
+                    'azmoon_source' => 'database',
                 ],
             ]
         );
@@ -275,6 +295,505 @@ class UM_Azmoon_Widget extends \Elementor\Widget_Base {
                 'selectors' => [
                     '{{WRAPPER}} .um-azmoon-card' => 'background-color: {{VALUE}};',
                 ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Container
+        $this->start_controls_section(
+            'section_style_container',
+            [
+                'label' => um_translate('استایل کانتینر', __('استایل کانتینر', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'container_background',
+                'label' => um_translate('پس‌زمینه کانتینر', __('پس‌زمینه کانتینر', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .um-azmoon-widget',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'container_border',
+                'label' => um_translate('حاشیه کانتینر', __('حاشیه کانتینر', 'university-management')),
+                'selector' => '{{WRAPPER}} .um-azmoon-widget',
+            ]
+        );
+
+        $this->add_control(
+            'container_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌ها', __('گردی گوشه‌ها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-azmoon-widget' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'container_box_shadow',
+                'label' => um_translate('سایه کانتینر', __('سایه کانتینر', 'university-management')),
+                'selector' => '{{WRAPPER}} .um-azmoon-widget',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_padding',
+            [
+                'label' => um_translate('فاصله داخلی', __('فاصله داخلی', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-azmoon-widget' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_margin',
+            [
+                'label' => um_translate('فاصله خارجی', __('فاصله خارجی', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-azmoon-widget' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Main Title
+        $this->start_controls_section(
+            'section_style_main_title',
+            [
+                'label' => um_translate('استایل عنوان اصلی', __('استایل عنوان اصلی', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'main_title_typography',
+                'label' => um_translate('تایپوگرافی عنوان', __('تایپوگرافی عنوان', 'university-management')),
+                'selector' => '{{WRAPPER}} .main-title',
+            ]
+        );
+
+        $this->add_control(
+            'main_title_text_color',
+            [
+                'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'main_title_background',
+                'label' => um_translate('پس‌زمینه عنوان', __('پس‌زمینه عنوان', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .main-title',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'main_title_padding',
+            [
+                'label' => um_translate('فاصله داخلی عنوان', __('فاصله داخلی عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'main_title_margin',
+            [
+                'label' => um_translate('فاصله خارجی عنوان', __('فاصله خارجی عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'main_title_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های عنوان', __('گردی گوشه‌های عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .main-title' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Azmoon Cards
+        $this->start_controls_section(
+            'section_style_azmoon_cards',
+            [
+                'label' => um_translate('استایل کارت‌های آزمون', __('استایل کارت‌های آزمون', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'azmoon_card_background',
+                'label' => um_translate('پس‌زمینه کارت', __('پس‌زمینه کارت', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .um-azmoon-card',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'azmoon_card_border',
+                'label' => um_translate('حاشیه کارت', __('حاشیه کارت', 'university-management')),
+                'selector' => '{{WRAPPER}} .um-azmoon-card',
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_card_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های کارت', __('گردی گوشه‌های کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-azmoon-card' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'azmoon_card_box_shadow',
+                'label' => um_translate('سایه کارت', __('سایه کارت', 'university-management')),
+                'selector' => '{{WRAPPER}} .um-azmoon-card',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'azmoon_card_padding',
+            [
+                'label' => um_translate('فاصله داخلی کارت', __('فاصله داخلی کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-azmoon-card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'azmoon_card_margin',
+            [
+                'label' => um_translate('فاصله خارجی کارت', __('فاصله خارجی کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-azmoon-card' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Azmoon Image
+        $this->start_controls_section(
+            'section_style_azmoon_image',
+            [
+                'label' => um_translate('استایل تصویر آزمون', __('استایل تصویر آزمون', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_image_height',
+            [
+                'label' => um_translate('ارتفاع تصویر', __('ارتفاع تصویر', 'university-management')),
+                'type' => \Elementor\Controls_Manager::SLIDER,
+                'size_units' => ['px', 'vh'],
+                'range' => [
+                    'px' => [
+                        'min' => 100,
+                        'max' => 500,
+                        'step' => 10,
+                    ],
+                    'vh' => [
+                        'min' => 10,
+                        'max' => 100,
+                        'step' => 1,
+                    ],
+                ],
+                'default' => [
+                    'unit' => 'px',
+                    'size' => 200,
+                ],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-image img' => 'height: {{SIZE}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_image_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های تصویر', __('گردی گوشه‌های تصویر', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-image img' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'azmoon_image_border',
+                'label' => um_translate('حاشیه تصویر', __('حاشیه تصویر', 'university-management')),
+                'selector' => '{{WRAPPER}} .azmoon-image img',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'azmoon_image_box_shadow',
+                'label' => um_translate('سایه تصویر', __('سایه تصویر', 'university-management')),
+                'selector' => '{{WRAPPER}} .azmoon-image img',
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Azmoon Title
+        $this->start_controls_section(
+            'section_style_azmoon_title',
+            [
+                'label' => um_translate('استایل عنوان آزمون', __('استایل عنوان آزمون', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'azmoon_title_typography',
+                'label' => um_translate('تایپوگرافی عنوان', __('تایپوگرافی عنوان', 'university-management')),
+                'selector' => '{{WRAPPER}} .azmoon-title',
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_title_text_color',
+            [
+                'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-title' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'azmoon_title_margin',
+            [
+                'label' => um_translate('فاصله عنوان', __('فاصله عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-title' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Azmoon Details
+        $this->start_controls_section(
+            'section_style_azmoon_details',
+            [
+                'label' => um_translate('استایل جزئیات آزمون', __('استایل جزئیات آزمون', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'azmoon_details_typography',
+                'label' => um_translate('تایپوگرافی جزئیات', __('تایپوگرافی جزئیات', 'university-management')),
+                'selector' => '{{WRAPPER}} .azmoon-details',
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_details_text_color',
+            [
+                'label' => um_translate('رنگ جزئیات', __('رنگ جزئیات', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-details' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'azmoon_details_margin',
+            [
+                'label' => um_translate('فاصله جزئیات', __('فاصله جزئیات', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-details' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Azmoon Button
+        $this->start_controls_section(
+            'section_style_azmoon_button',
+            [
+                'label' => um_translate('استایل دکمه آزمون', __('استایل دکمه آزمون', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'azmoon_button_typography',
+                'label' => um_translate('تایپوگرافی دکمه', __('تایپوگرافی دکمه', 'university-management')),
+                'selector' => '{{WRAPPER}} .azmoon-button',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'azmoon_button_background',
+                'label' => um_translate('پس‌زمینه دکمه', __('پس‌زمینه دکمه', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .azmoon-button',
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_button_text_color',
+            [
+                'label' => um_translate('رنگ متن دکمه', __('رنگ متن دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-button' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'azmoon_button_border',
+                'label' => um_translate('حاشیه دکمه', __('حاشیه دکمه', 'university-management')),
+                'selector' => '{{WRAPPER}} .azmoon-button',
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_button_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های دکمه', __('گردی گوشه‌های دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-button' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'azmoon_button_padding',
+            [
+                'label' => um_translate('فاصله داخلی دکمه', __('فاصله داخلی دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-button' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'azmoon_button_margin',
+            [
+                'label' => um_translate('فاصله خارجی دکمه', __('فاصله خارجی دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-button' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        // Hover state
+        $this->add_control(
+            'azmoon_button_hover_heading',
+            [
+                'label' => um_translate('حالت هاور', __('حالت هاور', 'university-management')),
+                'type' => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'azmoon_button_hover_text_color',
+            [
+                'label' => um_translate('رنگ متن دکمه (هاور)', __('رنگ متن دکمه (هاور)', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .azmoon-button:hover' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'azmoon_button_hover_background',
+                'label' => um_translate('پس‌زمینه دکمه (هاور)', __('پس‌زمینه دکمه (هاور)', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .azmoon-button:hover',
             ]
         );
 

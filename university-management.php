@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.4.3
+ * Version: 1.4.12
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -71,9 +71,6 @@ class University_Management {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         
-        // اضافه کردن script برای صفحات پرسنل
-        add_action('admin_head', array($this, 'add_staff_page_scripts'));
-        
         // ثبت پست‌تایپ‌ها
         add_action('init', array($this, 'register_post_types'));
 
@@ -102,18 +99,32 @@ class University_Management {
         add_action('save_post_um_seminars', array($this, 'save_seminar_meta'));
         add_action('save_post_um_employment_exams', array($this, 'save_employment_exam_meta'));
         add_action('save_post_um_staff', array($this, 'save_staff_meta'));
-        add_action('save_post', array($this, 'debug_save_post'), 5);
-        add_action('wp_insert_post', array($this, 'debug_wp_insert_post'), 5);
-        add_action('admin_head', array($this, 'add_staff_nonce_once'));
-        add_action('admin_init', array($this, 'handle_staff_save'));
         add_action('save_post_um_slides', array($this, 'save_slide_meta'));
         add_action('delete_post', array($this, 'maybe_resync_slides_on_delete'), 10, 1);
+        
+        // پاک کردن کش برای اطمینان از نمایش تغییرات
+        add_action('admin_init', array($this, 'clear_cache_for_employment_exams'));
         
         // اضافه کردن اکشن‌های AJAX
         add_action('wp_ajax_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
         add_action('wp_ajax_nopriv_um_get_videos_by_category', array($this, 'ajax_get_videos_by_category'));
         add_action('wp_ajax_um_get_videos_by_language', array($this, 'ajax_get_videos_by_language'));
         add_action('wp_ajax_nopriv_um_get_videos_by_language', array($this, 'ajax_get_videos_by_language'));
+        
+        // Register shortcode
+        add_shortcode('um_staff_subordinates', array($this, 'staff_subordinates_shortcode'));
+        
+        // Test shortcode for debugging
+        add_shortcode('um_test_subordinates', array($this, 'test_subordinates_shortcode'));
+        
+        // Manual sync shortcode
+        add_shortcode('um_sync_subordinates', array($this, 'sync_subordinates_shortcode'));
+        
+        // Clean subordinates shortcode
+        add_shortcode('um_clean_subordinates', array($this, 'clean_subordinates_shortcode'));
+        
+        // Sync subordinates data on admin init
+        add_action('admin_init', array($this, 'sync_subordinates_data'));
         
         // اکشن‌های AJAX برای پایگاه داده
         add_action('wp_ajax_um_import_database', array($this, 'ajax_import_database'));
@@ -1572,6 +1583,24 @@ class University_Management {
             'normal',
             'high'
         );
+        
+        add_meta_box(
+            'um_staff_subordinates',
+            __('کارمندان زیر مجموعه', 'university-management'),
+            array($this, 'staff_subordinates_meta_box'),
+            'um_staff',
+            'normal',
+            'high'
+        );
+        
+        add_meta_box(
+            'um_staff_sub_preview',
+            __('پیش‌نمایش ذخیره‌ی زیرمجموعه', 'university-management'),
+            array($this, 'staff_sub_preview_meta_box'),
+            'um_staff',
+            'side',
+            'low'
+        );
 
         // متاباکس‌های اسلاید
         add_meta_box(
@@ -2004,47 +2033,21 @@ class University_Management {
     }
 
     /**
-     * اضافه کردن script برای صفحات پرسنل
-     */
-    public function add_staff_page_scripts() {
-        global $pagenow, $post;
-        
-        // بررسی اینکه آیا در صفحه ویرایش پرسنل هستیم
-        if (($pagenow === 'post.php' || $pagenow === 'post-new.php') && 
-            (($post && $post->post_type === 'um_staff') || 
-             (isset($_GET['post_type']) && $_GET['post_type'] === 'um_staff'))) {
-            
-            // اضافه کردن script مستقیماً
-            $admin_js_url = UM_PLUGIN_URL . 'assets/js/admin.js';
-            echo '<script src="' . esc_url($admin_js_url) . '?v=' . UM_VERSION . '"></script>';
-            echo '<script>console.log("Staff page script loaded directly");</script>';
-        }
-    }
-
-    /**
      * بارگذاری فایل‌های CSS و JS در سمت مدیریت
      */
     public function enqueue_admin_assets($hook) {
-        // بررسی صفحات مدیریت افزونه یا صفحات ویرایش پرسنل
-        if (strpos($hook, 'university-management') === false && strpos($hook, 'post.php') === false && strpos($hook, 'post-new.php') === false) {
-            return;
-        }
-        
-        // اگر در صفحه ویرایش پست هستیم، بررسی کنیم که پست تایپ پرسنل باشد
-        if (strpos($hook, 'post.php') !== false || strpos($hook, 'post-new.php') !== false) {
-            // بررسی از طریق GET parameter
-            $post_id = isset($_GET['post']) ? intval($_GET['post']) : 0;
-            if ($post_id > 0) {
-                $post_type = get_post_type($post_id);
-                if ($post_type !== 'um_staff') {
-                    return;
-                }
-            } elseif (strpos($hook, 'post-new.php') !== false) {
-                // برای پست جدید، بررسی کنیم که post_type در URL باشد
-                $post_type = isset($_GET['post_type']) ? sanitize_text_field($_GET['post_type']) : 'post';
-                if ($post_type !== 'um_staff') {
-                    return;
-                }
+        // بررسی صفحات مدیریت افزونه
+        if (strpos($hook, 'university-management') === false) {
+            // Also load on post edit pages for um_staff
+            if (strpos($hook, 'post.php') === false && strpos($hook, 'post-new.php') === false) {
+                return;
+            }
+            // Check if we're editing um_staff post type
+            if (isset($_GET['post']) && get_post_type($_GET['post']) !== 'um_staff') {
+                return;
+            }
+            if (isset($_GET['post_type']) && $_GET['post_type'] !== 'um_staff') {
+                return;
             }
         }
         
@@ -2059,32 +2062,27 @@ class University_Management {
             );
         }
         
+        // استایل‌های متاباکس کارمندان زیر مجموعه
+        $subordinates_css = UM_PLUGIN_DIR . 'assets/css/staff-subordinates-admin.css';
+        if (file_exists($subordinates_css)) {
+            wp_enqueue_style(
+                'university-management-staff-subordinates-admin-style',
+                UM_PLUGIN_URL . 'assets/css/staff-subordinates-admin.css',
+                array(),
+                UM_VERSION
+            );
+        }
+        
         // جاوااسکریپت‌های مدیریت (فقط اگر فایل وجود داشته باشد)
         $admin_js = UM_PLUGIN_DIR . 'assets/js/admin.js';
         if (file_exists($admin_js)) {
             wp_enqueue_script(
                 'university-management-admin-script',
                 UM_PLUGIN_URL . 'assets/js/admin.js',
-                array('jquery', 'wp-media'),
+                array('jquery'),
                 UM_VERSION,
                 true
             );
-            
-            // اضافه کردن متغیرهای مورد نیاز برای AJAX
-            wp_localize_script('university-management-admin-script', 'um_admin_ajax', array(
-                'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('um_admin_nonce')
-            ));
-            
-            // Debug: اضافه کردن script برای تست
-            add_action('admin_footer', function() {
-                echo '<script>console.log("University Management Admin Script Enqueued Successfully");</script>';
-            });
-        } else {
-            // Debug: اگر فایل وجود نداشته باشد
-            add_action('admin_footer', function() {
-                echo '<script>console.error("Admin JS file not found: ' . $admin_js . '");</script>';
-            });
         }
         
         // منابع خاص صفحه تنظیمات عمومی
@@ -2505,6 +2503,19 @@ class University_Management {
         register_meta('post', 'start_date', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
         register_meta('post', 'end_date', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
         register_meta('post', 'exam_date', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'contact_number', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'job_title', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'education_level', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'exam_type', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'registration_start_date', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'registration_end_date', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'employment_link', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'employment_link_enabled', array('show_in_rest' => true, 'single' => true, 'type' => 'boolean'));
+        register_meta('post', 'exam_time', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'exam_date_custom', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'exam_status_custom', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        register_meta('post', 'exam_results_link', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
+        
         register_meta('post', 'poster', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
         register_meta('post', 'agahi_file', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
         register_meta('post', 'link', array('show_in_rest' => true, 'single' => true, 'type' => 'string'));
@@ -2623,6 +2634,30 @@ class University_Management {
                 'sanitize_callback' => $type === 'integer' ? 'absint' : 'sanitize_text_field',
             ));
         }
+
+        // Register subordinates meta for REST API
+        register_meta('post', '_um_staff_subordinates', array(
+            'object_subtype'   => 'um_staff',
+            'type'             => 'array',
+            'single'           => true,
+            'show_in_rest'     => true,
+            'sanitize_callback' => function($value) {
+                if (!is_array($value)) return [];
+                $out = [];
+                foreach($value as $r) {
+                    $out[] = array(
+                        'first_name' => sanitize_text_field(isset($r['first_name']) ? $r['first_name'] : ''),
+                        'last_name'  => sanitize_text_field(isset($r['last_name']) ? $r['last_name'] : ''),
+                        'position'   => sanitize_text_field(isset($r['position']) ? $r['position'] : ''),
+                        'image_id'   => intval(isset($r['image_id']) ? $r['image_id'] : 0),
+                        'phone'      => sanitize_text_field(isset($r['phone']) ? $r['phone'] : ''),
+                        'internal'   => sanitize_text_field(isset($r['internal']) ? $r['internal'] : ''),
+                    );
+                }
+                return $out;
+            },
+            'auth_callback'    => function() { return current_user_can('edit_posts'); },
+        ));
     }
 
     /**
@@ -4423,42 +4458,129 @@ class University_Management {
         $exam_requirements = get_post_meta($post->ID, '_exam_requirements', true);
         $exam_application_deadline = get_post_meta($post->ID, '_exam_application_deadline', true);
         $exam_status = get_post_meta($post->ID, '_exam_status', true);
+        
+        // دریافت فیلدهای سفارشی جدید
+        $city = get_post_meta($post->ID, 'city', true);
+        $contact_number = get_post_meta($post->ID, 'contact_number', true);
+        $job_title = get_post_meta($post->ID, 'job_title', true);
+        $education_level = get_post_meta($post->ID, 'education_level', true);
+        $exam_type = get_post_meta($post->ID, 'exam_type', true);
+        $registration_start_date = get_post_meta($post->ID, 'registration_start_date', true);
+        $registration_end_date = get_post_meta($post->ID, 'registration_end_date', true);
+        $employment_link = get_post_meta($post->ID, 'employment_link', true);
+        $employment_link_enabled = get_post_meta($post->ID, 'employment_link_enabled', true);
+        $exam_time_custom = get_post_meta($post->ID, 'exam_time', true);
+        $exam_date_custom = get_post_meta($post->ID, 'exam_date_custom', true);
+        $exam_status_custom = get_post_meta($post->ID, 'exam_status_custom', true);
+        $exam_results_link = get_post_meta($post->ID, 'exam_results_link', true);
 
         echo '<table class="form-table">';
         
-        echo '<tr><th><label for="exam_date">' . __('تاریخ آزمون', 'university-management') . '</label></th>';
-        echo '<td><input type="date" id="exam_date" name="exam_date" value="' . esc_attr($exam_date) . '" class="regular-text"></td></tr>';
-
-        echo '<tr><th><label for="exam_time">' . __('زمان آزمون', 'university-management') . '</label></th>';
-        echo '<td><input type="time" id="exam_time" name="exam_time" value="' . esc_attr($exam_time) . '" class="regular-text"></td></tr>';
-
-        echo '<tr><th><label for="exam_duration">' . __('مدت زمان آزمون (دقیقه)', 'university-management') . '</label></th>';
-        echo '<td><input type="number" id="exam_duration" name="exam_duration" value="' . esc_attr($exam_duration) . '" class="regular-text" min="30" step="15"></td></tr>';
-
-        echo '<tr><th><label for="exam_position">' . __('موقعیت شغلی', 'university-management') . '</label></th>';
-        echo '<td><input type="text" id="exam_position" name="exam_position" value="' . esc_attr($exam_position) . '" class="regular-text" placeholder="مثال: مهندس نرم‌افزار"></td></tr>';
-
-        echo '<tr><th><label for="exam_department">' . __('دپارتمان', 'university-management') . '</label></th>';
-        echo '<td><input type="text" id="exam_department" name="exam_department" value="' . esc_attr($exam_department) . '" class="regular-text" placeholder="مثال: فناوری اطلاعات"></td></tr>';
-
-        echo '<tr><th><label for="exam_location">' . __('محل برگزاری', 'university-management') . '</label></th>';
-        echo '<td><input type="text" id="exam_location" name="exam_location" value="' . esc_attr($exam_location) . '" class="regular-text" placeholder="مثال: سالن اجتماعات دانشگاه"></td></tr>';
-
-        echo '<tr><th><label for="exam_application_deadline">' . __('مهلت ثبت‌نام', 'university-management') . '</label></th>';
-        echo '<td><input type="date" id="exam_application_deadline" name="exam_application_deadline" value="' . esc_attr($exam_application_deadline) . '" class="regular-text"></td></tr>';
-
-        echo '<tr><th><label for="exam_status">' . __('وضعیت آزمون', 'university-management') . '</label></th>';
-        echo '<td><select id="exam_status" name="exam_status" class="regular-text">';
-        echo '<option value="upcoming"' . selected($exam_status, 'upcoming', false) . '>' . __('در انتظار برگزاری', 'university-management') . '</option>';
-        echo '<option value="registration"' . selected($exam_status, 'registration', false) . '>' . __('در حال ثبت‌نام', 'university-management') . '</option>';
-        echo '<option value="closed"' . selected($exam_status, 'closed', false) . '>' . __('بسته', 'university-management') . '</option>';
-        echo '<option value="completed"' . selected($exam_status, 'completed', false) . '>' . __('برگزار شده', 'university-management') . '</option>';
+        // فقط فیلدهای سفارشی جدید
+        echo '<tr><th colspan="2" style="padding: 20px 0 10px 0;"><h3 style="color: #1e2a78; margin: 0;">' . __('اطلاعات تکمیلی آزمون', 'university-management') . '</h3></th></tr>';
+        
+        echo '<tr><th><label for="city">' . __('نام شهر خدمت', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="city" name="city" value="' . esc_attr($city) . '" class="regular-text" placeholder="مثال: اهواز"></td></tr>';
+        
+        echo '<tr><th><label for="contact_number">' . __('شماره تماس', 'university-management') . '</label></th>';
+        echo '<td><input type="tel" id="contact_number" name="contact_number" value="' . esc_attr($contact_number) . '" class="regular-text" placeholder="مثال: 0999184394"></td></tr>';
+        
+        echo '<tr><th><label for="job_title">' . __('عنوان شغلی مورد نیاز', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="job_title" name="job_title" value="' . esc_attr($job_title) . '" class="regular-text" placeholder="مثال: سیمبان، سیمبان خط گرم"></td></tr>';
+        
+        echo '<tr><th><label for="education_level">' . __('مقطع تحصیلی مورد نیاز', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="education_level" name="education_level" value="' . esc_attr($education_level) . '" class="regular-text" placeholder="مثال: دیپلم، فوق دیپلم برق"></td></tr>';
+        
+        echo '<tr><th><label for="exam_type">' . __('نوع آزمون', 'university-management') . '</label></th>';
+        echo '<td><select id="exam_type" name="exam_type" class="regular-text">';
+        echo '<option value="">' . __('انتخاب کنید...', 'university-management') . '</option>';
+        echo '<option value="آزمون بکارگیری نیروی انسانی"' . selected($exam_type, 'آزمون بکارگیری نیروی انسانی', false) . '>' . __('آزمون بکارگیری نیروی انسانی', 'university-management') . '</option>';
+        echo '<option value="آگهی جذب نیروی حجمی"' . selected($exam_type, 'آگهی جذب نیروی حجمی', false) . '>' . __('آگهی جذب نیروی حجمی', 'university-management') . '</option>';
+        echo '<option value="آزمون استخدامی عمومی"' . selected($exam_type, 'آزمون استخدامی عمومی', false) . '>' . __('آزمون استخدامی عمومی', 'university-management') . '</option>';
+        echo '</select></td></tr>';
+        
+        echo '<tr><th><label for="registration_start_date">' . __('شروع ثبت نام', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="registration_start_date" name="registration_start_date" value="' . esc_attr($registration_start_date) . '" class="regular-text" placeholder="مثال: 1404/07/27"></td></tr>';
+        
+        echo '<tr><th><label for="registration_end_date">' . __('پایان ثبت نام', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="registration_end_date" name="registration_end_date" value="' . esc_attr($registration_end_date) . '" class="regular-text" placeholder="مثال: 1404/08/06"></td></tr>';
+        
+        echo '<tr><th><label for="exam_date_custom">' . __('تاریخ آزمون', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="exam_date_custom" name="exam_date_custom" value="' . esc_attr($exam_date_custom) . '" class="regular-text" placeholder="مثال: 1404/08/22"></td></tr>';
+        
+        echo '<tr><th><label for="exam_time_custom">' . __('زمان آزمون', 'university-management') . '</label></th>';
+        echo '<td><input type="text" id="exam_time_custom" name="exam_time_custom" value="' . esc_attr($exam_time_custom) . '" class="regular-text" placeholder="مثال: 08:00"></td></tr>';
+        
+        echo '<tr><th><label for="employment_link">' . __('لینک استخدام', 'university-management') . '</label></th>';
+        echo '<td><input type="url" id="employment_link" name="employment_link" value="' . esc_url($employment_link) . '" class="regular-text" placeholder="مثال: https://example.com/employment"></td></tr>';
+        
+        echo '<tr><th><label for="exam_results_link">' . __('لینک نتایج آزمون', 'university-management') . '</label></th>';
+        echo '<td><input type="url" id="exam_results_link" name="exam_results_link" value="' . esc_url($exam_results_link) . '" class="regular-text" placeholder="مثال: https://example.com/results"></td></tr>';
+        
+        echo '<tr><th><label for="employment_link_enabled">' . __('وضعیت لینک استخدام', 'university-management') . '</label></th>';
+        echo '<td><label><input type="checkbox" id="employment_link_enabled" name="employment_link_enabled" value="1"' . checked($employment_link_enabled, 1, false) . '> ' . __('لینک استخدام فعال باشد', 'university-management') . '</label><br><small>' . __('اگر این گزینه فعال باشد، لینک استخدام در ویجت نمایش داده می‌شود', 'university-management') . '</small></td></tr>';
+        
+        echo '<tr><th><label for="exam_status_custom">' . __('وضعیت آزمون', 'university-management') . '</label></th>';
+        echo '<td><select id="exam_status_custom" name="exam_status_custom" class="regular-text">';
+        echo '<option value="در انتظار برگزاری"' . selected($exam_status_custom, 'در انتظار برگزاری', false) . '>' . __('در انتظار برگزاری', 'university-management') . '</option>';
+        echo '<option value="در حال ثبت نام"' . selected($exam_status_custom, 'در حال ثبت نام', false) . '>' . __('در حال ثبت نام', 'university-management') . '</option>';
+        echo '<option value="بسته"' . selected($exam_status_custom, 'بسته', false) . '>' . __('بسته', 'university-management') . '</option>';
+        echo '<option value="برگزار شده"' . selected($exam_status_custom, 'برگزار شده', false) . '>' . __('برگزار شده', 'university-management') . '</option>';
+        echo '<option value="اعلام نتایج"' . selected($exam_status_custom, 'اعلام نتایج', false) . '>' . __('اعلام نتایج', 'university-management') . '</option>';
         echo '</select></td></tr>';
 
-        echo '<tr><th><label for="exam_requirements">' . __('شرایط و الزامات', 'university-management') . '</label></th>';
-        echo '<td><textarea id="exam_requirements" name="exam_requirements" rows="5" class="large-text" placeholder="شرایط و الزامات مورد نیاز برای شرکت در آزمون...">' . esc_textarea($exam_requirements) . '</textarea></td></tr>';
-
         echo '</table>';
+        
+        // اضافه کردن اسکریپت برای اطمینان از نمایش گزینه "اعلام نتایج"
+        echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // بررسی وجود گزینه "اعلام نتایج" در dropdown
+            const examStatusSelect = document.getElementById("exam_status_custom");
+            if (examStatusSelect) {
+                const hasResultsOption = Array.from(examStatusSelect.options).some(option => option.value === "اعلام نتایج");
+                if (!hasResultsOption) {
+                    console.warn("گزینه \'اعلام نتایج\' در dropdown وضعیت آزمون یافت نشد!");
+                    // اضافه کردن گزینه اگر وجود نداشته باشد
+                    const resultsOption = document.createElement("option");
+                    resultsOption.value = "اعلام نتایج";
+                    resultsOption.textContent = "اعلام نتایج";
+                    examStatusSelect.appendChild(resultsOption);
+                }
+            }
+        });
+        </script>';
+        
+        // اضافه کردن اسکریپت فرمت کردن تاریخ
+        echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const startDateInput = document.getElementById("registration_start_date");
+            const endDateInput = document.getElementById("registration_end_date");
+            
+            if (startDateInput && endDateInput) {
+                // فرمت کردن تاریخ هنگام تایپ
+                function formatDate(input) {
+                    let value = input.value.replace(/\D/g, "");
+                    
+                    if (value.length >= 4) {
+                        value = value.substring(0, 4) + "/" + value.substring(4);
+                    }
+                    if (value.length >= 7) {
+                        value = value.substring(0, 7) + "/" + value.substring(7, 9);
+                    }
+                    
+                    input.value = value;
+                }
+                
+                startDateInput.addEventListener("input", function() {
+                    formatDate(this);
+                });
+                
+                endDateInput.addEventListener("input", function() {
+                    formatDate(this);
+                });
+            }
+        });
+        </script>';
     }
 
     /**
@@ -4589,7 +4711,21 @@ class University_Management {
         $html = ob_get_clean();
         wp_send_json_success($html);
     }
-
+    
+    /**
+     * پاک کردن کش برای اطمینان از نمایش تغییرات در آزمون‌های استخدامی
+     */
+    public function clear_cache_for_employment_exams() {
+        // فقط در صفحات مربوط به آزمون‌های استخدامی
+        if (isset($_GET['post_type']) && $_GET['post_type'] === 'um_employment_exams') {
+            // پاک کردن کش object cache
+            wp_cache_flush();
+            
+            // پاک کردن کش transients
+            delete_transient('um_employment_exams_meta_fields');
+        }
+    }
+    
     /**
      * ذخیره متادیتای آزمون‌های استخدامی
      */
@@ -4644,6 +4780,70 @@ class University_Management {
 
         if (isset($_POST['exam_status'])) {
             update_post_meta($post_id, '_exam_status', sanitize_text_field($_POST['exam_status']));
+        }
+        
+        // ذخیره فیلدهای سفارشی جدید
+        if (isset($_POST['city'])) {
+            update_post_meta($post_id, 'city', sanitize_text_field($_POST['city']));
+        }
+        
+        if (isset($_POST['contact_number'])) {
+            update_post_meta($post_id, 'contact_number', sanitize_text_field($_POST['contact_number']));
+        }
+        
+        if (isset($_POST['job_title'])) {
+            update_post_meta($post_id, 'job_title', sanitize_text_field($_POST['job_title']));
+        }
+        
+        if (isset($_POST['education_level'])) {
+            update_post_meta($post_id, 'education_level', sanitize_text_field($_POST['education_level']));
+        }
+        
+        if (isset($_POST['exam_type'])) {
+            update_post_meta($post_id, 'exam_type', sanitize_text_field($_POST['exam_type']));
+        }
+        
+        if (isset($_POST['registration_start_date'])) {
+            update_post_meta($post_id, 'registration_start_date', sanitize_text_field($_POST['registration_start_date']));
+        }
+        
+        if (isset($_POST['registration_end_date'])) {
+            update_post_meta($post_id, 'registration_end_date', sanitize_text_field($_POST['registration_end_date']));
+        }
+        
+        if (isset($_POST['employment_link'])) {
+            update_post_meta($post_id, 'employment_link', esc_url_raw($_POST['employment_link']));
+        }
+        
+        if (isset($_POST['employment_link_enabled'])) {
+            update_post_meta($post_id, 'employment_link_enabled', 1);
+        } else {
+            update_post_meta($post_id, 'employment_link_enabled', 0);
+        }
+        
+        if (isset($_POST['exam_time_custom'])) {
+            update_post_meta($post_id, 'exam_time', sanitize_text_field($_POST['exam_time_custom']));
+        }
+        
+        if (isset($_POST['exam_date_custom'])) {
+            update_post_meta($post_id, 'exam_date_custom', sanitize_text_field($_POST['exam_date_custom']));
+        }
+        
+        if (isset($_POST['exam_status_custom'])) {
+            update_post_meta($post_id, 'exam_status_custom', sanitize_text_field($_POST['exam_status_custom']));
+        }
+        
+        if (isset($_POST['exam_results_link'])) {
+            update_post_meta($post_id, 'exam_results_link', esc_url_raw($_POST['exam_results_link']));
+        }
+        
+        // برای سازگاری با فیلدهای موجود
+        if (isset($_POST['exam_date'])) {
+            update_post_meta($post_id, 'exam_date', sanitize_text_field($_POST['exam_date']));
+        }
+        
+        if (isset($_POST['exam_application_deadline'])) {
+            update_post_meta($post_id, 'end_date', sanitize_text_field($_POST['exam_application_deadline']));
         }
     }
     
@@ -6517,28 +6717,15 @@ class University_Management {
      * ایجاد کلیدهای متای پیشفرض برای پرسنل تا در بخش "زمینه‌های دلخواه" قابل انتخاب باشند
      */
     public function save_staff_meta($post_id) {
-        error_log('Staff Meta Save Debug - Function called for post ID: ' . $post_id);
-        error_log('Staff Meta Save Debug - POST method: ' . $_SERVER['REQUEST_METHOD']);
-        error_log('Staff Meta Save Debug - POST data keys: ' . implode(', ', array_keys($_POST)));
-        
-        // اضافه کردن alert برای تست
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>Staff Meta Save Function Executed!</p></div>';
-        });
-        
         // جلوگیری از اجرا در حالت اتوسیو یا درخواست‌های سریع
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-            error_log('Staff Meta Save Debug - Autosave detected, skipping');
             return;
         }
 
         // بررسی nonce
         if (!isset($_POST['um_staff_meta_nonce']) || !wp_verify_nonce($_POST['um_staff_meta_nonce'], 'um_save_staff_meta')) {
-            error_log('Staff Meta Save Debug - Nonce verification failed');
             return;
         }
-        
-        error_log('Staff Meta Save Debug - Nonce verification passed');
 
         // دسترسی کاربر
         if (!current_user_can('edit_post', $post_id)) {
@@ -6612,31 +6799,83 @@ class University_Management {
             update_post_meta($post_id, 'staff_thumbnail_url', esc_url_raw($thumb_url));
         }
 
-        // ذخیره زیر مجموعه پرسنل
-        error_log('Staff Meta Save Debug - POST data: ' . print_r($_POST, true));
+        // ذخیره کارمندان زیر مجموعه
+        if (isset($_POST['um_staff_subordinates_nonce']) && wp_verify_nonce($_POST['um_staff_subordinates_nonce'], 'um_staff_subordinates_save')) {
+            $rows = isset($_POST['um_sub']) && is_array($_POST['um_sub']) ? $_POST['um_sub'] : [];
+            $clean = [];
+            
+            foreach($rows as $r) {
+                $first = sanitize_text_field(isset($r['first_name']) ? $r['first_name'] : '');
+                $last  = sanitize_text_field(isset($r['last_name']) ? $r['last_name'] : '');
+                $pos   = sanitize_text_field(isset($r['position']) ? $r['position'] : '');
+                $img   = isset($r['image_id']) ? intval($r['image_id']) : 0;
+                $ph    = sanitize_text_field(isset($r['phone']) ? $r['phone'] : '');
+                $int   = sanitize_text_field(isset($r['internal']) ? $r['internal'] : '');
+                
+                // Skip completely empty rows
+                if ($first === '' && $last === '' && $pos === '' && $img === 0 && $ph === '' && $int === '') {
+                    continue;
+                }
+                
+                $clean[] = [
+                    'first_name' => $first,
+                    'last_name'  => $last,
+                    'position'   => $pos,
+                    'image_id'   => $img,
+                    'phone'      => $ph,
+                    'internal'   => $int,
+                ];
+            }
+            
+            update_post_meta($post_id, '_um_staff_subordinates', $clean);
+        }
         
-        if (isset($_POST['staff_sub_members']) && is_array($_POST['staff_sub_members'])) {
-            $sub_members = [];
-            foreach ($_POST['staff_sub_members'] as $member) {
-                // بررسی اینکه حداقل نام یا نام خانوادگی پر شده باشد
-                if (!empty($member['first_name']) || !empty($member['last_name'])) {
-                    $sub_members[] = [
-                        'first_name' => sanitize_text_field($member['first_name'] ?? ''),
-                        'last_name' => sanitize_text_field($member['last_name'] ?? ''),
-                        'position' => sanitize_text_field($member['position'] ?? ''),
-                        'image_id' => absint($member['image_id'] ?? 0),
-                        'phone' => sanitize_text_field($member['phone'] ?? ''),
-                        'internal' => sanitize_text_field($member['internal'] ?? '')
-                    ];
+        // Always save individual meta keys for custom fields display (outside nonce check)
+        $rows = isset($_POST['um_sub']) && is_array($_POST['um_sub']) ? $_POST['um_sub'] : [];
+        if (!empty($rows)) {
+            $clean = [];
+            foreach($rows as $r) {
+                $first = sanitize_text_field(isset($r['first_name']) ? $r['first_name'] : '');
+                $last  = sanitize_text_field(isset($r['last_name']) ? $r['last_name'] : '');
+                $pos   = sanitize_text_field(isset($r['position']) ? $r['position'] : '');
+                $img   = isset($r['image_id']) ? intval($r['image_id']) : 0;
+                $ph    = sanitize_text_field(isset($r['phone']) ? $r['phone'] : '');
+                $int   = sanitize_text_field(isset($r['internal']) ? $r['internal'] : '');
+                
+                // Skip completely empty rows
+                if ($first === '' && $last === '' && $pos === '' && $img === 0 && $ph === '' && $int === '') {
+                    continue;
+                }
+                
+                $clean[] = [
+                    'first_name' => $first,
+                    'last_name'  => $last,
+                    'position'   => $pos,
+                    'image_id'   => $img,
+                    'phone'      => $ph,
+                    'internal'   => $int,
+                ];
+            }
+            
+            // Always clear ALL existing individual meta keys first
+            $existing_meta = get_post_meta($post_id);
+            foreach ($existing_meta as $key => $value) {
+                if (strpos($key, '_um_subordinate_') === 0 || strpos($key, 'um_subordinate_') === 0) {
+                    delete_post_meta($post_id, $key);
                 }
             }
-            error_log('Staff Meta Save Debug - Sub-members to save: ' . print_r($sub_members, true));
-            $result = update_post_meta($post_id, 'staff_sub_members', $sub_members);
-            error_log('Staff Meta Save Debug - Update result: ' . ($result ? 'success' : 'failed'));
-        } else {
-            // اگر هیچ زیر مجموعه‌ای ارسال نشده، آرایه خالی ذخیره کن
-            error_log('Staff Meta Save Debug - No sub-members in POST data');
-            update_post_meta($post_id, 'staff_sub_members', []);
+            
+            // Only save individual meta keys if there are subordinates
+            if (!empty($clean)) {
+                foreach($clean as $index => $subordinate) {
+                    update_post_meta($post_id, 'um_subordinate_' . $index . '_first_name', $subordinate['first_name']);
+                    update_post_meta($post_id, 'um_subordinate_' . $index . '_last_name', $subordinate['last_name']);
+                    update_post_meta($post_id, 'um_subordinate_' . $index . '_position', $subordinate['position']);
+                    update_post_meta($post_id, 'um_subordinate_' . $index . '_image_id', $subordinate['image_id']);
+                    update_post_meta($post_id, 'um_subordinate_' . $index . '_phone', $subordinate['phone']);
+                    update_post_meta($post_id, 'um_subordinate_' . $index . '_internal', $subordinate['internal']);
+                }
+            }
         }
     }
 
@@ -6686,71 +6925,10 @@ class University_Management {
     }
 
     /**
-     * Debug function to check if save_post is being called
-     */
-    public function debug_save_post($post_id) {
-        if (get_post_type($post_id) === 'um_staff') {
-            error_log('Debug Save Post - save_post called for um_staff post ID: ' . $post_id);
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-info is-dismissible"><p>Debug: save_post hook executed for um_staff!</p></div>';
-            });
-        }
-    }
-
-    /**
-     * Debug function to check if wp_insert_post is being called
-     */
-    public function debug_wp_insert_post($post_id) {
-        if (get_post_type($post_id) === 'um_staff') {
-            error_log('Debug WP Insert Post - wp_insert_post called for um_staff post ID: ' . $post_id);
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-warning is-dismissible"><p>Debug: wp_insert_post hook executed for um_staff!</p></div>';
-            });
-        }
-    }
-
-    /**
-     * Handle staff save in admin_init
-     */
-    public function handle_staff_save() {
-        if (isset($_POST['post_type']) && $_POST['post_type'] === 'um_staff' && 
-            isset($_POST['action']) && $_POST['action'] === 'editpost') {
-            
-            error_log('Handle Staff Save - admin_init triggered for um_staff');
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p>Debug: admin_init triggered for um_staff save!</p></div>';
-            });
-            
-            // Call save function directly
-            if (isset($_POST['post_ID'])) {
-                $this->save_staff_meta($_POST['post_ID']);
-            }
-        }
-    }
-
-    /**
-     * اضافه کردن nonce فقط یک بار در صفحه پرسنل
-     */
-    public function add_staff_nonce_once() {
-        global $pagenow, $post;
-        if (($pagenow === 'post.php' || $pagenow === 'post-new.php') && 
-            (($post && $post->post_type === 'um_staff') || 
-             (isset($_GET['post_type']) && $_GET['post_type'] === 'um_staff'))) {
-            static $nonce_added = false;
-            if (!$nonce_added) {
-                echo '<script>console.log("Adding staff nonce field");</script>';
-                wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
-                $nonce_added = true;
-                $GLOBALS['um_nonce_added'] = true;
-            }
-        }
-    }
-
-    /**
      * نمایش متاباکس جزئیات پرسنل
      */
     public function staff_details_meta_box($post) {
-        // nonce در add_staff_nonce_once اضافه می‌شود
+        wp_nonce_field('um_save_staff_meta', 'um_staff_meta_nonce');
 
         $meta = [
             'first_name'          => get_post_meta($post->ID, 'staff_first_name', true),
@@ -6809,163 +6987,194 @@ class University_Management {
         }
 
         echo '</table>';
-
-        // بخش زیر مجموعه پرسنل
-        $sub_members = get_post_meta($post->ID, 'staff_sub_members', true);
-        if (!is_array($sub_members)) {
-            $sub_members = [];
-        }
-
-        echo '<h3 style="margin-top: 30px; margin-bottom: 15px; color: #1e2a78;">' . __('کارمندان زیر مجموعه', 'university-management') . '</h3>';
-        echo '<div id="um-sub-members-container">';
-        
-        if (!empty($sub_members)) {
-            foreach ($sub_members as $index => $member) {
-                $this->render_sub_member_row($index, $member);
-            }
-        } else {
-            // نمایش یک ردیف خالی برای شروع
-            $this->render_sub_member_row(0, []);
-        }
-        
-        echo '</div>';
-        echo '<button type="button" id="um-add-sub-member" class="button button-secondary" style="margin-top: 10px;">';
-        echo '<span class="dashicons dashicons-plus" style="vertical-align: middle; margin-left: 5px;"></span>';
-        echo __('افزودن کارمند جدید', 'university-management');
-        echo '</button>';
-        
-        // اضافه کردن script مستقیماً در HTML
-        echo '<script>
-        console.log("Sub-members section loaded");
-        
-        // تعریف متغیرهای AJAX
-        window.um_admin_ajax = {
-            ajaxurl: "' . admin_url('admin-ajax.php') . '",
-            nonce: "' . wp_create_nonce('um_admin_nonce') . '"
-        };
-        console.log("AJAX variables defined:", window.um_admin_ajax);
-        
-        // تست ساده برای دکمه افزودن
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log("DOM loaded, looking for add button");
-            var addBtn = document.getElementById("um-add-sub-member");
-            if (addBtn) {
-                console.log("Add button found, adding click listener");
-                addBtn.addEventListener("click", function(e) {
-                    e.preventDefault();
-                    console.log("Add button clicked!");
-                    alert("دکمه افزودن کار کرد!");
-                });
-            } else {
-                console.log("Add button not found");
-            }
-        });
-        
-        // تست ذخیره‌سازی
-        document.addEventListener("DOMContentLoaded", function() {
-            var form = document.getElementById("post");
-            if (form) {
-                form.addEventListener("submit", function() {
-                    console.log("Form submitted - checking for sub-members data");
-                    var subMembers = document.querySelectorAll("input[name^=\"staff_sub_members\"]");
-                    console.log("Found " + subMembers.length + " sub-member input fields");
-                    subMembers.forEach(function(input, index) {
-                        console.log("Input " + index + ":", input.name, "=", input.value);
-                    });
-                    
-                    // بررسی nonce
-                    var nonceField = document.querySelector("input[name=\"um_staff_meta_nonce\"]");
-                    if (nonceField) {
-                        console.log("Nonce field found:", nonceField.value);
-                    } else {
-                        console.log("Nonce field NOT found!");
-                    }
-                });
-            }
-        });
-        </script>';
-        
-        // نمایش debug info در صفحه
-        echo '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px;">';
-        echo '<strong>Debug Info:</strong><br>';
-        echo 'Post ID: ' . $post->ID . '<br>';
-        echo 'Post Type: ' . $post->post_type . '<br>';
-        echo 'Current User Can Edit: ' . (current_user_can("edit_post", $post->ID) ? "Yes" : "No") . '<br>';
-        echo 'Save Hook: ' . (has_action('save_post_um_staff', array($this, 'save_staff_meta')) ? "Yes" : "No") . '<br>';
-        echo 'Global Nonce Added: ' . (isset($GLOBALS['um_nonce_added']) ? "Yes" : "No") . '<br>';
-        echo '</div>';
     }
 
     /**
-     * رندر ردیف زیر مجموعه پرسنل
+     * متاباکس کارمندان زیر مجموعه
      */
-    public function render_sub_member_row($index, $member = []) {
-        $member = wp_parse_args($member, [
-            'first_name' => '',
-            'last_name' => '',
-            'position' => '',
-            'image_id' => '',
-            'phone' => '',
-            'internal' => ''
-        ]);
+    public function staff_subordinates_meta_box($post) {
+        wp_nonce_field('um_staff_subordinates_save', 'um_staff_subordinates_nonce');
+        
+        $rows = get_post_meta($post->ID, '_um_staff_subordinates', true);
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+        ?>
+        <style>
+            .um-sub-wrap { margin-top: 8px; }
+            .um-sub-row { 
+                background: #f9f9fb; 
+                border: 1px solid #ddd; 
+                border-radius: 8px; 
+                padding: 12px; 
+                margin-bottom: 12px; 
+            }
+            .um-sub-grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 10px; 
+            }
+            .um-sub-img img { 
+                width: 48px; 
+                height: 48px; 
+                object-fit: cover; 
+                border-radius: 6px; 
+                border: 1px solid #ddd; 
+                margin-inline-start: 8px; 
+            }
+            .um-sub-actions { 
+                margin-top: 8px; 
+            }
+        </style>
+        <div id="um-sub-wrap" class="um-sub-wrap">
+            <?php foreach($rows as $i => $r): 
+                $r = wp_parse_args((array)$r, [
+                    'first_name' => '',
+                    'last_name' => '',
+                    'position' => '',
+                    'image_id' => '',
+                    'phone' => '',
+                    'internal' => ''
+                ]);
+                $img_id = intval($r['image_id']); 
+                $src = $img_id ? wp_get_attachment_image_src($img_id, 'thumbnail')[0] : '';
+            ?>
+            <div class="um-sub-row" data-index="<?php echo esc_attr($i); ?>">
+                <strong>کارمند <?php echo intval($i) + 1; ?></strong>
+                <div class="um-sub-grid">
+                    <p>
+                        <label>نام<br>
+                            <input type="text" name="um_sub[<?php echo $i; ?>][first_name]" value="<?php echo esc_attr($r['first_name']); ?>" class="widefat">
+                        </label>
+                    </p>
+                    <p>
+                        <label>نام خانوادگی<br>
+                            <input type="text" name="um_sub[<?php echo $i; ?>][last_name]" value="<?php echo esc_attr($r['last_name']); ?>" class="widefat">
+                        </label>
+                    </p>
+                    <p>
+                        <label>سمت<br>
+                            <input type="text" name="um_sub[<?php echo $i; ?>][position]" value="<?php echo esc_attr($r['position']); ?>" class="widefat">
+                        </label>
+                    </p>
+                    <p class="um-sub-img">
+                        <label>تصویر</label><br>
+                        <input type="hidden" class="um-sub-image-id" name="um_sub[<?php echo $i; ?>][image_id]" value="<?php echo $img_id; ?>">
+                        <button type="button" class="button um-sub-media">انتخاب تصویر</button>
+                        <?php if($src): ?><img src="<?php echo esc_url($src); ?>" alt=""><?php endif; ?>
+                    </p>
+                    <p>
+                        <label>شماره تماس<br>
+                            <input type="text" name="um_sub[<?php echo $i; ?>][phone]" value="<?php echo esc_attr($r['phone']); ?>" class="widefat">
+                        </label>
+                    </p>
+                    <p>
+                        <label>شماره داخلی<br>
+                            <input type="text" name="um_sub[<?php echo $i; ?>][internal]" value="<?php echo esc_attr($r['internal']); ?>" class="widefat">
+                        </label>
+                    </p>
+                </div>
+                <div class="um-sub-actions">
+                    <button type="button" class="button-link delete um-sub-remove">حذف</button>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <p>
+            <button type="button" class="button button-primary" id="um-sub-add">افزودن کارمند جدید</button>
+        </p>
+        <script>
+        (function($) {
+            function bindRow($row) {
+                $row.on('click', '.um-sub-remove', function() { 
+                    $row.remove(); 
+                });
+                
+                $row.find('.um-sub-media').on('click', function(e) {
+                    e.preventDefault();
+                    const frame = wp.media({
+                        title: 'انتخاب تصویر',
+                        button: { text: 'انتخاب' },
+                        multiple: false
+                    });
+                    frame.on('select', function() {
+                        const att = frame.state().get('selection').first().toJSON();
+                        $row.find('.um-sub-image-id').val(att.id);
+                        if($row.find('img').length) { 
+                            $row.find('img').attr('src', att.sizes?.thumbnail?.url || att.url); 
+                        } else { 
+                            $('<img>').attr('src', att.sizes?.thumbnail?.url || att.url).appendTo($row.find('.um-sub-img')); 
+                        }
+                    });
+                    frame.open();
+                });
+            }
+            
+            jQuery('.um-sub-row').each(function() { 
+                bindRow(jQuery(this)); 
+            });
+            
+            jQuery('#um-sub-add').on('click', function() {
+                const i = jQuery('.um-sub-row').length;
+                const html = `
+                <div class="um-sub-row" data-index="${i}">
+                    <strong>کارمند ${i+1}</strong>
+                    <div class="um-sub-grid">
+                        <p><label>نام<br><input type="text" name="um_sub[${i}][first_name]" class="widefat"></label></p>
+                        <p><label>نام خانوادگی<br><input type="text" name="um_sub[${i}][last_name]" class="widefat"></label></p>
+                        <p><label>سمت<br><input type="text" name="um_sub[${i}][position]" class="widefat"></label></p>
+                        <p class="um-sub-img">
+                            <label>تصویر</label><br>
+                            <input type="hidden" class="um-sub-image-id" name="um_sub[${i}][image_id]" value="">
+                            <button type="button" class="button um-sub-media">انتخاب تصویر</button>
+                        </p>
+                        <p><label>شماره تماس<br><input type="text" name="um_sub[${i}][phone]" class="widefat"></label></p>
+                        <p><label>شماره داخلی<br><input type="text" name="um_sub[${i}][internal]" class="widefat"></label></p>
+                    </div>
+                    <div class="um-sub-actions"><button type="button" class="button-link delete um-sub-remove">حذف</button></div>
+                </div>`;
+                const $row = jQuery(html).appendTo('#um-sub-wrap');
+                bindRow($row);
+            });
+        })(jQuery);
+        </script>
+        <?php
+    }
 
-        echo '<div class="um-sub-member-row" data-index="' . esc_attr($index) . '" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #f9f9f9;">';
+    /**
+     * متاباکس پیش‌نمایش ذخیره‌ی زیرمجموعه (فقط خواندنی)
+     */
+    public function staff_sub_preview_meta_box($post) {
+        $rows = get_post_meta($post->ID, '_um_staff_subordinates', true);
+        if (!is_array($rows) || empty($rows)) { 
+            echo '<em>ذخیره‌ای ثبت نشده است.</em>'; 
+            return; 
+        }
+        echo '<ol>';
+        foreach($rows as $r) {
+            $full = esc_html(trim((isset($r['first_name']) ? $r['first_name'] : '') . ' ' . (isset($r['last_name']) ? $r['last_name'] : '')));
+            $pos  = esc_html(isset($r['position']) ? $r['position'] : '');
+            $ph   = esc_html(isset($r['phone']) ? $r['phone'] : '');
+            $int  = esc_html(isset($r['internal']) ? $r['internal'] : '');
+            echo '<li>' . $full . ($pos ? ' — ' . $pos : '') . ($ph ? ' — ' . $ph : '') . ($int ? ' — داخلی ' . $int : '') . '</li>';
+        }
+        echo '</ol><details><summary>JSON</summary><pre style="white-space:pre-wrap;direction:ltr">' . esc_html(wp_json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . '</pre></details>';
         
-        echo '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">';
-        echo '<h4 style="margin: 0; color: #1e2a78;">' . sprintf(__('کارمند %d', 'university-management'), $index + 1) . '</h4>';
-        echo '<button type="button" class="um-remove-sub-member button button-link-delete" style="color: #a00;">';
-        echo '<span class="dashicons dashicons-trash"></span> ' . __('حذف', 'university-management');
-        echo '</button>';
-        echo '</div>';
-
-        echo '<table class="form-table" style="margin: 0;">';
+        // Debug info
+        echo '<hr><h4>Debug Info:</h4>';
+        echo '<p><strong>Meta Key:</strong> _um_staff_subordinates</p>';
+        echo '<p><strong>Data Type:</strong> ' . gettype($rows) . '</p>';
+        echo '<p><strong>Count:</strong> ' . (is_array($rows) ? count($rows) : 'N/A') . '</p>';
         
-        // نام
-        echo '<tr><th style="width: 150px;"><label>' . __('نام', 'university-management') . '</label></th>';
-        echo '<td><input type="text" name="staff_sub_members[' . $index . '][first_name]" value="' . esc_attr($member['first_name']) . '" class="regular-text" placeholder="نام"></td></tr>';
-        
-        // نام خانوادگی
-        echo '<tr><th><label>' . __('نام خانوادگی', 'university-management') . '</label></th>';
-        echo '<td><input type="text" name="staff_sub_members[' . $index . '][last_name]" value="' . esc_attr($member['last_name']) . '" class="regular-text" placeholder="نام خانوادگی"></td></tr>';
-        
-        // سمت
-        echo '<tr><th><label>' . __('سمت', 'university-management') . '</label></th>';
-        echo '<td><input type="text" name="staff_sub_members[' . $index . '][position]" value="' . esc_attr($member['position']) . '" class="regular-text" placeholder="سمت"></td></tr>';
-        
-        // تصویر
-        echo '<tr><th><label>' . __('تصویر', 'university-management') . '</label></th>';
-        echo '<td>';
-        echo '<div class="um-sub-member-image-container">';
-        
-        if (!empty($member['image_id'])) {
-            $image_url = wp_get_attachment_image_url($member['image_id'], 'thumbnail');
-            if ($image_url) {
-                echo '<div class="um-sub-member-image-preview" style="margin-bottom: 10px;">';
-                echo '<img src="' . esc_url($image_url) . '" style="max-width: 150px; height: auto; border-radius: 4px;">';
-                echo '</div>';
+        // Check individual meta keys (both with and without underscore)
+        $individual_meta = get_post_meta($post->ID);
+        $subordinate_keys = array();
+        foreach ($individual_meta as $key => $value) {
+            if (strpos($key, '_um_subordinate_') === 0 || strpos($key, 'um_subordinate_') === 0) {
+                $subordinate_keys[] = $key;
             }
         }
-        
-        echo '<input type="hidden" name="staff_sub_members[' . $index . '][image_id]" value="' . esc_attr($member['image_id']) . '" class="um-sub-member-image-id">';
-        echo '<button type="button" class="um-upload-sub-member-image button" data-index="' . $index . '">';
-        echo '<span class="dashicons dashicons-upload"></span> ' . __('انتخاب تصویر', 'university-management');
-        echo '</button>';
-        echo '<button type="button" class="um-remove-sub-member-image button button-link-delete" data-index="' . $index . '" style="margin-right: 10px;' . (empty($member['image_id']) ? ' display: none;' : '') . '">';
-        echo '<span class="dashicons dashicons-no"></span> ' . __('حذف تصویر', 'university-management');
-        echo '</button>';
-        echo '</div>';
-        echo '</td></tr>';
-        
-        // شماره تماس
-        echo '<tr><th><label>' . __('شماره تماس', 'university-management') . '</label></th>';
-        echo '<td><input type="text" name="staff_sub_members[' . $index . '][phone]" value="' . esc_attr($member['phone']) . '" class="regular-text" placeholder="061-33153125"></td></tr>';
-        
-        // شماره داخلی
-        echo '<tr><th><label>' . __('شماره داخلی', 'university-management') . '</label></th>';
-        echo '<td><input type="text" name="staff_sub_members[' . $index . '][internal]" value="' . esc_attr($member['internal']) . '" class="regular-text" placeholder="123"></td></tr>';
-        
-        echo '</table>';
-        echo '</div>';
+        echo '<p><strong>Individual Meta Keys:</strong> ' . (empty($subordinate_keys) ? 'None found' : implode(', ', $subordinate_keys)) . '</p>';
     }
 
     /**
@@ -7083,6 +7292,281 @@ class University_Management {
         $videos = $this->get_videos_by_language($lang, $limit);
         
         wp_send_json_success($videos);
+    }
+
+    /**
+     * Shortcode for displaying staff subordinates
+     */
+    public function staff_subordinates_shortcode($atts) {
+        $a = shortcode_atts(array('id' => 0, 'title' => ''), $atts, 'um_staff_subordinates');
+        $pid = intval($a['id']);
+        if (!$pid && is_singular('um_staff')) {
+            $pid = get_queried_object_id();
+        }
+        if (!$pid) {
+            return '';
+        }
+        
+        $rows = get_post_meta($pid, '_um_staff_subordinates', true);
+        
+        // Debug output (remove in production)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            echo '<!-- Shortcode Debug: Post ID = ' . $pid . ' -->';
+            echo '<!-- Shortcode Debug: Rows = ' . print_r($rows, true) . ' -->';
+        }
+        
+        if (!is_array($rows) || empty($rows)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                echo '<!-- Shortcode Debug: No rows found or empty array -->';
+            }
+            return '';
+        }
+        
+        ob_start();
+        if ($a['title']) {
+            echo '<h3>' . esc_html($a['title']) . '</h3>';
+        }
+        echo '<div class="um-staff-subordinates">';
+        foreach($rows as $r) {
+            $first_name = isset($r['first_name']) ? $r['first_name'] : '';
+            $last_name = isset($r['last_name']) ? $r['last_name'] : '';
+            $alt_text = trim($first_name . ' ' . $last_name);
+            $img = !empty($r['image_id']) ? wp_get_attachment_image(intval($r['image_id']), 'thumbnail', false, array('alt' => esc_attr($alt_text))) : '';
+            $full = esc_html(trim($first_name . ' ' . $last_name));
+            $pos = esc_html(isset($r['position']) ? $r['position'] : '');
+            $ph = esc_html(isset($r['phone']) ? $r['phone'] : '');
+            $int = esc_html(isset($r['internal']) ? $r['internal'] : '');
+            echo '<div class="um-staff-sub-card"><div class="um-staff-sub-photo">' . ($img ?: '<span class="um-staff-sub-noimg"></span>') . '</div><div class="um-staff-sub-body">';
+            if($full) echo '<div class="um-staff-sub-name">' . $full . '</div>';
+            if($pos) echo '<div class="um-staff-sub-pos">' . $pos . '</div>';
+            if($ph || $int) echo '<div class="um-staff-sub-contact">' . ($ph ? '<span class="tel">' . $ph . '</span>' : '') . ($int ? ' • <span class="ext">' . $int . '</span>' : '') . '</div>';
+            echo '</div></div>';
+        }
+        echo '</div>
+        <style>
+            .um-staff-subordinates{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+            .um-staff-sub-card{border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center}
+            .um-staff-sub-photo img{width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid #ddd}
+            .um-staff-sub-noimg{display:inline-block;width:56px;height:56px;border-radius:8px;background:#f1f5f9;border:1px dashed #cbd5e1}
+            .um-staff-sub-name{font-weight:600}
+            .um-staff-sub-pos{font-size:90%;color:#475569;margin-top:2px}
+            .um-staff-sub-contact{font-size:90%;color:#334155;margin-top:6px}
+        </style>';
+        return ob_get_clean();
+    }
+
+    /**
+     * Test shortcode for debugging subordinates
+     */
+    public function test_subordinates_shortcode($atts) {
+        $a = shortcode_atts(array('id' => 0), $atts, 'um_test_subordinates');
+        $pid = intval($a['id']);
+        if (!$pid && is_singular('um_staff')) {
+            $pid = get_queried_object_id();
+        }
+        if (!$pid) {
+            return '<p>No staff ID provided and not on a staff page.</p>';
+        }
+        
+        $rows = get_post_meta($pid, '_um_staff_subordinates', true);
+        
+        ob_start();
+        echo '<div style="border: 2px solid #ccc; padding: 10px; margin: 10px 0;">';
+        echo '<h3>Test Subordinates Debug</h3>';
+        echo '<p><strong>Post ID:</strong> ' . $pid . '</p>';
+        echo '<p><strong>Data Type:</strong> ' . gettype($rows) . '</p>';
+        echo '<p><strong>Is Array:</strong> ' . (is_array($rows) ? 'Yes' : 'No') . '</p>';
+        echo '<p><strong>Count:</strong> ' . (is_array($rows) ? count($rows) : 'N/A') . '</p>';
+        
+        if (is_array($rows) && !empty($rows)) {
+            echo '<h4>Data:</h4>';
+            echo '<pre>' . esc_html(print_r($rows, true)) . '</pre>';
+            
+            echo '<h4>Rendered Cards:</h4>';
+            echo '<div class="um-staff-subordinates">';
+            foreach($rows as $r) {
+                $first_name = isset($r['first_name']) ? $r['first_name'] : '';
+                $last_name = isset($r['last_name']) ? $r['last_name'] : '';
+                $alt_text = trim($first_name . ' ' . $last_name);
+                
+                $img = !empty($r['image_id']) ? wp_get_attachment_image(intval($r['image_id']), 'thumbnail', false, array('alt' => esc_attr($alt_text))) : '';
+                
+                $full = trim(esc_html($first_name . ' ' . $last_name));
+                $pos = esc_html(isset($r['position']) ? $r['position'] : '');
+                $ph = esc_html(isset($r['phone']) ? $r['phone'] : '');
+                $int = esc_html(isset($r['internal']) ? $r['internal'] : '');
+                echo '<div class="um-staff-sub-card"><div class="um-staff-sub-photo">' . ($img ?: '<span class="um-staff-sub-noimg"></span>') . '</div><div class="um-staff-sub-body">';
+                if($full) echo '<div class="um-staff-sub-name">' . $full . '</div>';
+                if($pos) echo '<div class="um-staff-sub-pos">' . $pos . '</div>';
+                if($ph || $int) echo '<div class="um-staff-sub-contact">' . ($ph ? '<span class="tel">' . $ph . '</span>' : '') . ($int ? ' • <span class="ext">' . $int . '</span>' : '') . '</div>';
+                echo '</div></div>';
+            }
+            echo '</div>';
+        } else {
+            echo '<p>No subordinates found.</p>';
+        }
+        echo '</div>';
+        
+        return ob_get_clean();
+    }
+
+    /**
+     * Sync subordinates data - ensure individual meta keys are created
+     */
+    public function sync_subordinates_data() {
+        // Only run on staff post edit pages
+        if (!isset($_GET['post']) || get_post_type($_GET['post']) !== 'um_staff') {
+            return;
+        }
+        
+        $post_id = intval($_GET['post']);
+        if (!$post_id) {
+            return;
+        }
+        
+        // Get the main subordinates data
+        $rows = get_post_meta($post_id, '_um_staff_subordinates', true);
+        if (!is_array($rows) || empty($rows)) {
+            return;
+        }
+        
+        // Check if individual meta keys exist (without underscore prefix)
+        $has_individual_keys = false;
+        $existing_meta = get_post_meta($post_id);
+        foreach ($existing_meta as $key => $value) {
+            if (strpos($key, 'um_subordinate_') === 0) {
+                $has_individual_keys = true;
+                break;
+            }
+        }
+        
+        // Always clear ALL existing individual meta keys first
+        foreach ($existing_meta as $key => $value) {
+            if (strpos($key, '_um_subordinate_') === 0 || strpos($key, 'um_subordinate_') === 0) {
+                delete_post_meta($post_id, $key);
+            }
+        }
+        
+        // Create individual meta keys (without underscore prefix) if there are subordinates
+        if (!empty($rows)) {
+            foreach($rows as $index => $subordinate) {
+                update_post_meta($post_id, 'um_subordinate_' . $index . '_first_name', $subordinate['first_name']);
+                update_post_meta($post_id, 'um_subordinate_' . $index . '_last_name', $subordinate['last_name']);
+                update_post_meta($post_id, 'um_subordinate_' . $index . '_position', $subordinate['position']);
+                update_post_meta($post_id, 'um_subordinate_' . $index . '_image_id', $subordinate['image_id']);
+                update_post_meta($post_id, 'um_subordinate_' . $index . '_phone', $subordinate['phone']);
+                update_post_meta($post_id, 'um_subordinate_' . $index . '_internal', $subordinate['internal']);
+            }
+        }
+    }
+
+    /**
+     * Manual sync shortcode for subordinates data
+     */
+    public function sync_subordinates_shortcode($atts) {
+        $a = shortcode_atts(array('id' => 0), $atts, 'um_sync_subordinates');
+        $pid = intval($a['id']);
+        if (!$pid && is_singular('um_staff')) {
+            $pid = get_queried_object_id();
+        }
+        if (!$pid) {
+            return '<p>No staff ID provided and not on a staff page.</p>';
+        }
+        
+        // Get the main subordinates data
+        $rows = get_post_meta($pid, '_um_staff_subordinates', true);
+        if (!is_array($rows) || empty($rows)) {
+            return '<p>No subordinates data found to sync.</p>';
+        }
+        
+        // Clear existing individual meta keys (both with and without underscore)
+        $existing_meta = get_post_meta($pid);
+        foreach ($existing_meta as $key => $value) {
+            if (strpos($key, '_um_subordinate_') === 0 || strpos($key, 'um_subordinate_') === 0) {
+                delete_post_meta($pid, $key);
+            }
+        }
+        
+        // Create individual meta keys (without underscore prefix)
+        $created_keys = array();
+        foreach($rows as $index => $subordinate) {
+            update_post_meta($pid, 'um_subordinate_' . $index . '_first_name', $subordinate['first_name']);
+            update_post_meta($pid, 'um_subordinate_' . $index . '_last_name', $subordinate['last_name']);
+            update_post_meta($pid, 'um_subordinate_' . $index . '_position', $subordinate['position']);
+            update_post_meta($pid, 'um_subordinate_' . $index . '_image_id', $subordinate['image_id']);
+            update_post_meta($pid, 'um_subordinate_' . $index . '_phone', $subordinate['phone']);
+            update_post_meta($pid, 'um_subordinate_' . $index . '_internal', $subordinate['internal']);
+            
+            $created_keys[] = 'um_subordinate_' . $index . '_first_name';
+            $created_keys[] = 'um_subordinate_' . $index . '_last_name';
+            $created_keys[] = 'um_subordinate_' . $index . '_position';
+            $created_keys[] = 'um_subordinate_' . $index . '_image_id';
+            $created_keys[] = 'um_subordinate_' . $index . '_phone';
+            $created_keys[] = 'um_subordinate_' . $index . '_internal';
+        }
+        
+        ob_start();
+        echo '<div style="border: 2px solid #4CAF50; padding: 10px; margin: 10px 0; background: #f1f8e9;">';
+        echo '<h3>✅ Sync Successful</h3>';
+        echo '<p><strong>Post ID:</strong> ' . $pid . '</p>';
+        echo '<p><strong>Subordinates Count:</strong> ' . count($rows) . '</p>';
+        echo '<p><strong>Created Keys:</strong> ' . count($created_keys) . '</p>';
+        echo '<p><strong>Keys Created:</strong></p>';
+        echo '<ul>';
+        foreach($created_keys as $key) {
+            echo '<li>' . esc_html($key) . '</li>';
+        }
+        echo '</ul>';
+        echo '<p><em>Individual meta keys have been created for custom fields display.</em></p>';
+        echo '</div>';
+        
+        return ob_get_clean();
+    }
+
+    /**
+     * Clean subordinates shortcode - remove all subordinate meta keys
+     */
+    public function clean_subordinates_shortcode($atts) {
+        $a = shortcode_atts(array('id' => 0), $atts, 'um_clean_subordinates');
+        $pid = intval($a['id']);
+        if (!$pid && is_singular('um_staff')) {
+            $pid = get_queried_object_id();
+        }
+        if (!$pid) {
+            return '<p>No staff ID provided and not on a staff page.</p>';
+        }
+        
+        // Get all meta keys
+        $existing_meta = get_post_meta($pid);
+        $deleted_keys = array();
+        
+        // Delete all subordinate meta keys
+        foreach ($existing_meta as $key => $value) {
+            if (strpos($key, '_um_subordinate_') === 0 || strpos($key, 'um_subordinate_') === 0) {
+                delete_post_meta($pid, $key);
+                $deleted_keys[] = $key;
+            }
+        }
+        
+        ob_start();
+        echo '<div style="border: 2px solid #f44336; padding: 10px; margin: 10px 0; background: #ffebee;">';
+        echo '<h3>🧹 Cleanup Complete</h3>';
+        echo '<p><strong>Post ID:</strong> ' . $pid . '</p>';
+        echo '<p><strong>Deleted Keys:</strong> ' . count($deleted_keys) . '</p>';
+        if (!empty($deleted_keys)) {
+            echo '<p><strong>Keys Deleted:</strong></p>';
+            echo '<ul>';
+            foreach($deleted_keys as $key) {
+                echo '<li>' . esc_html($key) . '</li>';
+            }
+            echo '</ul>';
+        } else {
+            echo '<p>No subordinate meta keys found to delete.</p>';
+        }
+        echo '<p><em>All subordinate meta keys have been removed from custom fields.</em></p>';
+        echo '</div>';
+        
+        return ob_get_clean();
     }
 }
 

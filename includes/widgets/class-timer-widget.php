@@ -328,6 +328,500 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
         );
 
         $this->end_controls_section();
+
+        // بخش استایل - Container
+        $this->start_controls_section(
+            'section_style_container',
+            [
+                'label' => um_translate('استایل کانتینر', __('استایل کانتینر', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'container_background',
+                'label' => um_translate('پس‌زمینه کانتینر', __('پس‌زمینه کانتینر', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .class-timer-container',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'container_border',
+                'label' => um_translate('حاشیه کانتینر', __('حاشیه کانتینر', 'university-management')),
+                'selector' => '{{WRAPPER}} .class-timer-container',
+            ]
+        );
+
+        $this->add_control(
+            'container_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌ها', __('گردی گوشه‌ها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-timer-container' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'container_box_shadow',
+                'label' => um_translate('سایه کانتینر', __('سایه کانتینر', 'university-management')),
+                'selector' => '{{WRAPPER}} .class-timer-container',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_padding',
+            [
+                'label' => um_translate('فاصله داخلی', __('فاصله داخلی', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-timer-container' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_margin',
+            [
+                'label' => um_translate('فاصله خارجی', __('فاصله خارجی', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-timer-container' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Calendar Header
+        $this->start_controls_section(
+            'section_style_calendar_header',
+            [
+                'label' => um_translate('استایل هدر تقویم', __('استایل هدر تقویم', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'calendar_header_background',
+                'label' => um_translate('پس‌زمینه هدر', __('پس‌زمینه هدر', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .calendar-header',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'calendar_header_typography',
+                'label' => um_translate('تایپوگرافی هدر', __('تایپوگرافی هدر', 'university-management')),
+                'selector' => '{{WRAPPER}} .calendar-header',
+            ]
+        );
+
+        $this->add_control(
+            'calendar_header_text_color',
+            [
+                'label' => um_translate('رنگ متن هدر', __('رنگ متن هدر', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-header' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'calendar_header_padding',
+            [
+                'label' => um_translate('فاصله داخلی هدر', __('فاصله داخلی هدر', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-header' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Calendar Days
+        $this->start_controls_section(
+            'section_style_calendar_days',
+            [
+                'label' => um_translate('استایل روزهای تقویم', __('استایل روزهای تقویم', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'calendar_days_typography',
+                'label' => um_translate('تایپوگرافی روزها', __('تایپوگرافی روزها', 'university-management')),
+                'selector' => '{{WRAPPER}} .calendar-day',
+            ]
+        );
+
+        $this->add_control(
+            'calendar_days_text_color',
+            [
+                'label' => um_translate('رنگ متن روزها', __('رنگ متن روزها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-day' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'calendar_days_background_color',
+            [
+                'label' => um_translate('رنگ پس‌زمینه روزها', __('رنگ پس‌زمینه روزها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-day' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'calendar_days_active_text_color',
+            [
+                'label' => um_translate('رنگ متن روز فعال', __('رنگ متن روز فعال', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-day.active' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'calendar_days_active_background_color',
+            [
+                'label' => um_translate('رنگ پس‌زمینه روز فعال', __('رنگ پس‌زمینه روز فعال', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-day.active' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'calendar_days_padding',
+            [
+                'label' => um_translate('فاصله داخلی روزها', __('فاصله داخلی روزها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-day' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'calendar_days_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های روزها', __('گردی گوشه‌های روزها', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .calendar-day' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Class Cards
+        $this->start_controls_section(
+            'section_style_class_cards',
+            [
+                'label' => um_translate('استایل کارت‌های کلاس', __('استایل کارت‌های کلاس', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'class_card_background',
+                'label' => um_translate('پس‌زمینه کارت', __('پس‌زمینه کارت', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .class-card',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'class_card_border',
+                'label' => um_translate('حاشیه کارت', __('حاشیه کارت', 'university-management')),
+                'selector' => '{{WRAPPER}} .class-card',
+            ]
+        );
+
+        $this->add_control(
+            'class_card_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های کارت', __('گردی گوشه‌های کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-card' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'class_card_box_shadow',
+                'label' => um_translate('سایه کارت', __('سایه کارت', 'university-management')),
+                'selector' => '{{WRAPPER}} .class-card',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'class_card_padding',
+            [
+                'label' => um_translate('فاصله داخلی کارت', __('فاصله داخلی کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-card' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'class_card_margin',
+            [
+                'label' => um_translate('فاصله خارجی کارت', __('فاصله خارجی کارت', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-card' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Class Title
+        $this->start_controls_section(
+            'section_style_class_title',
+            [
+                'label' => um_translate('استایل عنوان کلاس', __('استایل عنوان کلاس', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'class_title_typography',
+                'label' => um_translate('تایپوگرافی عنوان', __('تایپوگرافی عنوان', 'university-management')),
+                'selector' => '{{WRAPPER}} .class-title',
+            ]
+        );
+
+        $this->add_control(
+            'class_title_text_color',
+            [
+                'label' => um_translate('رنگ عنوان', __('رنگ عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .class-title' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'class_title_margin',
+            [
+                'label' => um_translate('فاصله عنوان', __('فاصله عنوان', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-title' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Class Details
+        $this->start_controls_section(
+            'section_style_class_details',
+            [
+                'label' => um_translate('استایل جزئیات کلاس', __('استایل جزئیات کلاس', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'class_details_typography',
+                'label' => um_translate('تایپوگرافی جزئیات', __('تایپوگرافی جزئیات', 'university-management')),
+                'selector' => '{{WRAPPER}} .class-details',
+            ]
+        );
+
+        $this->add_control(
+            'class_details_text_color',
+            [
+                'label' => um_translate('رنگ جزئیات', __('رنگ جزئیات', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .class-details' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'class_details_margin',
+            [
+                'label' => um_translate('فاصله جزئیات', __('فاصله جزئیات', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .class-details' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Start Button
+        $this->start_controls_section(
+            'section_style_start_button',
+            [
+                'label' => um_translate('استایل دکمه شروع', __('استایل دکمه شروع', 'university-management')),
+                'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'start_button_typography',
+                'label' => um_translate('تایپوگرافی دکمه', __('تایپوگرافی دکمه', 'university-management')),
+                'selector' => '{{WRAPPER}} .start-class-btn',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'start_button_background',
+                'label' => um_translate('پس‌زمینه دکمه', __('پس‌زمینه دکمه', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .start-class-btn',
+            ]
+        );
+
+        $this->add_control(
+            'start_button_text_color',
+            [
+                'label' => um_translate('رنگ متن دکمه', __('رنگ متن دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .start-class-btn' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'start_button_border',
+                'label' => um_translate('حاشیه دکمه', __('حاشیه دکمه', 'university-management')),
+                'selector' => '{{WRAPPER}} .start-class-btn',
+            ]
+        );
+
+        $this->add_control(
+            'start_button_border_radius',
+            [
+                'label' => um_translate('گردی گوشه‌های دکمه', __('گردی گوشه‌های دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .start-class-btn' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'start_button_padding',
+            [
+                'label' => um_translate('فاصله داخلی دکمه', __('فاصله داخلی دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .start-class-btn' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'start_button_margin',
+            [
+                'label' => um_translate('فاصله خارجی دکمه', __('فاصله خارجی دکمه', 'university-management')),
+                'type' => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .start-class-btn' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        // Hover state
+        $this->add_control(
+            'start_button_hover_heading',
+            [
+                'label' => um_translate('حالت هاور', __('حالت هاور', 'university-management')),
+                'type' => \Elementor\Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'start_button_hover_text_color',
+            [
+                'label' => um_translate('رنگ متن دکمه (هاور)', __('رنگ متن دکمه (هاور)', 'university-management')),
+                'type' => \Elementor\Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .start-class-btn:hover' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'start_button_hover_background',
+                'label' => um_translate('پس‌زمینه دکمه (هاور)', __('پس‌زمینه دکمه (هاور)', 'university-management')),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .start-class-btn:hover',
+            ]
+        );
+
+        $this->end_controls_section();
     }
 
     /**

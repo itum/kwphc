@@ -51,6 +51,328 @@ class UM_Hall_Booking_Widget extends \Elementor\Widget_Base {
 		$this->add_control('label_terms', [ 'label' => 'متن کنار تیک قوانین', 'type' => \Elementor\Controls_Manager::TEXT, 'default' => 'قوانین رزرو و لغو را خوانده‌ام و می‌پذیرم' ]);
 		$this->add_control('enable_payment_method', [ 'label' => 'نمایش انتخاب روش پرداخت', 'type' => \Elementor\Controls_Manager::SWITCHER, 'default' => 'yes' ]);
 		$this->end_controls_section();
+
+		// بخش استایل - Container
+		$this->start_controls_section(
+			'section_style_container',
+			[
+				'label' => um_translate('استایل کانتینر', __('استایل کانتینر', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'container_background',
+				'label' => um_translate('پس‌زمینه کانتینر', __('پس‌زمینه کانتینر', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-hall-form',
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			[
+				'name' => 'container_border',
+				'label' => um_translate('حاشیه کانتینر', __('حاشیه کانتینر', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form',
+			]
+		);
+
+		$this->add_control(
+			'container_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌ها', __('گردی گوشه‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Box_Shadow::get_type(),
+			[
+				'name' => 'container_box_shadow',
+				'label' => um_translate('سایه کانتینر', __('سایه کانتینر', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form',
+			]
+		);
+
+		$this->add_responsive_control(
+			'container_padding',
+			[
+				'label' => um_translate('فاصله داخلی', __('فاصله داخلی', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'container_margin',
+			[
+				'label' => um_translate('فاصله خارجی', __('فاصله خارجی', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Form Fields
+		$this->start_controls_section(
+			'section_style_form_fields',
+			[
+				'label' => um_translate('استایل فیلدهای فرم', __('استایل فیلدهای فرم', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			[
+				'name' => 'form_fields_typography',
+				'label' => um_translate('تایپوگرافی فیلدها', __('تایپوگرافی فیلدها', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form input, {{WRAPPER}} .um-hall-form select, {{WRAPPER}} .um-hall-form textarea',
+			]
+		);
+
+		$this->add_control(
+			'form_fields_text_color',
+			[
+				'label' => um_translate('رنگ متن فیلدها', __('رنگ متن فیلدها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form input, {{WRAPPER}} .um-hall-form select, {{WRAPPER}} .um-hall-form textarea' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'form_fields_background_color',
+			[
+				'label' => um_translate('رنگ پس‌زمینه فیلدها', __('رنگ پس‌زمینه فیلدها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form input, {{WRAPPER}} .um-hall-form select, {{WRAPPER}} .um-hall-form textarea' => 'background-color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			[
+				'name' => 'form_fields_border',
+				'label' => um_translate('حاشیه فیلدها', __('حاشیه فیلدها', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form input, {{WRAPPER}} .um-hall-form select, {{WRAPPER}} .um-hall-form textarea',
+			]
+		);
+
+		$this->add_control(
+			'form_fields_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌های فیلدها', __('گردی گوشه‌های فیلدها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form input, {{WRAPPER}} .um-hall-form select, {{WRAPPER}} .um-hall-form textarea' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'form_fields_padding',
+			[
+				'label' => um_translate('فاصله داخلی فیلدها', __('فاصله داخلی فیلدها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form input, {{WRAPPER}} .um-hall-form select, {{WRAPPER}} .um-hall-form textarea' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'form_fields_margin',
+			[
+				'label' => um_translate('فاصله خارجی فیلدها', __('فاصله خارجی فیلدها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form .row' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Form Labels
+		$this->start_controls_section(
+			'section_style_form_labels',
+			[
+				'label' => um_translate('استایل برچسب‌های فرم', __('استایل برچسب‌های فرم', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			[
+				'name' => 'form_labels_typography',
+				'label' => um_translate('تایپوگرافی برچسب‌ها', __('تایپوگرافی برچسب‌ها', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form label',
+			]
+		);
+
+		$this->add_control(
+			'form_labels_text_color',
+			[
+				'label' => um_translate('رنگ برچسب‌ها', __('رنگ برچسب‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form label' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'form_labels_margin',
+			[
+				'label' => um_translate('فاصله برچسب‌ها', __('فاصله برچسب‌ها', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form label' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		// بخش استایل - Submit Button
+		$this->start_controls_section(
+			'section_style_submit_button',
+			[
+				'label' => um_translate('استایل دکمه ارسال', __('استایل دکمه ارسال', 'university-management')),
+				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Typography::get_type(),
+			[
+				'name' => 'submit_button_typography',
+				'label' => um_translate('تایپوگرافی دکمه', __('تایپوگرافی دکمه', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form button[type="submit"]',
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'submit_button_background',
+				'label' => um_translate('پس‌زمینه دکمه', __('پس‌زمینه دکمه', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-hall-form button[type="submit"]',
+			]
+		);
+
+		$this->add_control(
+			'submit_button_text_color',
+			[
+				'label' => um_translate('رنگ متن دکمه', __('رنگ متن دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form button[type="submit"]' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Border::get_type(),
+			[
+				'name' => 'submit_button_border',
+				'label' => um_translate('حاشیه دکمه', __('حاشیه دکمه', 'university-management')),
+				'selector' => '{{WRAPPER}} .um-hall-form button[type="submit"]',
+			]
+		);
+
+		$this->add_control(
+			'submit_button_border_radius',
+			[
+				'label' => um_translate('گردی گوشه‌های دکمه', __('گردی گوشه‌های دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form button[type="submit"]' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'submit_button_padding',
+			[
+				'label' => um_translate('فاصله داخلی دکمه', __('فاصله داخلی دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form button[type="submit"]' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'submit_button_margin',
+			[
+				'label' => um_translate('فاصله خارجی دکمه', __('فاصله خارجی دکمه', 'university-management')),
+				'type' => \Elementor\Controls_Manager::DIMENSIONS,
+				'size_units' => ['px', 'em', '%'],
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form button[type="submit"]' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		// Hover state
+		$this->add_control(
+			'submit_button_hover_heading',
+			[
+				'label' => um_translate('حالت هاور', __('حالت هاور', 'university-management')),
+				'type' => \Elementor\Controls_Manager::HEADING,
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'submit_button_hover_text_color',
+			[
+				'label' => um_translate('رنگ متن دکمه (هاور)', __('رنگ متن دکمه (هاور)', 'university-management')),
+				'type' => \Elementor\Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .um-hall-form button[type="submit"]:hover' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			\Elementor\Group_Control_Background::get_type(),
+			[
+				'name' => 'submit_button_hover_background',
+				'label' => um_translate('پس‌زمینه دکمه (هاور)', __('پس‌زمینه دکمه (هاور)', 'university-management')),
+				'types' => ['classic', 'gradient'],
+				'selector' => '{{WRAPPER}} .um-hall-form button[type="submit"]:hover',
+			]
+		);
+
+		$this->end_controls_section();
     }
 
     protected function render() {

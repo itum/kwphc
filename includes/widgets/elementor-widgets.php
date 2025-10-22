@@ -103,6 +103,9 @@ class UM_Elementor_Widgets {
         if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/staff-carousel-widget.php')) {
             require_once UM_PLUGIN_DIR . 'includes/widgets/staff-carousel-widget.php';
         }
+        if (file_exists(UM_PLUGIN_DIR . 'includes/widgets/staff-subordinates-widget.php')) {
+            require_once UM_PLUGIN_DIR . 'includes/widgets/staff-subordinates-widget.php';
+        }
         require_once UM_PLUGIN_DIR . 'includes/widgets/azmoon-widget.php';
         require_once UM_PLUGIN_DIR . 'includes/widgets/employment-exams-widget.php';
         
@@ -158,6 +161,9 @@ class UM_Elementor_Widgets {
             }
             if (class_exists('UM_Staff_Carousel_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Staff_Carousel_Widget());
+            }
+            if (class_exists('UM_Staff_Subordinates_Widget')) {
+                \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Staff_Subordinates_Widget());
             }
             
             if (class_exists('UM_Azmoon_Widget')) {
@@ -229,6 +235,9 @@ class UM_Elementor_Widgets {
         wp_enqueue_style('swiper', 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css', array(), '11');
         if (file_exists(UM_PLUGIN_DIR . 'assets/css/staff-carousel-widget.css')) {
             wp_enqueue_style('um-staff-carousel-widget', UM_PLUGIN_URL . 'assets/css/staff-carousel-widget.css', array(), UM_VERSION);
+        }
+        if (file_exists(UM_PLUGIN_DIR . 'assets/css/staff-subordinates-widget.css')) {
+            wp_enqueue_style('um-staff-subordinates-widget', UM_PLUGIN_URL . 'assets/css/staff-subordinates-widget.css', array(), UM_VERSION);
         }
         
         if (file_exists(UM_PLUGIN_DIR . 'assets/css/elementor-slides-widget.css')) {

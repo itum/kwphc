@@ -1,0 +1,92 @@
+/* Staff Subordinates Admin Meta Box Styles */
+.um-sub-wrap {
+    margin-top: 8px;
+}
+
+.um-sub-row {
+    background: #f9f9fb;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.um-sub-row h4 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.um-sub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.um-sub-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.um-sub-remove {
+    color: #b30000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.um-sub-remove:hover {
+    color: #dc2626;
+    text-decoration: underline;
+}
+
+.um-sub-img {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.um-sub-img img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.um-sub-media {
+    margin-top: 4px;
+}
+
+/* RTL Support */
+[dir="rtl"] .um-sub-grid {
+    text-align: right;
+}
+
+[dir="rtl"] .um-sub-img {
+    flex-direction: row-reverse;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .um-sub-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .um-sub-row {
+        padding: 10px;
+    }
+    
+    .um-sub-img {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    [dir="rtl"] .um-sub-img {
+        flex-direction: column;
+        align-items: flex-end;
+    }
+}

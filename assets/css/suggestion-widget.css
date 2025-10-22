@@ -1,20 +1,29 @@
-/* Suggestion widget styles - inherit theme fonts and basic spacing */
-.um-suggestion-form,
+/* Suggestion widget styles - basic spacing */
+.um-suggestion-form {
+    font-family: 'peyda', 'Tahoma', 'Arial', sans-serif;
+}
+
 .um-suggestion-form *,
 .um-suggestion-form input,
 .um-suggestion-form select,
 .um-suggestion-form textarea,
 .um-suggestion-form button,
 .um-suggestion-form label {
-    font: inherit !important;
-    font-family: inherit !important;
-    line-height: inherit !important;
     color: inherit;
 }
 
 .um-suggestion-form {
     display: block;
     direction: rtl;
+}
+
+/* Ensure Elementor typography controls work properly */
+.elementor-widget-um_suggestion_widget .um-suggestion-form label,
+.elementor-widget-um_suggestion_widget .um-suggestion-form input,
+.elementor-widget-um_suggestion_widget .um-suggestion-form select,
+.elementor-widget-um_suggestion_widget .um-suggestion-form textarea,
+.elementor-widget-um_suggestion_widget .um-suggestion-form button {
+    font-family: inherit;
 }
 
 .um-suggestion-form .um-fields {

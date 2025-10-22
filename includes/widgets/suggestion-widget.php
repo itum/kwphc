@@ -115,6 +115,11 @@ class UM_Suggestion_Widget extends \Elementor\Widget_Base {
         $this->add_group_control(Group_Control_Typography::get_type(), [
             'name' => 'label_typography',
             'selector' => '{{WRAPPER}} .um-suggestion-form label',
+            'fields_options' => [
+                'font_family' => [
+                    'default' => 'peyda',
+                ],
+            ],
         ]);
 
         // Inputs
@@ -126,6 +131,11 @@ class UM_Suggestion_Widget extends \Elementor\Widget_Base {
         $this->add_group_control(Group_Control_Typography::get_type(), [
             'name' => 'input_typography',
             'selector' => '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea, {{WRAPPER}} .um-suggestion-form button',
+            'fields_options' => [
+                'font_family' => [
+                    'default' => 'peyda',
+                ],
+            ],
         ]);
         $this->add_control('input_text_color', [
             'label' => __('رنگ متن فیلد', 'university-management'),
@@ -229,6 +239,328 @@ class UM_Suggestion_Widget extends \Elementor\Widget_Base {
                 '{{WRAPPER}} .um-suggestion-form button[type="submit"]' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
             ],
         ]);
+
+        $this->end_controls_section();
+
+        // بخش استایل - Container
+        $this->start_controls_section(
+            'section_style_container',
+            [
+                'label' => __('استایل کانتینر', 'university-management'),
+                'tab' => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'container_background',
+                'label' => __('پس‌زمینه کانتینر', 'university-management'),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .um-suggestion-form',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'container_border',
+                'label' => __('حاشیه کانتینر', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form',
+            ]
+        );
+
+        $this->add_control(
+            'container_border_radius',
+            [
+                'label' => __('گردی گوشه‌ها', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name' => 'container_box_shadow',
+                'label' => __('سایه کانتینر', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form',
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_padding',
+            [
+                'label' => __('فاصله داخلی', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'container_margin',
+            [
+                'label' => __('فاصله خارجی', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Form Fields
+        $this->start_controls_section(
+            'section_style_form_fields',
+            [
+                'label' => __('استایل فیلدهای فرم', 'university-management'),
+                'tab' => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'form_fields_typography',
+                'label' => __('تایپوگرافی فیلدها', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea',
+            ]
+        );
+
+        $this->add_control(
+            'form_fields_text_color',
+            [
+                'label' => __('رنگ متن فیلدها', 'university-management'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_control(
+            'form_fields_background_color',
+            [
+                'label' => __('رنگ پس‌زمینه فیلدها', 'university-management'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea' => 'background-color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'form_fields_border',
+                'label' => __('حاشیه فیلدها', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea',
+            ]
+        );
+
+        $this->add_control(
+            'form_fields_border_radius',
+            [
+                'label' => __('گردی گوشه‌های فیلدها', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'form_fields_padding',
+            [
+                'label' => __('فاصله داخلی فیلدها', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form input, {{WRAPPER}} .um-suggestion-form select, {{WRAPPER}} .um-suggestion-form textarea' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'form_fields_margin',
+            [
+                'label' => __('فاصله خارجی فیلدها', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form .form-group' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Form Labels
+        $this->start_controls_section(
+            'section_style_form_labels',
+            [
+                'label' => __('استایل برچسب‌های فرم', 'university-management'),
+                'tab' => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'form_labels_typography',
+                'label' => __('تایپوگرافی برچسب‌ها', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form label',
+            ]
+        );
+
+        $this->add_control(
+            'form_labels_text_color',
+            [
+                'label' => __('رنگ برچسب‌ها', 'university-management'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form label' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'form_labels_margin',
+            [
+                'label' => __('فاصله برچسب‌ها', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form label' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // بخش استایل - Submit Button
+        $this->start_controls_section(
+            'section_style_submit_button',
+            [
+                'label' => __('استایل دکمه ارسال', 'university-management'),
+                'tab' => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'submit_button_typography',
+                'label' => __('تایپوگرافی دکمه', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form button[type="submit"]',
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'submit_button_background',
+                'label' => __('پس‌زمینه دکمه', 'university-management'),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .um-suggestion-form button[type="submit"]',
+            ]
+        );
+
+        $this->add_control(
+            'submit_button_text_color',
+            [
+                'label' => __('رنگ متن دکمه', 'university-management'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form button[type="submit"]' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Border::get_type(),
+            [
+                'name' => 'submit_button_border',
+                'label' => __('حاشیه دکمه', 'university-management'),
+                'selector' => '{{WRAPPER}} .um-suggestion-form button[type="submit"]',
+            ]
+        );
+
+        $this->add_control(
+            'submit_button_border_radius',
+            [
+                'label' => __('گردی گوشه‌های دکمه', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form button[type="submit"]' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'submit_button_padding',
+            [
+                'label' => __('فاصله داخلی دکمه', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form button[type="submit"]' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_responsive_control(
+            'submit_button_margin',
+            [
+                'label' => __('فاصله خارجی دکمه', 'university-management'),
+                'type' => Controls_Manager::DIMENSIONS,
+                'size_units' => ['px', 'em', '%'],
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form button[type="submit"]' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        // Hover state
+        $this->add_control(
+            'submit_button_hover_heading',
+            [
+                'label' => __('حالت هاور', 'university-management'),
+                'type' => Controls_Manager::HEADING,
+                'separator' => 'before',
+            ]
+        );
+
+        $this->add_control(
+            'submit_button_hover_text_color',
+            [
+                'label' => __('رنگ متن دکمه (هاور)', 'university-management'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .um-suggestion-form button[type="submit"]:hover' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Background::get_type(),
+            [
+                'name' => 'submit_button_hover_background',
+                'label' => __('پس‌زمینه دکمه (هاور)', 'university-management'),
+                'types' => ['classic', 'gradient'],
+                'selector' => '{{WRAPPER}} .um-suggestion-form button[type="submit"]:hover',
+            ]
+        );
 
         $this->end_controls_section();
     }
