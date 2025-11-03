@@ -9,7 +9,13 @@ class UM_XLSXWriter {
     public function save($path, $downloadName = null, $isDownload = false) {
         $zip = new ZipArchive();
         $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
-        $zip->open($tmp, ZipArchive::OVERWRITE);
+        if ($tmp === false) {
+            die('خطا در ایجاد فایل موقت');
+        }
+        $result = $zip->open($tmp, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        if ($result !== true) {
+            die('خطا در باز کردن فایل ZIP: ' . $result);
+        }
         // Content types
         $ct = '<?xml version="1.0" encoding="UTF-8"?>'
             .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -35,15 +41,34 @@ class UM_XLSXWriter {
         // workbook
         $wb = '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>'.self::wbSheets($this->sheets).'</sheets></workbook>';
         $zip->addFromString('xl/workbook.xml', $wb);
-        $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.self::relsSheets($this->sheets).'<Relationship Id="rId999" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+        // workbook relationships - باید sharedStrings را هم شامل شود
+        $workbook_rels = '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.self::relsSheets($this->sheets).'<Relationship Id="rId999" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId998" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>';
+        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbook_rels);
         // styles basic
         $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>');
-        // shared strings
-        list($sst, $si_count) = self::buildSharedStrings($this->sheets);
-        if ($si_count>0) $zip->addFromString('xl/sharedStrings.xml', $sst);
-        // sheets
-        $i=1; foreach ($this->sheets as $sheet) { $zip->addFromString('xl/worksheets/sheet'.$i.'.xml', self::sheetXml($sheet['rows'])); $i++; }
-        $zip->close();
+        // shared strings - باید قبل از ساخت sheet XML ها ساخته شود
+        list($sst, $si_count, $shared_map) = self::buildSharedStrings($this->sheets);
+        // sharedStrings.xml همیشه باید اضافه شود حتی اگر خالی باشد
+        if (empty($sst)) {
+            $sst = '<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="0" uniqueCount="0"></sst>';
+        }
+        $zip->addFromString('xl/sharedStrings.xml', $sst);
+        
+        // sheets - استفاده از map ساخته شده
+        $i=1; 
+        foreach ($this->sheets as $sheet) {
+            if (!isset($sheet['rows']) || !is_array($sheet['rows'])) {
+                $sheet['rows'] = array();
+            }
+            $sheetXml = self::sheetXml($sheet['rows'], $shared_map);
+            $zip->addFromString('xl/worksheets/sheet'.$i.'.xml', $sheetXml);
+            $i++; 
+        }
+        $close_result = $zip->close();
+        if ($close_result !== true) {
+            @unlink($tmp);
+            die('خطا در بستن فایل ZIP: ' . $close_result);
+        }
         if ($isDownload) {
             if (!headers_sent()) {
                 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -51,7 +76,18 @@ class UM_XLSXWriter {
                 header('Pragma: public'); header('Cache-Control: max-age=0');
             }
             readfile($tmp); @unlink($tmp); exit;
-        } else { rename($tmp, $path); }
+        } else { 
+            if (file_exists($tmp)) {
+                if (copy($tmp, $path)) {
+                    @unlink($tmp);
+                } else {
+                    @unlink($tmp);
+                    die('خطا در کپی فایل به مسیر نهایی');
+                }
+            } else {
+                die('فایل موقت ایجاد نشد');
+            }
+        }
     }
     private static function esc($v){ return htmlspecialchars($v, ENT_QUOTES|ENT_XML1, 'UTF-8'); }
     private static function col2name($i){ $s=''; while($i>0){ $m=($i-1)%26; $s=chr(65+$m).$s; $i=intval(($i-$m)/26);} return $s; }
@@ -61,27 +97,60 @@ class UM_XLSXWriter {
     private static function buildSharedStrings($sheets){
         $map = array(); $list = array(); $count = 0;
         foreach ($sheets as $sheet) {
+            if (!isset($sheet['rows']) || !is_array($sheet['rows'])) {
+                continue;
+            }
             foreach ($sheet['rows'] as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
                 foreach ($row as $cell) {
-                    $val = (string)$cell; if (!isset($map[$val])) { $map[$val] = count($list); $list[] = $val; }
+                    $val = (string)$cell; 
+                    if (!isset($map[$val])) { 
+                        $map[$val] = count($list); 
+                        $list[] = $val; 
+                    }
                     $count++;
                 }
             }
         }
-        if (empty($list)) return array('',0);
+        if (empty($list)) {
+            return array('', 0, array());
+        }
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'
              .'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'.$count.'" uniqueCount="'.count($list).'">';
-        foreach ($list as $s) { $xml .= '<si><t>'.self::esc($s).'</t></si>'; }
+        foreach ($list as $s) { 
+            $xml .= '<si><t>'.self::esc($s).'</t></si>'; 
+        }
         $xml .= '</sst>';
-        // replace cells to sst indices when generating cells
-        self::$shared_map = $map; return array($xml,$count);
+        return array($xml, $count, $map);
     }
-    private static $shared_map = array();
-    private static function sheetXml($rows){
-        $r = array(); $r[] = '<?xml version="1.0" encoding="UTF-8"?>';
+    
+    private static function sheetXml($rows, $shared_map = array()){
+        if (!is_array($rows) || empty($rows)) {
+            return '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData></sheetData></worksheet>';
+        }
+        $r = array(); 
+        $r[] = '<?xml version="1.0" encoding="UTF-8"?>';
         $r[] = '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
-        $rowNum = 1; foreach ($rows as $row){ $r[] = '<row r="'.$rowNum.'">'; $col=0; foreach($row as $cell){ $col++; $v=self::$shared_map[(string)$cell]??0; $r[] = '<c r="'.self::col2name($col).$rowNum.'" t="s"><v>'.$v.'</v></c>'; } $r[]='</row>'; $rowNum++; }
-        $r[]='</sheetData></worksheet>'; return implode('', $r);
+        $rowNum = 1; 
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $r[] = '<row r="'.$rowNum.'">'; 
+            $col = 0; 
+            foreach ($row as $cell) {
+                $col++; 
+                $cellVal = (string)$cell;
+                $v = isset($shared_map[$cellVal]) ? $shared_map[$cellVal] : 0; 
+                $r[] = '<c r="'.self::col2name($col).$rowNum.'" t="s"><v>'.$v.'</v></c>'; 
+            } 
+            $r[] = '</row>'; 
+            $rowNum++; 
+        }
+        $r[] = '</sheetData></worksheet>'; 
+        return implode('', $r);
     }
 }
 }

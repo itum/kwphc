@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.5.0
+ * Version: 1.5.4
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -139,8 +139,6 @@ class University_Management {
         // افزودن منوی مدیریت
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_menu', array($this, 'ensure_hall_settings_group'), 20);
-        // صفحه تنظیم انتخاب برگه جزئیات دوره
-        add_action('admin_menu', array($this, 'add_course_detail_settings_page'));
         
         // اضافه کردن CSS و JS
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
@@ -236,6 +234,12 @@ class University_Management {
         add_action('wp_ajax_um_import_seminars', array($this, 'ajax_import_seminars'));
         add_action('wp_ajax_um_get_imported_seminars', array($this, 'ajax_get_imported_seminars'));
         add_action('wp_ajax_um_test_image_download', array($this, 'ajax_test_image_download'));
+        
+        // اکشن‌های admin_post برای حذف ثبت نام سمینار
+        add_action('admin_post_um_delete_seminar_registration', array($this, 'handle_delete_seminar_registration'));
+        
+        // اکشن‌های admin_post برای خروجی اکسل ثبت نام سمینارها
+        add_action('admin_post_um_export_seminar_registrations_excel', array($this, 'handle_export_seminar_registrations_excel'));
         
         // اکشن‌های AJAX برای آزمون‌ها
         add_action('wp_ajax_um_save_azmoon_api_settings', array($this, 'ajax_save_azmoon_api_settings'));
@@ -384,37 +388,6 @@ class University_Management {
         exit;
     }
 
-    /**
-     * ایجاد صفحه تنظیمات ساده برای انتخاب برگه جزئیات دوره (المنتوری)
-     */
-    public function add_course_detail_settings_page() {
-        add_submenu_page(
-            'university-management',
-            __('برگه جزئیات دوره', 'university-management'),
-            __('برگه جزئیات دوره', 'university-management'),
-            'manage_options',
-            'um-course-detail-page',
-            array($this, 'render_course_detail_settings_page')
-        );
-    }
-
-    public function render_course_detail_settings_page() {
-        if (!current_user_can('manage_options')) { return; }
-        if (isset($_POST['um_cdp_nonce']) && wp_verify_nonce($_POST['um_cdp_nonce'], 'um_cdp_save')) {
-            update_option('um_course_detail_page_id', intval($_POST['um_course_detail_page_id'] ?? 0));
-            echo '<div class="updated"><p>' . esc_html__('تنظیمات ذخیره شد.', 'university-management') . '</p></div>';
-        }
-        $selected = intval(get_option('um_course_detail_page_id', 0));
-        echo '<div class="wrap"><h1>' . esc_html__('برگه جزئیات دوره', 'university-management') . '</h1>';
-        echo '<form method="post">';
-        wp_nonce_field('um_cdp_save', 'um_cdp_nonce');
-        echo '<table class="form-table"><tr><th>' . esc_html__('انتخاب برگه', 'university-management') . '</th><td>';
-        echo wp_dropdown_pages(array('echo'=>0,'name'=>'um_course_detail_page_id','selected'=>$selected,'show_option_none'=>__('— انتخاب صفحه —','university-management')));
-        echo '<p class="description">' . esc_html__('در این برگه شورتکد [course_details] را قرار دهید.', 'university-management') . '</p>';
-        echo '</td></tr></table>';
-        submit_button(__('ذخیره', 'university-management'));
-        echo '</form></div>';
-    }
 
     /**
      * [course_details] shortcode
@@ -1018,15 +991,6 @@ class University_Management {
             array($this, 'class_timing_admin_page')
         );
         
-        add_submenu_page(
-            'university-management',
-            __('مدیریت ویدیوها', 'university-management'),
-            __('مدیریت ویدیوها', 'university-management'),
-            'manage_options',
-            'university-videos',
-            array($this, 'videos_admin_page')
-        );
-        
         // توجه: خود پست‌تایپ um_slides با show_in_menu => university-management به‌صورت خودکار یک آیتم
         // «اسلایدها» زیر منوی مدیریت ایجاد می‌کند. بنابراین نیازی به افزودن دستی آیتم تکراری نیست.
 
@@ -1043,33 +1007,6 @@ class University_Management {
         
         add_submenu_page(
             'university-management',
-            __('ورود اطلاعات پایگاه داده', 'university-management'),
-            __('ورود اطلاعات پایگاه داده', 'university-management'),
-            'manage_options',
-            'university-database-import',
-            array($this, 'database_import_admin_page')
-        );
-        
-        add_submenu_page(
-            'university-management',
-            __('تنظیمات عمومی', 'university-management'),
-            __('تنظیمات عمومی', 'university-management'),
-            'manage_options',
-            'university-general-settings',
-            array($this, 'general_settings_admin_page')
-        );
-        
-        add_submenu_page(
-            'university-management',
-            __('آزمون‌های استخدامی', 'university-management'),
-            __('آزمون‌های استخدامی', 'university-management'),
-            'manage_options',
-            'university-azmoon',
-            array($this, 'azmoon_admin_page')
-        );
-        
-        add_submenu_page(
-            'university-management',
             __('گزارش ثبت نام سمینارها', 'university-management'),
             __('گزارش ثبت نام سمینارها', 'university-management'),
             'manage_options',
@@ -1077,15 +1014,6 @@ class University_Management {
             array($this, 'seminar_reports_admin_page')
         );
         
-        add_submenu_page(
-            'university-management',
-            __('مدیریت آزمون‌های استخدامی', 'university-management'),
-            __('مدیریت آزمون‌های استخدامی', 'university-management'),
-            'manage_options',
-            'university-employment-exams',
-            array($this, 'employment_exams_admin_page')
-        );
-
         // زیرمنوی انتقادات و پیشنهادات
         add_submenu_page(
             'university-management',
@@ -1094,6 +1022,16 @@ class University_Management {
             'manage_options',
             'university-suggestions',
             array($this, 'suggestions_admin_page')
+        );
+        
+        // تنظیمات عمومی در آخر
+        add_submenu_page(
+            'university-management',
+            __('تنظیمات عمومی', 'university-management'),
+            __('تنظیمات عمومی', 'university-management'),
+            'manage_options',
+            'university-general-settings',
+            array($this, 'general_settings_admin_page')
         );
 
         // منوی مستقل: سالن جلسات
@@ -1173,17 +1111,6 @@ class University_Management {
         }
     }
 
-    /**
-     * صفحه نمایش پیشنهادات و انتقادات در مدیریت
-     */
-    public function suggestions_admin_page() {
-        $file = UM_PLUGIN_DIR . 'admin/suggestions-page.php';
-        if (file_exists($file)) {
-            require_once $file;
-        } else {
-            echo '<div class="wrap"><h1>پیشنهادات و انتقادات</h1><p>فایل مدیریتی یافت نشد.</p></div>';
-        }
-    }
 
     /**
      * صفحه مدیریت تقویم
@@ -1210,26 +1137,17 @@ class University_Management {
     }
 
     /**
-     * صفحه مدیریت ویدیوها
+     * صفحه نمایش پیشنهادات و انتقادات در مدیریت
      */
-    public function videos_admin_page() {
-        $videos_file = UM_PLUGIN_DIR . 'admin/videos-page.php';
-        if (file_exists($videos_file)) {
-            require_once $videos_file;
-        } else {
-            echo '<div class="wrap"><h1>خطا</h1><p>فایل videos-page.php یافت نشد.</p></div>';
+    public function suggestions_admin_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('شما دسترسی به این صفحه را ندارید.', 'university-management'));
         }
-    }
-    
-    /**
-     * صفحه ورود اطلاعات پایگاه داده
-     */
-    public function database_import_admin_page() {
-        $import_file = UM_PLUGIN_DIR . 'admin/database-import-page.php';
-        if (file_exists($import_file)) {
-            require_once $import_file;
+        $file = UM_PLUGIN_DIR . 'admin/suggestions-page.php';
+        if (file_exists($file)) {
+            require_once $file;
         } else {
-            echo '<div class="wrap"><h1>خطا</h1><p>فایل database-import-page.php یافت نشد.</p></div>';
+            echo '<div class="wrap"><h1>پیشنهادات و انتقادات</h1><p>فایل مدیریتی یافت نشد.</p></div>';
         }
     }
     
@@ -1245,29 +1163,6 @@ class University_Management {
         }
     }
     
-    /**
-     * صفحه مدیریت آزمون‌های استخدامی
-     */
-    public function azmoon_admin_page() {
-        $azmoon_file = UM_PLUGIN_DIR . 'admin/azmoon-page.php';
-        if (file_exists($azmoon_file)) {
-            require_once $azmoon_file;
-        } else {
-            echo '<div class="wrap"><h1>خطا</h1><p>فایل azmoon-page.php یافت نشد.</p></div>';
-        }
-    }
-
-    /**
-     * صفحه مدیریت آزمون‌های استخدامی (پست تایپ)
-     */
-    public function employment_exams_admin_page() {
-        $employment_file = UM_PLUGIN_DIR . 'admin/employment-exams-page.php';
-        if (file_exists($employment_file)) {
-            require_once $employment_file;
-        } else {
-            echo '<div class="wrap"><h1>خطا</h1><p>فایل employment-exams-page.php یافت نشد.</p></div>';
-        }
-    }
 
     /**
      * سالن جلسات: مدیریت رزروها
@@ -2246,7 +2141,7 @@ class University_Management {
             'has_archive'         => true,
             'publicly_queryable'  => true,
             'show_ui'             => true,
-            'show_in_menu'        => 'university-management',
+            'show_in_menu'        => false,
             'capability_type'     => 'post',
             'hierarchical'        => false,
             'supports'            => array('title', 'editor', 'thumbnail', 'custom-fields'),
@@ -2349,7 +2244,7 @@ class University_Management {
             'hierarchical'          => false,
             'public'                => false,
             'show_ui'               => true,
-            'show_in_menu'          => 'university-management',
+            'show_in_menu'          => false,
             'menu_icon'             => 'dashicons-format-chat',
             'capability_type'       => 'post',
             'has_archive'           => false,
@@ -4205,6 +4100,35 @@ class University_Management {
         <div class="wrap">
             <h1><?php _e('گزارش ثبت نام سمینارها', 'university-management'); ?></h1>
             
+            <?php if (isset($_GET['deleted']) && $_GET['deleted'] == '1'): ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php _e('ثبت نام با موفقیت حذف شد.', 'university-management'); ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_GET['error'])): ?>
+                <div class="notice notice-error is-dismissible">
+                    <p><?php 
+                        if ($_GET['error'] == 'invalid_id') {
+                            _e('شناسه ثبت نام نامعتبر است.', 'university-management');
+                        } elseif ($_GET['error'] == 'delete_failed') {
+                            _e('خطا در حذف ثبت نام.', 'university-management');
+                        }
+                    ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <div style="margin-bottom: 20px;">
+                <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline;">
+                    <input type="hidden" name="action" value="um_export_seminar_registrations_excel" />
+                    <input type="hidden" name="um_reg_export_nonce" value="<?php echo esc_attr(wp_create_nonce('um_seminar_reg_export')); ?>" />
+                    <button type="submit" class="button button-primary">
+                        <span class="dashicons dashicons-media-spreadsheet" style="vertical-align: middle; margin-left: 5px;"></span>
+                        <?php _e('خروجی Excel', 'university-management'); ?>
+                    </button>
+                </form>
+            </div>
+            
             <div class="um-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
                 <div class="um-stat-card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h3 style="margin: 0 0 10px 0; color: #333;"><?php _e('کل ثبت نام‌ها', 'university-management'); ?></h3>
@@ -4244,10 +4168,16 @@ class University_Management {
                 </thead>
                 <tbody>
                     <?php if ($registrations): ?>
-                        <?php foreach ($registrations as $registration): ?>
-                            <tr>
+                        <?php foreach ($registrations as $registration): 
+                            // دریافت اطلاعات پرداخت
+                            $payment = $wpdb->get_row($wpdb->prepare(
+                                "SELECT * FROM $payments_table WHERE registration_id = %d ORDER BY id DESC LIMIT 1",
+                                $registration->id
+                            ));
+                        ?>
+                            <tr class="um-reg-row" data-id="<?php echo esc_attr($registration->id); ?>">
                                 <td><?php echo esc_html($registration->first_name . ' ' . $registration->last_name); ?></td>
-                                <td><?php echo esc_html($registration->seminar_title); ?></td>
+                                <td><?php echo esc_html($registration->seminar_title ?: '-'); ?></td>
                                 <td><?php echo esc_html($registration->email); ?></td>
                                 <td><?php echo esc_html($registration->phone); ?></td>
                                 <td><?php echo number_format($registration->price); ?> <?php _e('تومان', 'university-management'); ?></td>
@@ -4272,9 +4202,93 @@ class University_Management {
                                 </td>
                                 <td><?php echo date_i18n('Y/m/d H:i', strtotime($registration->registration_date)); ?></td>
                                 <td>
-                                    <a href="#" class="button button-small um-view-details" data-registration-id="<?php echo $registration->id; ?>">
-                                        <?php _e('جزئیات', 'university-management'); ?>
-                                    </a>
+                                    <button type="button" class="button button-small um-toggle-reg-details" data-id="<?php echo esc_attr($registration->id); ?>">
+                                        <span class="um-details-text"><?php _e('جزئیات', 'university-management'); ?></span>
+                                        <span class="um-hide-text" style="display:none;"><?php _e('مخفی کردن', 'university-management'); ?></span>
+                                    </button>
+                                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline; margin-left:6px;" onsubmit="return confirm('<?php echo esc_js(__('آیا مطمئن هستید که می‌خواهید این ثبت نام را حذف کنید؟','university-management')); ?>');">
+                                        <input type="hidden" name="action" value="um_delete_seminar_registration" />
+                                        <input type="hidden" name="registration_id" value="<?php echo esc_attr($registration->id); ?>" />
+                                        <input type="hidden" name="um_reg_admin_nonce" value="<?php echo esc_attr(wp_create_nonce('um_seminar_reg_admin')); ?>" />
+                                        <button class="button button-small button-danger" type="submit"><?php _e('حذف', 'university-management'); ?></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr class="um-reg-details" data-id="<?php echo esc_attr($registration->id); ?>" style="display:none;">
+                                <td colspan="8" style="background:#f9f9f9; padding:20px;">
+                                    <div style="background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
+                                        <h3 style="margin-top:0; color:#2271b1; border-bottom:2px solid #2271b1; padding-bottom:8px;"><?php _e('جزئیات ثبت نام', 'university-management'); ?></h3>
+                                        <table style="width:100%; border-collapse:collapse;">
+                                            <tr>
+                                                <td style="padding:8px; width:180px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شناسه ثبت نام:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->id); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('نام و نام خانوادگی:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->first_name . ' ' . $registration->last_name); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('ایمیل:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->email); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شماره تماس:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->phone); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('سمینار:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->seminar_title ?: '-'); ?> (ID: <?php echo esc_html($registration->seminar_id); ?>)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('مبلغ:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo number_format($registration->price); ?> <?php _e('تومان', 'university-management'); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('وضعیت پرداخت:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;">
+                                                    <span class="um-payment-status um-status-<?php echo esc_attr($registration->payment_status); ?>">
+                                                        <?php
+                                                        switch ($registration->payment_status) {
+                                                            case 'completed':
+                                                                _e('تکمیل شده', 'university-management');
+                                                                break;
+                                                            case 'pending':
+                                                                _e('در انتظار', 'university-management');
+                                                                break;
+                                                            case 'failed':
+                                                                _e('ناموفق', 'university-management');
+                                                                break;
+                                                            default:
+                                                                _e('نامشخص', 'university-management');
+                                                        }
+                                                        ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <?php if ($payment): ?>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شناسه تراکنش:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($payment->transaction_id ?: '-'); ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('کد مرجع:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($payment->ref_id ?: '-'); ?></td>
+                                            </tr>
+                                            <?php endif; ?>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('تاریخ ثبت نام:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo date_i18n('Y/m/d H:i', strtotime($registration->registration_date)); ?></td>
+                                            </tr>
+                                            <?php if (!empty($registration->notes)): ?>
+                                            <tr>
+                                                <td style="padding:8px; font-weight:bold; vertical-align:top; border-bottom:1px solid #eee;"><?php _e('یادداشت:', 'university-management'); ?></td>
+                                                <td style="padding:8px; border-bottom:1px solid #eee;">
+                                                    <div style="background:#f5f5f5; padding:12px; border-radius:4px; line-height:1.6; white-space:pre-wrap;"><?php echo esc_html($registration->notes); ?></div>
+                                                </td>
+                                            </tr>
+                                            <?php endif; ?>
+                                        </table>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -4288,6 +4302,15 @@ class University_Management {
         </div>
         
         <style>
+        /* ارث‌بری فونت‌های پیشخوان وردپرس */
+        .wrap, .wrap *, .um-stats-grid, .um-stats-grid *, 
+        .wp-list-table, .wp-list-table *, 
+        .um-stat-card, .um-stat-card * {
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+        }
+        
         .um-payment-status {
             padding: 4px 8px;
             border-radius: 4px;
@@ -4306,8 +4329,311 @@ class University_Management {
             background: #f8d7da;
             color: #721c24;
         }
+        .um-reg-details {
+            transition: all 0.2s ease;
+        }
+        .um-reg-details td {
+            background: #f9f9f9;
+            border-top: 2px solid #2271b1;
+        }
+        .um-toggle-reg-details {
+            cursor: pointer;
+        }
         </style>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            'use strict';
+            
+            function toggleRegistrationDetails(regId) {
+                var $detailsRow = $('.um-reg-details[data-id="' + regId + '"]');
+                var $button = $('.um-toggle-reg-details[data-id="' + regId + '"]');
+                var $detailsText = $button.find('.um-details-text');
+                var $hideText = $button.find('.um-hide-text');
+                
+                // بستن سایر جزئیات باز شده
+                $('.um-reg-details').each(function(){
+                    var otherRegId = $(this).data('id');
+                    if (otherRegId != regId && $(this).is(':visible')) {
+                        $(this).slideUp(200);
+                        var $otherButton = $('.um-toggle-reg-details[data-id="' + otherRegId + '"]');
+                        $otherButton.find('.um-details-text').show();
+                        $otherButton.find('.um-hide-text').hide();
+                        $otherButton.removeClass('button-primary');
+                    }
+                });
+                
+                // نمایش/مخفی کردن جزئیات فعلی
+                if ($detailsRow.length && $detailsRow.is(':visible')) {
+                    $detailsRow.slideUp(200);
+                    $detailsText.show();
+                    $hideText.hide();
+                    $button.removeClass('button-primary');
+                } else if ($detailsRow.length) {
+                    $detailsRow.slideDown(200);
+                    $detailsText.hide();
+                    $hideText.show();
+                    $button.addClass('button-primary');
+                }
+            }
+            
+            // نمایش/مخفی کردن جزئیات با کلیک روی دکمه
+            $(document).on('click', '.um-toggle-reg-details', function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                var regId = $(this).data('id');
+                if (regId) {
+                    toggleRegistrationDetails(regId);
+                }
+            });
+        });
+        </script>
         <?php
+    }
+
+    /**
+     * خروجی اکسل ثبت نام سمینارها با دسته‌بندی بر اساس نوع سمینار
+     */
+    public function handle_export_seminar_registrations_excel() {
+        // بررسی دسترسی
+        if (!current_user_can('manage_options')) {
+            status_header(403);
+            die(__('شما دسترسی به این صفحه را ندارید.', 'university-management'));
+        }
+        
+        if (!isset($_POST['um_reg_export_nonce']) || !wp_verify_nonce($_POST['um_reg_export_nonce'], 'um_seminar_reg_export')) {
+            status_header(403);
+            die(__('Nonce نامعتبر است.', 'university-management'));
+        }
+        
+        // بررسی وجود ZipArchive
+        if (!class_exists('ZipArchive')) {
+            status_header(500);
+            die(__('ZipArchive extension در دسترس نیست. لطفاً با مدیر سیستم تماس بگیرید.', 'university-management'));
+        }
+        
+        // تمیز کردن همه output buffer ها
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // شروع output buffering جدید برای جلوگیری از هر خروجی اضافی
+        ob_start();
+        
+        // بارگذاری کلاس xlsxwriter
+        require_once UM_PLUGIN_DIR . 'includes/xlsxwriter.php';
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'um_seminar_registrations';
+        $payments_table = $wpdb->prefix . 'um_seminar_payments';
+        
+        // دریافت همه ثبت نام‌ها با اطلاعات کامل
+        $all_registrations = $wpdb->get_results("
+            SELECT 
+                r.*, 
+                p.post_title as seminar_title
+            FROM $table_name r 
+            LEFT JOIN {$wpdb->posts} p ON r.seminar_id = p.ID 
+            ORDER BY p.post_title ASC, r.registration_date DESC
+        ");
+        
+        // دریافت اطلاعات پرداخت برای هر ثبت نام
+        foreach ($all_registrations as $registration) {
+            $payment = $wpdb->get_row($wpdb->prepare(
+                "SELECT transaction_id, ref_id FROM $payments_table WHERE registration_id = %d AND payment_status = 'completed' ORDER BY id DESC LIMIT 1",
+                $registration->id
+            ));
+            $registration->transaction_id = $payment ? $payment->transaction_id : null;
+            $registration->ref_id = $payment ? $payment->ref_id : null;
+        }
+        
+        if (empty($all_registrations)) {
+            ob_end_clean();
+            wp_redirect(admin_url('admin.php?page=university-seminar-reports&error=no_data'));
+            exit;
+        }
+        
+        // دسته‌بندی بر اساس نوع سمینار
+        $grouped_registrations = array();
+        foreach ($all_registrations as $registration) {
+            $seminar_title = $registration->seminar_title ?: __('بدون عنوان', 'university-management');
+            if (!isset($grouped_registrations[$seminar_title])) {
+                $grouped_registrations[$seminar_title] = array();
+            }
+            $grouped_registrations[$seminar_title][] = $registration;
+        }
+        
+        // ایجاد کلاس Excel Writer
+        $writer = new UM_XLSXWriter();
+        
+        // شیت خلاصه
+        $summary_rows = array(
+            array(
+                __('کل ثبت نام‌ها', 'university-management'),
+                __('پرداخت‌های تکمیل شده', 'university-management'),
+                __('پرداخت‌های در انتظار', 'university-management'),
+                __('کل درآمد', 'university-management')
+            ),
+            array(
+                count($all_registrations),
+                count(array_filter($all_registrations, function($r) { return $r->payment_status === 'completed'; })),
+                count(array_filter($all_registrations, function($r) { return $r->payment_status === 'pending'; })),
+                number_format($wpdb->get_var("SELECT SUM(amount) FROM $payments_table WHERE payment_status = 'completed'") ?: 0)
+            )
+        );
+        $writer->addSheet($summary_rows, __('خلاصه', 'university-management'));
+        
+        // ایجاد شیت برای هر نوع سمینار
+        foreach ($grouped_registrations as $seminar_title => $registrations) {
+            $rows = array();
+            
+            // هدر جدول
+            $rows[] = array(
+                __('شناسه', 'university-management'),
+                __('سمینار', 'university-management'),
+                __('نام', 'university-management'),
+                __('نام خانوادگی', 'university-management'),
+                __('ایمیل', 'university-management'),
+                __('شماره تماس', 'university-management'),
+                __('مبلغ', 'university-management'),
+                __('وضعیت پرداخت', 'university-management'),
+                __('شناسه تراکنش', 'university-management'),
+                __('کد مرجع', 'university-management'),
+                __('تاریخ ثبت نام', 'university-management'),
+                __('یادداشت', 'university-management')
+            );
+            
+            // داده‌ها
+            foreach ($registrations as $registration) {
+                $payment_status = '';
+                switch ($registration->payment_status) {
+                    case 'completed':
+                        $payment_status = __('تکمیل شده', 'university-management');
+                        break;
+                    case 'pending':
+                        $payment_status = __('در انتظار', 'university-management');
+                        break;
+                    case 'failed':
+                        $payment_status = __('ناموفق', 'university-management');
+                        break;
+                    default:
+                        $payment_status = __('نامشخص', 'university-management');
+                }
+                
+                $rows[] = array(
+                    (string)$registration->id,
+                    $seminar_title,
+                    $registration->first_name ?: '',
+                    $registration->last_name ?: '',
+                    $registration->email ?: '',
+                    $registration->phone ?: '',
+                    number_format($registration->price),
+                    $payment_status,
+                    $registration->transaction_id ?: '-',
+                    $registration->ref_id ?: '-',
+                    date_i18n('Y/m/d H:i', strtotime($registration->registration_date)),
+                    $registration->notes ?: '-'
+                );
+            }
+            
+            // محدود کردن نام شیت به 31 کاراکتر (محدودیت Excel)
+            $sheet_name = mb_substr($seminar_title, 0, 31);
+            if (empty($sheet_name)) {
+                $sheet_name = __('بدون عنوان', 'university-management');
+            }
+            $writer->addSheet($rows, $sheet_name);
+        }
+        
+        // تنظیم header ها و دانلود فایل
+        $filename = 'seminar-registrations-' . date('Y-m-d-His') . '.xlsx';
+        
+        // ساخت فایل در مسیر موقت
+        $tmp_file = tempnam(sys_get_temp_dir(), 'xlsx');
+        if ($tmp_file === false) {
+            ob_end_clean();
+            status_header(500);
+            die(__('خطا در ایجاد فایل موقت', 'university-management'));
+        }
+        
+        try {
+            $writer->save($tmp_file, $filename, false);
+        } catch (Exception $e) {
+            @unlink($tmp_file);
+            ob_end_clean();
+            status_header(500);
+            die(__('خطا در ساخت فایل Excel: ', 'university-management') . $e->getMessage());
+        }
+        
+        // بررسی وجود فایل
+        if (!file_exists($tmp_file) || filesize($tmp_file) == 0) {
+            @unlink($tmp_file);
+            ob_end_clean();
+            status_header(500);
+            die(__('فایل Excel ایجاد نشد', 'university-management'));
+        }
+        
+        // تمیز کردن output buffer و ارسال فایل
+        ob_end_clean();
+        
+        // ارسال header ها
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($tmp_file));
+        header('Expires: 0');
+        
+        // ارسال فایل
+        readfile($tmp_file);
+        
+        // حذف فایل موقت
+        @unlink($tmp_file);
+        
+        exit;
+    }
+
+    /**
+     * حذف ثبت نام سمینار
+     */
+    public function handle_delete_seminar_registration() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('شما دسترسی به این صفحه را ندارید.', 'university-management'));
+        }
+        
+        if (!isset($_POST['um_reg_admin_nonce']) || !wp_verify_nonce($_POST['um_reg_admin_nonce'], 'um_seminar_reg_admin')) {
+            wp_die(__('Nonce نامعتبر است.', 'university-management'));
+        }
+        
+        global $wpdb;
+        $registration_id = intval($_POST['registration_id'] ?? 0);
+        
+        if (!$registration_id) {
+            wp_redirect(admin_url('admin.php?page=university-seminar-reports&error=invalid_id'));
+            exit;
+        }
+        
+        $table_name = $wpdb->prefix . 'um_seminar_registrations';
+        $payments_table = $wpdb->prefix . 'um_seminar_payments';
+        
+        // حذف ثبت نام
+        $deleted = $wpdb->delete(
+            $table_name,
+            array('id' => $registration_id),
+            array('%d')
+        );
+        
+        // حذف پرداخت‌های مرتبط
+        $wpdb->delete(
+            $payments_table,
+            array('registration_id' => $registration_id),
+            array('%d')
+        );
+        
+        if ($deleted) {
+            wp_redirect(admin_url('admin.php?page=university-seminar-reports&deleted=1'));
+        } else {
+            wp_redirect(admin_url('admin.php?page=university-seminar-reports&error=delete_failed'));
+        }
+        exit;
     }
 
     /**

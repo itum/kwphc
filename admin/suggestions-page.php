@@ -1,5 +1,13 @@
 <?php
-if (!defined('ABSPATH')) { exit; }
+// جلوگیری از دسترسی مستقیم
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// بررسی دسترسی کاربر
+if (!current_user_can('manage_options')) {
+    wp_die(__('شما دسترسی به این صفحه را ندارید.', 'university-management'));
+}
 ?>
 <div class="wrap">
     <h1><?php _e('انتقادات و پیشنهادات', 'university-management'); ?></h1>
@@ -105,26 +113,76 @@ if (!defined('ABSPATH')) { exit; }
                 <td><?php echo esc_html($phone); ?></td>
                 <td><?php echo esc_html(get_the_date('', $p)); ?></td>
                 <td>
-                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline;">
+                    <button type="button" class="button button-small um-toggle-details" data-id="<?php echo esc_attr($p->ID); ?>">
+                        <span class="um-details-text"><?php _e('نمایش جزئیات', 'university-management'); ?></span>
+                        <span class="um-hide-text" style="display:none;"><?php _e('مخفی کردن', 'university-management'); ?></span>
+                    </button>
+                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline; margin-left:6px;">
                         <input type="hidden" name="action" value="um_suggestion_mark_read" />
                         <input type="hidden" name="post_id" value="<?php echo esc_attr($p->ID); ?>" />
                         <input type="hidden" name="set" value="<?php echo $is_read ? '0' : '1'; ?>" />
                         <input type="hidden" name="um_sugg_admin_nonce" value="<?php echo esc_attr($admin_nonce); ?>" />
-                        <button class="button" type="submit"><?php echo $is_read ? __('برگردان به خوانده‌نشده','university-management') : __('نشانه‌گذاری خوانده','university-management'); ?></button>
+                        <button class="button button-small" type="submit"><?php echo $is_read ? __('برگردان به خوانده‌نشده','university-management') : __('نشانه‌گذاری خوانده','university-management'); ?></button>
                     </form>
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline; margin-left:6px;" onsubmit="return confirm('<?php echo esc_js(__('آیا مطمئن هستید که می‌خواهید این پیام را حذف کنید؟','university-management')); ?>');">
                         <input type="hidden" name="action" value="um_suggestion_delete" />
                         <input type="hidden" name="post_id" value="<?php echo esc_attr($p->ID); ?>" />
                         <input type="hidden" name="um_sugg_admin_nonce" value="<?php echo esc_attr($admin_nonce); ?>" />
-                        <button class="button button-danger" type="submit"><?php _e('حذف', 'university-management'); ?></button>
+                        <button class="button button-small button-danger" type="submit"><?php _e('حذف', 'university-management'); ?></button>
                     </form>
                 </td>
             </tr>
-            <tr class="um-sugg-message" style="display:none;">
-                <td colspan="6"><strong><?php _e('پیام:', 'university-management'); ?></strong><div style="margin-top:8px;"><?php echo wpautop(esc_html($content)); ?></div></td>
+            <tr class="um-sugg-details" data-id="<?php echo esc_attr($p->ID); ?>" style="display:none;">
+                <td colspan="8" style="background:#f9f9f9; padding:20px;">
+                    <div style="background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
+                        <h3 style="margin-top:0; color:#2271b1; border-bottom:2px solid #2271b1; padding-bottom:8px;"><?php _e('جزئیات پیام', 'university-management'); ?></h3>
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tr>
+                                <td style="padding:8px; width:150px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شناسه:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($p->ID); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('عنوان:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($p->post_title); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('گیرنده:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($recipient ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('نام و نام خانوادگی:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($name ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شماره تماس:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($phone ?: '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('تاریخ ارسال:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html(get_the_date('Y/m/d H:i', $p)); ?></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold; vertical-align:top; border-bottom:1px solid #eee;"><?php _e('پیام شما:', 'university-management'); ?></td>
+                                <td style="padding:8px; border-bottom:1px solid #eee;">
+                                    <div style="background:#f5f5f5; padding:12px; border-radius:4px; line-height:1.6; white-space:pre-wrap;"><?php echo esc_html($content); ?></div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px; font-weight:bold;"><?php _e('وضعیت:', 'university-management'); ?></td>
+                                <td style="padding:8px;">
+                                    <?php if ($is_read): ?>
+                                        <span style="color:#46b450; font-weight:bold;"><?php _e('خوانده شده', 'university-management'); ?></span>
+                                    <?php else: ?>
+                                        <span style="color:#dc3232; font-weight:bold;"><?php _e('خوانده نشده', 'university-management'); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
             </tr>
             <?php endwhile; else: ?>
-            <tr><td colspan="6"><?php _e('هیچ پیامی یافت نشد.', 'university-management'); ?></td></tr>
+            <tr><td colspan="8"><?php _e('هیچ پیامی یافت نشد.', 'university-management'); ?></td></tr>
             <?php endif; wp_reset_postdata(); ?>
         </tbody>
     </table>
@@ -145,5 +203,63 @@ if (!defined('ABSPATH')) { exit; }
     </div>
 
 </div>
+
+<style>
+/* ارث‌بری فونت‌های پیشخوان وردپرس */
+.wrap, .wrap *,
+#um-suggestions-table, #um-suggestions-table * {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+</style>
+
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+    'use strict';
+    
+    function toggleDetails(postId) {
+        var $detailsRow = $('.um-sugg-details[data-id="' + postId + '"]');
+        var $button = $('.um-toggle-details[data-id="' + postId + '"]');
+        var $detailsText = $button.find('.um-details-text');
+        var $hideText = $button.find('.um-hide-text');
+        
+        // بستن سایر جزئیات باز شده
+        $('.um-sugg-details').each(function(){
+            var otherPostId = $(this).data('id');
+            if (otherPostId != postId && $(this).is(':visible')) {
+                $(this).slideUp(200);
+                var $otherButton = $('.um-toggle-details[data-id="' + otherPostId + '"]');
+                $otherButton.find('.um-details-text').show();
+                $otherButton.find('.um-hide-text').hide();
+                $otherButton.removeClass('button-primary');
+            }
+        });
+        
+        // نمایش/مخفی کردن جزئیات فعلی
+        if ($detailsRow.length && $detailsRow.is(':visible')) {
+            $detailsRow.slideUp(200);
+            $detailsText.show();
+            $hideText.hide();
+            $button.removeClass('button-primary');
+        } else if ($detailsRow.length) {
+            $detailsRow.slideDown(200);
+            $detailsText.hide();
+            $hideText.show();
+            $button.addClass('button-primary');
+        }
+    }
+    
+    // نمایش/مخفی کردن جزئیات با کلیک روی دکمه
+    $(document).on('click', '.um-toggle-details', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        var postId = $(this).data('id');
+        if (postId) {
+            toggleDetails(postId);
+        }
+    });
+});
+</script>
 
 

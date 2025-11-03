@@ -1,7 +1,24 @@
 /* سبک‌های صفحه مدیریت پیشنهادات */
-#um-suggestions-table .um-sugg-row { cursor: pointer; }
+#um-suggestions-table .um-sugg-row { cursor: default; }
 #um-suggestions-table .um-sugg-row:hover { background:#f9f9f9; }
-.um-sugg-message td { background: #fff; border-top:1px solid #eee; }
-.um-sugg-message div { white-space:pre-wrap; }
+.um-sugg-row.unread { background-color: #fff9e5; }
+.um-sugg-row.read { background-color: #fff; }
+
+.um-sugg-details {
+    transition: all 0.2s ease;
+}
+
+.um-sugg-details td {
+    background: #f9f9f9;
+    border-top: 2px solid #2271b1;
+}
+
+.um-toggle-details {
+    cursor: pointer;
+}
+
+.um-toggle-details:hover {
+    opacity: 0.8;
+}
 
 
