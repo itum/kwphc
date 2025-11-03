@@ -48,11 +48,11 @@ class UM_Polylang_Integration {
     public function register_all_strings() {
         // بررسی وجود Polylang
         if (!function_exists('pll_register_string')) {
-            error_log('UM Plugin: Polylang not available for string registration');
+            um_warning_log('Polylang not available for string registration');
             return;
         }
         
-        error_log('UM Plugin: Registering strings with Polylang');
+        um_log('Registering strings with Polylang');
 
         // رشته‌های عمومی
         $this->register_general_strings();
