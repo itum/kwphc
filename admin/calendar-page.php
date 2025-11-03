@@ -162,8 +162,8 @@ if (function_exists('pll_current_language') && isset($_GET['lang_filter'])) {
     $current_lang = sanitize_text_field($_GET['lang_filter']);
     if (!empty($current_lang)) {
         // لاگ برای دیباگ
-        error_log('=== CALENDAR LANGUAGE FILTER DEBUG ===');
-        error_log('Selected Language: ' . $current_lang);
+        um_log('=== CALENDAR LANGUAGE FILTER DEBUG ===');
+        um_log('Selected Language: ' . $current_lang);
         
         // ابتدا همه پست‌ها را دریافت کن
         $all_events = new WP_Query(array(

@@ -18,6 +18,7 @@ $auth_status = get_option('_um_auth_status');
 $auth_username = get_option('_um_auth_username');
 $token_expires = get_option('_um_token_expires');
 $seminars_limit = get_option('_um_seminars_limit', 10);
+$debug_mode = get_option('um_debug_mode', '0');
 
 $is_authenticated = ($auth_status === 'authenticated' && !empty($auth_username) && time() < $token_expires);
 ?>
@@ -98,6 +99,48 @@ $is_authenticated = ($auth_status === 'authenticated' && !empty($auth_username) 
                             </button>
                         <?php endif; ?>
                         <span id="um-auth-loading" class="spinner" style="display: none;"></span>
+                    </p>
+                </form>
+            </div>
+        </div>
+        
+        <!-- بخش تنظیمات حالت دیباگ -->
+        <div class="um-debug-settings-section">
+            <div class="card">
+                <h2><?php _e('تنظیمات حالت دیباگ', 'university-management'); ?></h2>
+                <p class="description">
+                    <?php _e('در حالت دیباگ، تمام لاگ‌های جزئیات فنی و اطلاعات توسعه‌دهندگان ثبت می‌شوند. توصیه می‌شود این گزینه را فقط برای رفع مشکلات فعال کنید.', 'university-management'); ?>
+                </p>
+                
+                <form id="um-debug-settings-form">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="um-debug-mode"><?php _e('حالت دیباگ', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" id="um-debug-mode" name="debug_mode" value="1" 
+                                           <?php checked($debug_mode, '1'); ?> />
+                                    <?php _e('فعال‌سازی حالت دیباگ', 'university-management'); ?>
+                                </label>
+                                <p class="description">
+                                    <?php _e('با فعال کردن این گزینه، لاگ‌های جزئیات برای رفع مشکلات ثبت می‌شوند. در حالت عادی این گزینه را غیرفعال نگه دارید.', 'university-management'); ?>
+                                </p>
+                                <?php if ($debug_mode === '1'): ?>
+                                    <div class="notice notice-warning inline" style="margin-top: 10px;">
+                                        <p><strong>⚠️ هشدار:</strong> حالت دیباگ فعال است. این ممکن است باعث پر شدن فایل error_log شود.</p>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p class="submit">
+                        <button type="submit" class="button button-primary">
+                            <?php _e('ذخیره تنظیمات دیباگ', 'university-management'); ?>
+                        </button>
+                        <span id="um-debug-loading" class="spinner" style="display: none;"></span>
                     </p>
                 </form>
             </div>
@@ -353,6 +396,46 @@ jQuery(document).ready(function($) {
                     }, 2000);
                 } else {
                     showMessage('خطا در خروج: ' + response.data, 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                showMessage('خطا در اتصال به سرور: ' + error, 'error');
+            },
+            complete: function() {
+                $button.prop('disabled', false);
+                $loading.hide();
+            }
+        });
+    });
+    
+    // ذخیره تنظیمات دیباگ
+    $('#um-debug-settings-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var debugMode = $('#um-debug-mode').is(':checked') ? '1' : '0';
+        
+        var $button = $(this).find('button[type="submit"]');
+        var $loading = $('#um-debug-loading');
+        
+        $button.prop('disabled', true);
+        $loading.show();
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'um_save_debug_settings',
+                debug_mode: debugMode,
+                nonce: '<?php echo wp_create_nonce('um_debug_settings_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage('تنظیمات دیباگ با موفقیت ذخیره شد. صفحه بازخوانی می‌شود...', 'success');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showMessage('خطا در ذخیره تنظیمات دیباگ: ' + response.data, 'error');
                 }
             },
             error: function(xhr, status, error) {

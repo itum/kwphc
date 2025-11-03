@@ -344,8 +344,8 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
             // فیلتر بر اساس زبان فعلی (اگر Polylang فعال باشد)
             if (function_exists('pll_current_language')) {
                 $current_lang = pll_current_language();
-                error_log('=== CALENDAR WIDGET LANGUAGE DEBUG ===');
-                error_log('Current Language: ' . $current_lang);
+                um_log('=== CALENDAR WIDGET LANGUAGE DEBUG ===');
+                um_log('Current Language: ' . $current_lang);
                 
                 if ($current_lang) {
                     // دریافت رویدادها با محدودیت (کش غیرفعال موقت)
@@ -381,7 +381,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                             'order' => 'ASC',
                             'post__in' => $filtered_posts,
                         );
-                        error_log('Filtered Posts Found: ' . count($filtered_posts));
+                        um_log('Filtered Posts Found: ' . count($filtered_posts));
                     } else {
                         // اگر هیچ پستی با زبان فعلی نباشد، کوئری خالی
                         $args = array(
@@ -389,7 +389,7 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
                             'posts_per_page' => $settings['events_count'],
                             'post__in' => array(0), // هیچ پستی
                         );
-                        error_log('No posts found for current language');
+                        um_log('No posts found for current language');
                     }
                 }
             }

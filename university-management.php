@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.4.12
+ * Version: 1.5.0
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -19,6 +19,81 @@ if (!defined('ABSPATH')) {
 define('UM_VERSION', '1.4.3');
 define('UM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('UM_PLUGIN_URL', plugin_dir_url(__FILE__));
+
+/**
+ * توابع Helper برای لاگ‌گیری هوشمند
+ */
+
+/**
+ * لاگ Debug - فقط زمانی که Debug Mode فعال باشد
+ * 
+ * @param string $message پیام لاگ
+ * @param mixed $data داده‌های اضافی (اختیاری)
+ * @return void
+ */
+function um_log($message, $data = null) {
+    // بررسی فعال بودن Debug Mode
+    $debug_mode = get_option('um_debug_mode', '0');
+    
+    if ($debug_mode !== '1') {
+        return; // Debug Mode غیرفعال است
+    }
+    
+    // ساخت پیام لاگ
+    $log_message = '[UM Debug] ' . $message;
+    
+    if ($data !== null) {
+        $log_message .= ' - Data: ' . print_r($data, true);
+    }
+    
+    // نوشتن در لاگ
+    error_log($log_message);
+}
+
+/**
+ * لاگ خطا - همیشه فعال برای خطاهای واقعی
+ * 
+ * @param string $message پیام خطا
+ * @param mixed $data داده‌های اضافی (اختیاری)
+ * @return void
+ */
+function um_error_log($message, $data = null) {
+    // ساخت پیام خطا
+    $log_message = '[UM Error] ' . $message;
+    
+    if ($data !== null) {
+        $log_message .= ' - Data: ' . print_r($data, true);
+    }
+    
+    // نوشتن در لاگ (همیشه فعال)
+    error_log($log_message);
+}
+
+/**
+ * لاگ هشدار - فقط در Debug Mode
+ * 
+ * @param string $message پیام هشدار
+ * @param mixed $data داده‌های اضافی (اختیاری)
+ * @return void
+ */
+function um_warning_log($message, $data = null) {
+    // بررسی فعال بودن Debug Mode
+    $debug_mode = get_option('um_debug_mode', '0');
+    
+    if ($debug_mode !== '1') {
+        return; // Debug Mode غیرفعال است
+    }
+    
+    // ساخت پیام هشدار
+    $log_message = '[UM Warning] ' . $message;
+    
+    if ($data !== null) {
+        $log_message .= ' - Data: ' . print_r($data, true);
+    }
+    
+    // نوشتن در لاگ
+    error_log($log_message);
+}
 
 /**
  * کلاس اصلی افزونه مدیریت دانشگاه
@@ -155,6 +230,7 @@ class University_Management {
         add_action('wp_ajax_um_logout_user', array($this, 'ajax_logout_user'));
         add_action('wp_ajax_um_get_seminars', array($this, 'ajax_get_seminars'));
         add_action('wp_ajax_um_save_api_settings', array($this, 'ajax_save_api_settings'));
+        add_action('wp_ajax_um_save_debug_settings', array($this, 'ajax_save_debug_settings'));
         add_action('wp_ajax_um_test_api', array($this, 'ajax_test_api'));
         add_action('wp_ajax_um_direct_api_test', array($this, 'ajax_direct_api_test'));
         add_action('wp_ajax_um_import_seminars', array($this, 'ajax_import_seminars'));
@@ -666,13 +742,13 @@ class University_Management {
                 
                 // تست تابع um_translate (فقط برای دیباگ)
                 if (function_exists('um_translate') && defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM Plugin: um_translate function loaded successfully');
+                    um_log('um_translate function loaded successfully');
                 }
             } else {
-                error_log('UM Plugin: Polylang integration file not found');
+                um_warning_log('Polylang integration file not found');
             }
         } catch (Exception $e) {
-            error_log('UM Plugin: Error loading Polylang integration: ' . $e->getMessage());
+            um_error_log('Error loading Polylang integration', $e->getMessage());
         }
     }
 
@@ -897,7 +973,7 @@ class University_Management {
                 UM_Elementor_Widgets::get_instance();
             } catch (Exception $e) {
                 // لاگ خطا
-                error_log('UM Plugin Error: ' . $e->getMessage());
+                um_error_log('Plugin Error', $e->getMessage());
                 
                 // نمایش پیغام خطا در مدیریت
                 add_action('admin_notices', function() use ($e) {
@@ -1828,7 +1904,7 @@ class University_Management {
      */
     private function log_debug($message, $data = array()) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('UM Video Custom Fields: ' . $message . ' - ' . print_r($data, true));
+            um_log('Video Custom Fields: ' . $message, $data);
         }
     }
 
@@ -3990,10 +4066,8 @@ class University_Management {
         
         update_option('_um_import_logs', $logs);
         
-        // لاگ در error_log PHP اگر WP_DEBUG فعال باشد
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("UM Import: " . $message . " - " . print_r($data, true));
-        }
+        // لاگ در حالت دیباگ
+        um_log("Import: " . $message, $data);
     }
     
     /**
@@ -4871,7 +4945,7 @@ class University_Management {
         }
         
         // لاگ درخواست برای دیباگ
-        error_log('UM Auth Request: Username=' . $username);
+        um_log('Auth Request: Username=' . $username);
         
         // ارسال درخواست لاگین به ws_dore.php
         $response = wp_remote_post('https://kwphc.ir/webservice_new/ws_dore.php/login', array(
@@ -4890,7 +4964,7 @@ class University_Management {
         
         if (is_wp_error($response)) {
             $error_message = $response->get_error_message();
-            error_log('UM Auth Error: ' . $error_message);
+            um_error_log('Auth Error: ' . $error_message);
             wp_send_json_error('خطا در اتصال به سرور: ' . $error_message);
             return;
         }
@@ -4899,8 +4973,8 @@ class University_Management {
         $body = wp_remote_retrieve_body($response);
         
         // لاگ پاسخ برای دیباگ
-        error_log('UM Auth Response Code: ' . $http_code);
-        error_log('UM Auth Response Body: ' . $body);
+        um_log('Auth Response Code: ' . $http_code);
+        um_log('Auth Response Body: ' . $body);
         
         if ($http_code !== 200) {
             wp_send_json_error('خطای سرور: کد ' . $http_code);
@@ -4955,7 +5029,7 @@ class University_Management {
             // --- پایان لاگین آزمون ---
 
             // لاگ موفقیت
-            error_log('UM Auth Success: Token saved for user ' . $username);
+            um_log('Auth Success: Token saved for user ' . $username);
             $message = isset($data['message']) ? $data['message'] : 'ورود موفقیت‌آمیز بود';
             wp_send_json_success(array(
                 'message' => $message,
@@ -4965,7 +5039,7 @@ class University_Management {
             ));
         } else {
             $error_message = isset($data['message']) ? $data['message'] : 'خطا در احراز هویت';
-            error_log('UM Auth Failed: ' . $error_message);
+            um_error_log('Auth Failed: ' . $error_message);
             wp_send_json_error($error_message);
         }
     }
@@ -5010,8 +5084,18 @@ class University_Management {
         // دریافت limit از تنظیمات
         $limit = get_option('_um_seminars_limit', 10);
         
+        // بررسی کش (cache برای 5 دقیقه)
+        $cache_key = 'um_seminars_' . $limit;
+        $cached_data = get_transient($cache_key);
+        
+        if ($cached_data !== false) {
+            um_log('Seminars: Using cached data');
+            wp_send_json_success($cached_data);
+            return;
+        }
+        
         // لاگ درخواست
-        error_log('UM Seminars Request: Limit=' . $limit . ', Token=' . substr($token, 0, 20) . '...');
+        um_log('Seminars Request: Limit=' . $limit . ', Token=' . substr($token, 0, 20) . '...');
         
         // ارسال درخواست برای دریافت سمینارها
         $response = wp_remote_get('https://kwphc.ir/webservice_new/ws_dore.php?action=latest_records&limit=' . $limit, array(
@@ -5026,7 +5110,7 @@ class University_Management {
         
         if (is_wp_error($response)) {
             $error_message = $response->get_error_message();
-            error_log('UM Seminars Error: ' . $error_message);
+            um_error_log('Seminars Error: ' . $error_message);
             wp_send_json_error('خطا در اتصال به سرور: ' . $error_message);
         }
         
@@ -5034,8 +5118,8 @@ class University_Management {
         $body = wp_remote_retrieve_body($response);
         
         // لاگ پاسخ
-        error_log('UM Seminars Response Code: ' . $http_code);
-        error_log('UM Seminars Response Body: ' . substr($body, 0, 500) . '...');
+        um_log('Seminars Response Code: ' . $http_code);
+        um_log('Seminars Response Body: ' . substr($body, 0, 500) . '...');
         
         if ($http_code === 401) {
             // توکن منقضی شده
@@ -5054,7 +5138,10 @@ class University_Management {
         }
         
         // لاگ موفقیت
-        error_log('UM Seminars Success: ' . count($data) . ' seminars received');
+        um_log('Seminars Success: ' . count($data) . ' seminars received');
+        
+        // ذخیره در کش برای 5 دقیقه
+        set_transient($cache_key, $data, 5 * MINUTE_IN_SECONDS);
         
         wp_send_json_success($data);
     }
@@ -5076,6 +5163,22 @@ class University_Management {
         update_option('_um_seminars_limit', $limit);
         
         wp_send_json_success('تنظیمات با موفقیت ذخیره شد');
+    }
+    
+    /**
+     * AJAX: ذخیره تنظیمات Debug Mode
+     */
+    public function ajax_save_debug_settings() {
+        // بررسی امنیت
+        if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'um_debug_settings_nonce')) {
+            wp_send_json_error('خطای امنیتی');
+        }
+        
+        $debug_mode = isset($_POST['debug_mode']) && $_POST['debug_mode'] === '1' ? '1' : '0';
+        
+        update_option('um_debug_mode', $debug_mode);
+        
+        wp_send_json_success('تنظیمات دیباگ با موفقیت ذخیره شد');
     }
     
     /**
@@ -5260,7 +5363,7 @@ class University_Management {
                 $post_excerpt = sanitize_text_field($seminar['Mokhatabin']);
                 
                 // لاگ اطلاعات سمینار برای دیباگ
-                error_log("UM Import: Processing seminar - Title: {$post_title}, Teacher: " . ($seminar['Name_Ostad'] ?? 'null') . ", Date: " . ($seminar['Date_Start'] ?? 'null') . ", Image: " . ($seminar['SeminarPic'] ?? 'null'));
+                um_log("Import: Processing seminar - Title: {$post_title}, Teacher: " . ($seminar['Name_Ostad'] ?? 'null') . ", Date: " . ($seminar['Date_Start'] ?? 'null') . ", Image: " . ($seminar['SeminarPic'] ?? 'null'));
 
                 $post_data = array(
                     'post_title' => $post_title,
@@ -5308,14 +5411,14 @@ class University_Management {
                     
                     // لاگ نتیجه دانلود تصویر
                     if ($image_success) {
-                        error_log("UM Import: ✅ Image downloaded and set as thumbnail for post {$post_id}: {$image_name}");
+                        um_log("Import: ✅ Image downloaded and set as thumbnail for post {$post_id}: {$image_name}");
                         $summary['images_downloaded'] = ($summary['images_downloaded'] ?? 0) + 1;
                     } else {
-                        error_log("UM Import: ❌ Failed to download image for post {$post_id}: {$image_name}");
+                        um_warning_log("Import: ❌ Failed to download image for post {$post_id}: {$image_name}");
                         $summary['images_failed'] = ($summary['images_failed'] ?? 0) + 1;
                     }
                 } else {
-                    error_log("UM Import: ⚠️ No valid image found for post {$post_id}. SeminarPic: " . ($seminar['SeminarPic'] ?? 'null') . ", Boroshor: " . ($seminar['Boroshor'] ?? 'null'));
+                    um_warning_log("Import: ⚠️ No valid image found for post {$post_id}. SeminarPic: " . ($seminar['SeminarPic'] ?? 'null') . ", Boroshor: " . ($seminar['Boroshor'] ?? 'null'));
                     $summary['images_skipped'] = ($summary['images_skipped'] ?? 0) + 1;
                 }
 
@@ -5325,7 +5428,7 @@ class University_Management {
         }
 
         // لاگ نتیجه نهایی
-        error_log("UM Import Seminars Summary: " . json_encode($summary));
+        um_log("Import Seminars Summary", $summary);
         
         wp_send_json_success($summary);
     }
@@ -5341,13 +5444,13 @@ class University_Management {
 
         // بررسی وجود تصویر شاخص فعلی
         if (has_post_thumbnail($post_id)) {
-            error_log("UM Import: Post {$post_id} already has thumbnail, skipping image download");
+            um_log("Import: Post {$post_id} already has thumbnail, skipping image download");
             return true;
         }
 
         // بررسی اعتبار URL
         if (empty($image_url) || !filter_var($image_url, FILTER_VALIDATE_URL)) {
-            error_log("UM Import: Invalid image URL: {$image_url}");
+            um_warning_log("Import: Invalid image URL: {$image_url}");
             return false;
         }
 
@@ -5359,20 +5462,20 @@ class University_Management {
         ));
 
         if (is_wp_error($response)) {
-            error_log("UM Import: Network error checking image: " . $response->get_error_message());
+            um_error_log("Import: Network error checking image", $response->get_error_message());
             return false;
         }
 
         $http_code = wp_remote_retrieve_response_code($response);
         if ($http_code !== 200) {
-            error_log("UM Import: Image not accessible (HTTP {$http_code}): {$image_url}");
+            um_warning_log("Import: Image not accessible (HTTP {$http_code}): {$image_url}");
             return false;
         }
 
         // بررسی نوع فایل
         $content_type = wp_remote_retrieve_header($response, 'content-type');
         if ($content_type && !preg_match('/^image\//', $content_type)) {
-            error_log("UM Import: URL is not an image (Content-Type: {$content_type}): {$image_url}");
+            um_warning_log("Import: URL is not an image (Content-Type: {$content_type}): {$image_url}");
             return false;
         }
 
@@ -5385,7 +5488,7 @@ class University_Management {
             $thumbnail_result = set_post_thumbnail($post_id, $attachment_id);
             
             if ($thumbnail_result) {
-                error_log("UM Import: ✅ Successfully set thumbnail for post {$post_id} with attachment {$attachment_id}");
+                um_log("Import: ✅ Successfully set thumbnail for post {$post_id} with attachment {$attachment_id}");
                 
                 // به‌روزرسانی اطلاعات attachment
                 wp_update_post(array(
@@ -5396,12 +5499,12 @@ class University_Management {
                 
                 return true;
             } else {
-                error_log("UM Import: ❌ Failed to set thumbnail for post {$post_id} with attachment {$attachment_id}");
+                um_error_log("Import: ❌ Failed to set thumbnail for post {$post_id} with attachment {$attachment_id}");
                 return false;
             }
         } else {
             $error_message = is_wp_error($attachment_id) ? $attachment_id->get_error_message() : 'Unknown error';
-            error_log("UM Import: ❌ Failed to sideload image for post {$post_id}: " . $error_message);
+            um_error_log("Import: ❌ Failed to sideload image for post {$post_id}: " . $error_message);
         }
         
         return false;
@@ -5419,13 +5522,13 @@ class University_Management {
         ));
 
         if (is_wp_error($response)) {
-            error_log("UM Import: Failed to download image content: " . $response->get_error_message());
+            um_error_log("Import: Failed to download image content", $response->get_error_message());
             return false;
         }
 
         $image_content = wp_remote_retrieve_body($response);
         if (empty($image_content)) {
-            error_log("UM Import: Empty image content received");
+            um_error_log("Import: Empty image content received");
             return false;
         }
 
@@ -5451,7 +5554,7 @@ class University_Management {
                 $extension = 'webp';
                 break;
             default:
-                error_log("UM Import: Unsupported image type: {$mime_type}");
+                um_warning_log("Import: Unsupported image type: {$mime_type}");
                 return false;
         }
 
@@ -5464,7 +5567,7 @@ class University_Management {
 
         // ذخیره فایل موقت
         if (file_put_contents($temp_file, $image_content) === false) {
-            error_log("UM Import: Failed to save temporary file: {$temp_file}");
+            um_error_log("Import: Failed to save temporary file: {$temp_file}");
             return false;
         }
 
@@ -5486,11 +5589,11 @@ class University_Management {
         }
 
         if (is_wp_error($attachment_id)) {
-            error_log("UM Import: Failed to handle sideload: " . $attachment_id->get_error_message());
+            um_error_log("Import: Failed to handle sideload", $attachment_id->get_error_message());
             return false;
         }
 
-        error_log("UM Import: Successfully downloaded image with English filename: {$english_filename}");
+        um_log("Import: Successfully downloaded image with English filename: {$english_filename}");
         return $attachment_id;
     }
     
@@ -5990,9 +6093,9 @@ class University_Management {
         $data = json_decode($body, true);
 
         // لاگ پاسخ برای دیباگ
-        error_log('UM Azmoons Response Code: ' . $http_code);
-        error_log('UM Azmoons Response Body: ' . $body);
-        error_log('UM Azmoons Decoded Data: ' . print_r($data, true));
+        um_log('Azmoons Response Code: ' . $http_code);
+        um_log('Azmoons Response Body: ' . $body);
+        um_log('Azmoons Decoded Data', $data);
 
         if ($http_code === 401) {
             delete_option('_um_auth_status');
@@ -6614,6 +6717,16 @@ class University_Management {
         }
 
         $limit = 100; // دریافت حداکثر 100 آزمون
+        
+        // بررسی کش (cache برای 5 دقیقه)
+        $cache_key = 'um_azmoons_' . $limit;
+        $cached_data = get_transient($cache_key);
+        
+        if ($cached_data !== false) {
+            um_log('Azmoons: Using cached data');
+            return $cached_data;
+        }
+        
         $api_url = 'https://kwphc.ir/webservice_new/webervice_Azmoon.php';
         
         // دریافت توکن آزمون
@@ -6635,8 +6748,8 @@ class University_Management {
         $data = json_decode($body, true);
 
         // لاگ پاسخ برای دیباگ
-        error_log('UM Load Azmoons Response Code: ' . $http_code);
-        error_log('UM Load Azmoons Response Body: ' . $body);
+        um_log('Load Azmoons Response Code: ' . $http_code);
+        um_log('Load Azmoons Response Body: ' . $body);
 
         if ($http_code === 401) {
             delete_option('_um_auth_status');
@@ -6663,6 +6776,9 @@ class University_Management {
             throw new Exception('فرمت پاسخ وب‌سرویس نامعتبر است');
         }
 
+        // ذخیره در کش برای 5 دقیقه
+        set_transient($cache_key, $azmoons_array, 5 * MINUTE_IN_SECONDS);
+        
         // پردازش و تبدیل داده‌ها
         $processed_azmoons = array();
         foreach ($azmoons_array as $azmoon) {
@@ -7206,12 +7322,12 @@ class University_Management {
      * @return array
      */
     public function get_videos_by_language($lang = null, $limit = 10) {
-        error_log('=== GET VIDEOS BY LANGUAGE DEBUG ===');
-        error_log('Requested Language: ' . $lang);
+        um_log('=== GET VIDEOS BY LANGUAGE DEBUG ===');
+        um_log('Requested Language: ' . $lang);
         
         if (!$lang && function_exists('pll_current_language')) {
             $lang = pll_current_language();
-            error_log('Current Language from Polylang: ' . $lang);
+            um_log('Current Language from Polylang: ' . $lang);
         }
         
         $args = array(
@@ -7224,30 +7340,30 @@ class University_Management {
         
         if ($lang) {
             $args['lang'] = $lang;
-            error_log('Added language filter: ' . $lang);
+            um_log('Added language filter: ' . $lang);
         } else {
-            error_log('No language filter applied');
+            um_log('No language filter applied');
         }
         
-        error_log('Query Args: ' . print_r($args, true));
+        um_log('Query Args', $args);
         
         $query = new WP_Query($args);
-        error_log('Query Found Posts: ' . $query->found_posts);
-        error_log('Query Post Count: ' . $query->post_count);
+        um_log('Query Found Posts: ' . $query->found_posts);
+        um_log('Query Post Count: ' . $query->post_count);
         
         $videos = array();
         
         if ($query->have_posts()) {
-            error_log('Processing posts...');
+            um_log('Processing posts...');
             while ($query->have_posts()) {
                 $query->the_post();
                 $post_id = get_the_ID();
                 $post_title = get_the_title();
                 
-                error_log('Processing Post ID: ' . $post_id . ', Title: ' . $post_title);
+                um_log('Processing Post ID: ' . $post_id . ', Title: ' . $post_title);
                 
                 $video_url = get_post_meta($post_id, '_um_video_link', true);
-                error_log('Video URL: ' . $video_url);
+                um_log('Video URL: ' . $video_url);
                 
                 if ($video_url) {
                     $videos[] = array(
@@ -7258,19 +7374,19 @@ class University_Management {
                         'category' => wp_get_post_terms($post_id, 'um_video_category', array('fields' => 'names')),
                         'lang' => $lang
                     );
-                    error_log('Added video: ' . $post_title);
+                    um_log('Added video: ' . $post_title);
                 } else {
-                    error_log('Skipped video (no URL): ' . $post_title);
+                    um_log('Skipped video (no URL): ' . $post_title);
                 }
             }
             wp_reset_postdata();
         } else {
-            error_log('No posts found for language: ' . $lang);
+            um_log('No posts found for language: ' . $lang);
         }
         
-        error_log('Final Videos Count: ' . count($videos));
-        error_log('Final Videos: ' . print_r($videos, true));
-        error_log('=== END GET VIDEOS BY LANGUAGE DEBUG ===');
+        um_log('Final Videos Count: ' . count($videos));
+        um_log('Final Videos', $videos);
+        um_log('=== END GET VIDEOS BY LANGUAGE DEBUG ===');
         
         return $videos;
     }

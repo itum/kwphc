@@ -21,6 +21,16 @@ class UM_Performance_Optimizer {
     private static $instance = null;
     
     /**
+     * حداکثر تعداد پست‌ها در کوئری‌ها
+     */
+    const MAX_POSTS_PER_PAGE = 100;
+    
+    /**
+     * مدت زمان کش (به ثانیه)
+     */
+    const CACHE_DURATION = 300; // 5 دقیقه
+    
+    /**
      * دریافت نمونه کلاس
      */
     public static function get_instance() {
@@ -49,23 +59,56 @@ class UM_Performance_Optimizer {
         
         // بهینه‌سازی بارگذاری فایل‌ها
         add_action('wp_enqueue_scripts', array($this, 'optimize_asset_loading'), 1);
+        
+        // محدود کردن کوئری‌های بدون limit
+        add_filter('query', array($this, 'limit_unlimited_queries'));
     }
     
     /**
      * بهینه‌سازی کوئری‌های دیتابیس
      */
     public function optimize_queries($query) {
-        if (!is_admin() && $query->is_main_query()) {
+        // فقط برای کوئری‌های اصلی
+        if ($query->is_main_query()) {
             // محدود کردن نتایج جستجو
-            if ($query->is_search()) {
+            if ($query->is_search() && !is_admin()) {
                 $query->set('posts_per_page', 20);
             }
             
             // بهینه‌سازی کوئری‌های آرشیو
-            if ($query->is_archive()) {
+            if ($query->is_archive() && !is_admin()) {
                 $query->set('posts_per_page', 12);
             }
+            
+            // محدود کردن کوئری‌های افزونه
+            $post_type = $query->get('post_type');
+            if (in_array($post_type, array('um_seminars', 'um_videos', 'um_calendar_events', 'um_classes'))) {
+                $posts_per_page = $query->get('posts_per_page');
+                if ($posts_per_page == -1 && !is_admin()) {
+                    // محدود به حداکثر 100 پست
+                    $query->set('posts_per_page', self::MAX_POSTS_PER_PAGE);
+                    um_log('Query limited to ' . self::MAX_POSTS_PER_PAGE . ' posts for performance');
+                }
+            }
         }
+    }
+    
+    /**
+     * محدود کردن کوئری‌های بدون limit
+     */
+    public function limit_unlimited_queries($query) {
+        global $wpdb;
+        
+        // فقط در حالت دیباگ این کار را انجام دهیم
+        $debug_mode = get_option('um_debug_mode', '0');
+        if ($debug_mode === '1') {
+            // بررسی کوئری‌های بدون LIMIT
+            if (stripos($query, 'LIMIT') === false && (stripos($query, 'SELECT') !== false)) {
+                um_warning_log('Unlimited query detected', substr($query, 0, 200));
+            }
+        }
+        
+        return $query;
     }
     
     /**
@@ -78,8 +121,20 @@ class UM_Performance_Optimizer {
                 'um_hall_hourly_rate' => get_option('um_hall_hourly_rate', 0),
                 'um_hall_equipment' => get_option('um_hall_equipment', '[]'),
                 'um_hall_catering' => get_option('um_hall_catering', '[]'),
+                'um_debug_mode' => get_option('um_debug_mode', '0'),
             );
             set_transient('um_plugin_settings_cache', $settings, HOUR_IN_SECONDS);
+        }
+        
+        // کش کردن تعداد پست‌های مهم
+        if (!get_transient('um_posts_count_cache')) {
+            $counts = array(
+                'seminars' => wp_count_posts('um_seminars'),
+                'videos' => wp_count_posts('um_videos'),
+                'events' => wp_count_posts('um_calendar_events'),
+                'classes' => wp_count_posts('um_classes'),
+            );
+            set_transient('um_posts_count_cache', $counts, self::CACHE_DURATION);
         }
     }
     
@@ -105,8 +160,32 @@ class UM_Performance_Optimizer {
         $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_um_%'");
         $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_um_%'");
         
-        // پاک کردن کش تنظیمات
+        // پاک کردن کش‌های خاص
         delete_transient('um_plugin_settings_cache');
+        delete_transient('um_posts_count_cache');
+        
+        um_log('All plugin caches cleared');
+    }
+    
+    /**
+     * کش کردن نتیجه کوئری
+     */
+    public function cache_query_result($query_key, $callback, $duration = null) {
+        if ($duration === null) {
+            $duration = self::CACHE_DURATION;
+        }
+        
+        $cached = get_transient($query_key);
+        if ($cached !== false) {
+            um_log('Using cached query result: ' . $query_key);
+            return $cached;
+        }
+        
+        $result = call_user_func($callback);
+        set_transient($query_key, $result, $duration);
+        um_log('Cached query result: ' . $query_key);
+        
+        return $result;
     }
     
     /**

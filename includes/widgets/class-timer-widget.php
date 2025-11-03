@@ -850,9 +850,9 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
             $query = new \WP_Query($args);
             
             // دیباگ برای بررسی پست‌ها
-            error_log('Class Timer Widget Debug:');
-            error_log('Found posts: ' . $query->found_posts);
-            error_log('Post type exists: ' . (post_type_exists('um_classes') ? 'Yes' : 'No'));
+            um_log('Class Timer Widget Debug:');
+            um_log('Found posts: ' . $query->found_posts);
+            um_log('Post type exists: ' . (post_type_exists('um_classes') ? 'Yes' : 'No'));
             
             if ($query->have_posts()) {
                 while ($query->have_posts()) {
@@ -863,7 +863,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                     $class_teacher = get_post_meta(get_the_ID(), '_class_teacher', true);
                     $class_status = get_post_meta(get_the_ID(), '_class_status', true) ?: 'scheduled';
                     
-                    error_log('Class found - ID: ' . get_the_ID() . ', Title: ' . get_the_title() . ', Date: ' . $class_date);
+                    um_log('Class found - ID: ' . get_the_ID() . ', Title: ' . get_the_title() . ', Date: ' . $class_date);
                     
                     // تبدیل تاریخ به فرمت استاندارد
                     $formatted_date = date('Y-m-d H:i:s', strtotime($class_date));
@@ -881,7 +881,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
                 
                 wp_reset_postdata();
             } else {
-                error_log('No classes found in query');
+                um_log('No classes found in query');
             }
         } else {
             // استفاده از کلاس‌های دستی
@@ -920,7 +920,7 @@ class UM_Class_Timer_Widget extends \Elementor\Widget_Base {
             );
         }
         
-        error_log('Final classData: ' . print_r($classData, true));
+        um_log('Final classData', $classData);
         
         // اگر هیچ کلاسی وجود ندارد، داده‌های نمونه اضافه کن
         if (empty($classData)) {

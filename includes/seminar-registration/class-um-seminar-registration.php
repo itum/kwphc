@@ -20,7 +20,7 @@ class UM_Seminar_Registration {
     public function __construct() {
         // بررسی وجود کلاس درگاه پرداخت
         if (!class_exists('UM_Zarinpal_Gateway')) {
-            error_log('UM_Zarinpal_Gateway class not found');
+            um_warning_log('UM_Zarinpal_Gateway class not found');
             return;
         }
         

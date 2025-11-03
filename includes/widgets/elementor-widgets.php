@@ -127,7 +127,7 @@ class UM_Elementor_Widgets {
     private function register_widget_instances() {
         // دیباگ: بررسی وجود کلاس‌ها
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('UM: Starting widget registration...');
+            um_log('Starting widget registration...');
         }
         
         try {
@@ -135,28 +135,28 @@ class UM_Elementor_Widgets {
             if (class_exists('UM_Calendar_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Calendar_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Calendar widget registered');
+                    um_log('Calendar widget registered');
                 }
             }
             
             if (class_exists('UM_Class_Timer_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Class_Timer_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Class Timer widget registered');
+                    um_log('Class Timer widget registered');
                 }
             }
             
             if (class_exists('UM_Video_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Video_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Video widget registered');
+                    um_log('Video widget registered');
                 }
             }
             
             if (class_exists('UM_Seminar_Slider_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Seminar_Slider_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Seminar Slider widget registered');
+                    um_log('Seminar Slider widget registered');
                 }
             }
             if (class_exists('UM_Staff_Carousel_Widget')) {
@@ -169,14 +169,14 @@ class UM_Elementor_Widgets {
             if (class_exists('UM_Azmoon_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Azmoon_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Azmoon widget registered');
+                    um_log('Azmoon widget registered');
                 }
             }
             
             if (class_exists('UM_Employment_Exams_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Employment_Exams_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Employment Exams widget registered');
+                    um_log('Employment Exams widget registered');
                 }
             }
             
@@ -184,29 +184,29 @@ class UM_Elementor_Widgets {
             if (class_exists('UM_Hall_Booking_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Hall_Booking_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Hall Booking widget registered');
+                    um_log('Hall Booking widget registered');
                 }
             }
             if (class_exists('UM_Slides_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Slides_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Slides widget registered');
+                    um_log('Slides widget registered');
                 }
             }
             if (class_exists('UM_Suggestion_Widget')) {
                 \Elementor\Plugin::instance()->widgets_manager->register_widget_type(new UM_Suggestion_Widget());
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('UM: Suggestion widget registered');
+                    um_log('Suggestion widget registered');
                 }
             }
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('UM: All widgets registered successfully');
+                um_log('All widgets registered successfully');
             }
             
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('UM: Widget registration error: ' . $e->getMessage());
+                um_error_log('Widget registration error', $e->getMessage());
             }
         }
     }

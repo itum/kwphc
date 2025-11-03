@@ -375,9 +375,9 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $videos = [];
 
         // لاگ تنظیمات ویجت
-        error_log('=== VIDEO WIDGET DEBUG START ===');
-        error_log('Video Widget Settings: ' . print_r($settings, true));
-        error_log('Video Source: ' . $settings['video_source']);
+        um_log('=== VIDEO WIDGET DEBUG START ===');
+        um_log('Video Widget Settings', $settings);
+        um_log('Video Source: ' . $settings['video_source']);
 
         if ($settings['video_source'] === 'auto') {
             // $cat_id = $settings['video_category']; // Ignore category from settings
@@ -391,11 +391,11 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             // فیلتر بر اساس زبان فعلی Polylang
             if (function_exists('pll_current_language')) {
                 $current_lang = pll_current_language();
-                error_log('Current Language: ' . $current_lang);
+                um_log('Current Language: ' . $current_lang);
                 
                 if ($current_lang) {
                     $args['lang'] = $current_lang;
-                    error_log('Added language filter: ' . $current_lang);
+                    um_log('Added language filter: ' . $current_lang);
                 }
             }
 
@@ -410,36 +410,36 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
             */
 
             // لاگ آرگومان‌های کوئری
-            error_log('Video Widget Query Args: ' . print_r($args, true));
+            um_log('Video Widget Query Args', $args);
 
             // کش کردن کوئری ویدیو (غیرفعال موقت برای تست)
             $query = new \WP_Query($args);
 
             // لاگ نتایج کوئری
-            error_log('Video Widget Query Found Posts: ' . $query->found_posts);
-            error_log('Video Widget Query Post Count: ' . $query->post_count);
+            um_log('Video Widget Query Found Posts: ' . $query->found_posts);
+            um_log('Video Widget Query Post Count: ' . $query->post_count);
 
             if ($query->have_posts()) {
-                error_log('Video Widget: Found posts, processing...');
+                um_log('Video Widget: Found posts, processing...');
                 while ($query->have_posts()) {
                     $query->the_post();
                     $post_id = get_the_ID();
                     $post_title = get_the_title();
                     
-                    error_log('Processing Video Post ID: ' . $post_id . ', Title: ' . $post_title);
+                    um_log('Processing Video Post ID: ' . $post_id . ', Title: ' . $post_title);
                     
                     $thumbnail_url = get_the_post_thumbnail_url($post_id, 'medium');
                     if (!$thumbnail_url) {
                         $thumbnail_url = UM_PLUGIN_URL . 'assets/images/video-placeholder.jpg';
                     }
-                    error_log('Thumbnail URL: ' . $thumbnail_url);
+                    um_log('Thumbnail URL: ' . $thumbnail_url);
                     
                     $video_url = get_post_meta($post_id, '_um_video_link', true);
-                    error_log('Video URL from meta: ' . $video_url);
+                    um_log('Video URL from meta: ' . $video_url);
                     
                     $terms = get_the_terms($post_id, 'um_video_category');
                     $category = !empty($terms) ? $terms[0]->name : um_translate('عمومی', __('عمومی', 'university-management'));
-                    error_log('Category: ' . $category);
+                    um_log('Category: ' . $category);
 
                     if ($video_url) {
                         $videos[] = [
@@ -448,14 +448,14 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                             'thumbnail' => $thumbnail_url,
                             'category' => $category,
                         ];
-                        error_log('Added video to array: ' . $post_title);
+                        um_log('Added video to array: ' . $post_title);
                     } else {
-                        error_log('Skipped video (no URL): ' . $post_title);
+                        um_log('Skipped video (no URL): ' . $post_title);
                     }
                 }
                 wp_reset_postdata();
             } else {
-                error_log('Video Widget: No posts found in query, trying without language filter');
+                um_log('Video Widget: No posts found in query, trying without language filter');
                 
                 // اگر ویدیویی در زبان فعلی یافت نشد، همه ویدیوها را بگیر
                 $fallback_args = [
@@ -466,16 +466,16 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                 
                 // کش کردن کوئری fallback (غیرفعال موقت برای تست)
                 $fallback_query = new \WP_Query($fallback_args);
-                error_log('Fallback Query Found Posts: ' . $fallback_query->found_posts);
+                um_log('Fallback Query Found Posts: ' . $fallback_query->found_posts);
                 
                 if ($fallback_query->have_posts()) {
-                    error_log('Video Widget: Found posts in fallback query, processing...');
+                    um_log('Video Widget: Found posts in fallback query, processing...');
                     while ($fallback_query->have_posts()) {
                         $fallback_query->the_post();
                         $post_id = get_the_ID();
                         $post_title = get_the_title();
                         
-                        error_log('Processing Fallback Video Post ID: ' . $post_id . ', Title: ' . $post_title);
+                        um_log('Processing Fallback Video Post ID: ' . $post_id . ', Title: ' . $post_title);
                         
                         $thumbnail_url = get_the_post_thumbnail_url($post_id, 'medium');
                         if (!$thumbnail_url) {
@@ -494,16 +494,16 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
                                 'thumbnail' => $thumbnail_url,
                                 'category' => $category,
                             ];
-                            error_log('Added fallback video to array: ' . $post_title);
+                            um_log('Added fallback video to array: ' . $post_title);
                         }
                     }
                     wp_reset_postdata();
                 } else {
-                    error_log('Video Widget: No posts found in fallback query either');
+                    um_log('Video Widget: No posts found in fallback query either');
                 }
             }
         } else {
-            error_log('Video Widget: Using manual videos');
+            um_log('Video Widget: Using manual videos');
             if (!empty($settings['manual_videos'])) {
                 foreach ($settings['manual_videos'] as $video) {
                      if (!empty($video['video_url'])) {
@@ -519,9 +519,9 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         }
 
         // لاگ آرایه نهایی ویدیوها
-        error_log('Final Videos Array Count: ' . count($videos));
-        error_log('Final Videos Array: ' . print_r($videos, true));
-        error_log('=== VIDEO WIDGET DEBUG END ===');
+        um_log('Final Videos Array Count: ' . count($videos));
+        um_log('Final Videos Array', $videos);
+        um_log('=== VIDEO WIDGET DEBUG END ===');
 
         $all_categories = $this->get_video_categories();
         $widget_id = 'videoApp-' . $this->get_id();
@@ -529,10 +529,10 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         $categories_json = esc_attr(json_encode($all_categories));
         
         // لاگ داده‌های ارسالی به JavaScript
-        error_log('Widget ID: ' . $widget_id);
-        error_log('Videos JSON: ' . $videos_json);
-        error_log('Categories JSON: ' . $categories_json);
-        error_log('All Categories Array: ' . print_r($all_categories, true));
+        um_log('Widget ID: ' . $widget_id);
+        um_log('Videos JSON: ' . $videos_json);
+        um_log('Categories JSON: ' . $categories_json);
+        um_log('All Categories Array', $all_categories);
         ?>
         <div id="<?php echo esc_attr($widget_id); ?>" class="videoApp-container" data-videos='<?php echo $videos_json; ?>' data-categories='<?php echo $categories_json; ?>'>
             <div class="videoApp-wrapper">
@@ -564,7 +564,7 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
     private function get_video_categories() {
         $categories = array();
         
-        error_log('=== VIDEO CATEGORIES DEBUG ===');
+        um_log('=== VIDEO CATEGORIES DEBUG ===');
         
         $args = array(
             'taxonomy' => 'um_video_category',
@@ -574,17 +574,17 @@ class UM_Video_Widget extends \Elementor\Widget_Base {
         // فیلتر بر اساس زبان فعلی Polylang
         if (function_exists('pll_current_language')) {
             $current_lang = pll_current_language();
-            error_log('Current Language for Categories: ' . $current_lang);
+            um_log('Current Language for Categories: ' . $current_lang);
             
             if ($current_lang) {
                 $args['lang'] = $current_lang;
-                error_log('Added language filter for categories: ' . $current_lang);
+                um_log('Added language filter for categories: ' . $current_lang);
             }
         }
         
         $terms = get_terms($args);
         
-        error_log('Video Categories Terms: ' . print_r($terms, true));
+        um_log('Video Categories Terms', $terms);
         
         if (!empty($terms) && !is_wp_error($terms)) {
             foreach ($terms as $term) {
