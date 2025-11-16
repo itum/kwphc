@@ -391,7 +391,28 @@ class UM_Hall_Booking_Widget extends \Elementor\Widget_Base {
 		$layouts = json_decode((string) get_option('um_hall_layouts', '[]'), true); if (!is_array($layouts)) { $layouts = array(); }
 		$caterings = json_decode((string) get_option('um_hall_catering', '[]'), true); if (!is_array($caterings)) { $caterings = array(); }
 
-        wp_enqueue_script('um-hall-booking-widget');
+        // Enqueue script و style - اطمینان از اینکه localize قبل از enqueue انجام شده است
+        if (wp_script_is('um-hall-booking-widget', 'registered')) {
+            // localize script (می‌تواند چند بار صدا زده شود، WordPress فقط یک بار اضافه می‌کند)
+            $equipments_localize = json_decode((string) get_option('um_hall_equipment', '[]'), true);
+            if (!is_array($equipments_localize)) { 
+                $equipments_localize = array(); 
+            }
+            $equipments_enabled_localize = get_option('um_hall_enable_equipment', '1') === '1';
+            $caterings_localize = json_decode((string) get_option('um_hall_catering', '[]'), true);
+            if (!is_array($caterings_localize)) { 
+                $caterings_localize = array(); 
+            }
+            wp_localize_script('um-hall-booking-widget', 'um_hall_widget_vars', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('university-management-nonce'),
+                'hourly_rate' => (float) get_option('um_hall_hourly_rate', 0),
+                'equipments' => $equipments_localize,
+                'equipments_enabled' => $equipments_enabled_localize,
+                'caterings' => $caterings_localize,
+            ));
+            wp_enqueue_script('um-hall-booking-widget');
+        }
         wp_enqueue_style('um-hall-booking-widget');
         $nonce = wp_create_nonce('university-management-nonce');
         ?>
@@ -411,7 +432,7 @@ class UM_Hall_Booking_Widget extends \Elementor\Widget_Base {
 					<?php if ($dp === 'gregorian'): ?>
 						<input type="date" name="date" required />
 					<?php else: ?>
-						<input type="text" name="date" placeholder="مثلاً 1403-01-01" required />
+						<input type="text" name="date" id="um-hall-date-input" placeholder="مثلاً 1404/10/09" maxlength="10" required />
 					<?php endif; ?>
 				</div><?php endif; ?>
 				<?php if(!isset($s['enable_start_time']) || $s['enable_start_time']==='yes'): ?><div>

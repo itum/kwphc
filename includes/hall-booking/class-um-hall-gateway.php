@@ -24,14 +24,23 @@ class UM_Hall_Gateway {
      * AJAX: ایجاد رزرو و شروع پرداخت
      */
     public function ajax_create_and_pay() {
+        // لاگ درخواست
+        um_log('Hall Booking AJAX: Request received', array(
+            'action' => $_POST['action'] ?? '',
+            'has_nonce' => !empty($_POST['nonce']),
+            'post_data_keys' => array_keys($_POST ?? array())
+        ));
+        
         // ضد اسپم ساده
         if (!empty($_POST['website'])) {
+            um_error_log('Hall Booking AJAX: Bot detected');
             wp_send_json_error(array('message' => __('شناسایی ربات!', 'university-management')));
         }
 
         // بررسی نانس
         $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
         if (!$nonce || !wp_verify_nonce($nonce, 'university-management-nonce')) {
+            um_error_log('Hall Booking AJAX: Invalid nonce', array('nonce' => $nonce));
             wp_send_json_error(array('message' => __('خطای امنیتی. صفحه را نوسازی کنید.', 'university-management')));
         }
 
@@ -61,17 +70,32 @@ class UM_Hall_Gateway {
         }
 
         if (!$event_title || !$date || !$start_time || !$end_time || !$name || !$phone) {
+            um_error_log('Hall Booking AJAX: Required fields missing', array(
+                'event_title' => !empty($event_title),
+                'date' => !empty($date),
+                'start_time' => !empty($start_time),
+                'end_time' => !empty($end_time),
+                'name' => !empty($name),
+                'phone' => !empty($phone)
+            ));
             wp_send_json_error(array('message' => __('لطفاً فیلدهای الزامی را تکمیل کنید.', 'university-management')));
         }
 
         // بررسی تداخل زمانی
         if (UM_Hall_Booking_Manager::has_time_conflict($date, $start_time, $end_time)) {
+            um_error_log('Hall Booking AJAX: Time conflict detected', array(
+                'date' => $date,
+                'start_time' => $start_time,
+                'end_time' => $end_time
+            ));
             wp_send_json_error(array('message' => __('بازه زمانی انتخابی قبلاً رزرو شده است.', 'university-management')));
         }
 
         // محاسبه مبلغ
         $amount = $this->calculate_amount($start_time, $end_time, $equipment_ids, $catering);
+        um_log('Hall Booking AJAX: Amount calculated', array('amount' => $amount));
         if ($amount <= 0) {
+            um_error_log('Hall Booking AJAX: Invalid amount', array('amount' => $amount));
             wp_send_json_error(array('message' => __('مبلغ معتبر نیست.', 'university-management')));
         }
 
@@ -82,8 +106,12 @@ class UM_Hall_Gateway {
             'post_title'  => wp_strip_all_tags($event_title . ' - ' . $date),
         ));
         if (is_wp_error($post_id) || !$post_id) {
+            $error_msg = is_wp_error($post_id) ? $post_id->get_error_message() : 'Unknown error';
+            um_error_log('Hall Booking AJAX: Failed to create booking', array('error' => $error_msg));
             wp_send_json_error(array('message' => __('خطا در ایجاد رزرو.', 'university-management')));
         }
+        
+        um_log('Hall Booking AJAX: Booking created', array('post_id' => $post_id));
 
         // ذخیره متاها
         update_post_meta($post_id, '_um_hall_event_title', $event_title);
@@ -111,12 +139,18 @@ class UM_Hall_Gateway {
         $gateway = get_option('um_hall_gateway', 'zarinpal');
         if (!$payment_method || $payment_method === 'online') {
             if ($gateway === 'zarinpal') {
+                um_log('Hall Booking AJAX: Initiating Zarinpal payment', array(
+                    'post_id' => $post_id,
+                    'amount' => $amount,
+                    'merchant_id_set' => !empty(get_option('um_hall_zarinpal_merchant_id', ''))
+                ));
                 $result = $this->zarinpal_request($post_id, $amount, $email, $phone, $event_title);
             } else {
                 $result = new WP_Error('gateway_not_supported', __('درگاه پشتیبانی نمی‌شود', 'university-management'));
             }
         } else {
             // پیش‌فاکتور/ثبت رزرو بدون پرداخت آنلاین
+            um_log('Hall Booking AJAX: Creating invoice (non-online payment)', array('post_id' => $post_id));
             update_post_meta($post_id, '_um_hall_payment_status', 'pending');
             wp_update_post(array('ID' => $post_id, 'post_status' => 'draft'));
             $invoice_url = add_query_arg(array('um_hall_invoice' => 1, 'booking_id' => $post_id), home_url('/'));
@@ -124,9 +158,14 @@ class UM_Hall_Gateway {
         }
 
         if (is_wp_error($result)) {
+            um_error_log('Hall Booking AJAX: Payment gateway error', array(
+                'error' => $result->get_error_message(),
+                'code' => $result->get_error_code()
+            ));
             wp_send_json_error(array('message' => $result->get_error_message()));
         }
 
+        um_log('Hall Booking AJAX: Success, redirecting', array('redirect_url' => $result));
         wp_send_json_success(array('redirect_url' => $result));
     }
 
@@ -185,12 +224,21 @@ class UM_Hall_Gateway {
     private function zarinpal_request($booking_id, $amount, $email, $mobile, $description) {
         $merchant_id = trim((string) get_option('um_hall_zarinpal_merchant_id', ''));
         if (!$merchant_id) {
-            return new WP_Error('zarinpal_merchant_missing', __('مرچنت آیدی زرین‌پال تنظیم نشده است.', 'university-management'));
+            um_error_log('Zarinpal Request: Merchant ID not set', array('booking_id' => $booking_id));
+            return new WP_Error('zarinpal_merchant_missing', __('مرچنت آیدی زرین‌پال تنظیم نشده است. لطفاً در تنظیمات سالن، مرچنت آیدی را وارد کنید.', 'university-management'));
         }
+        
+        // ساخت callback URL
         $callback = add_query_arg(array(
             'um_hall_callback' => 1,
             'booking_id' => $booking_id,
         ), home_url('/'));
+        
+        // اطمینان از اینکه callback URL کامل است
+        if (!filter_var($callback, FILTER_VALIDATE_URL)) {
+            um_error_log('Zarinpal Request: Invalid callback URL', array('callback' => $callback));
+            return new WP_Error('invalid_callback_url', __('آدرس بازگشت معتبر نیست.', 'university-management'));
+        }
 
         $payload = array(
             'merchant_id' => $merchant_id,
@@ -204,24 +252,59 @@ class UM_Hall_Gateway {
         );
         $sandbox = get_option('um_hall_zarinpal_sandbox', '0') === '1';
         $base = $sandbox ? 'https://sandbox.zarinpal.com/pg/v4' : 'https://api.zarinpal.com/pg/v4';
+        um_log('Zarinpal Request: Sending request', array(
+            'base' => $base,
+            'merchant_id' => $merchant_id,
+            'amount' => $amount,
+            'booking_id' => $booking_id
+        ));
+        
         $response = wp_remote_post($base . '/payment/request.json', array(
             'headers' => array('Content-Type' => 'application/json'),
             'body' => wp_json_encode($payload),
             'timeout' => 30,
         ));
         if (is_wp_error($response)) {
+            um_error_log('Zarinpal Request: WP_Error', array(
+                'error' => $response->get_error_message(),
+                'code' => $response->get_error_code()
+            ));
             return $response;
         }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+        
+        um_log('Zarinpal Request: Response received', array(
+            'response_code' => $response_code,
+            'body' => $body
+        ));
+        
         if (!empty($body['data']['authority'])) {
             $authority = sanitize_text_field($body['data']['authority']);
             update_post_meta($booking_id, '_um_hall_authority', $authority);
             // لینک هدایت
             $redirect_url = ($sandbox ? 'https://sandbox.zarinpal.com/pg/StartPay/' : 'https://www.zarinpal.com/pg/StartPay/') . $authority;
+            um_log('Zarinpal Request: Success', array('authority' => $authority, 'redirect_url' => $redirect_url));
             return $redirect_url;
         }
 
+        // دریافت پیام خطا از زرین‌پال
         $message = $body['errors']['message'] ?? __('خطا در ارتباط با درگاه پرداخت', 'university-management');
+        
+        // ترجمه و بهبود پیام‌های خطای رایج زرین‌پال
+        $message_lower = strtolower($message);
+        if (strpos($message_lower, 'too many') !== false || strpos($message_lower, 'to many') !== false || strpos($message_lower, 'attempts') !== false) {
+            $message = __('تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً چند دقیقه صبر کنید و دوباره تلاش کنید.', 'university-management');
+            um_error_log('Zarinpal Request: Rate limit exceeded', array(
+                'original_message' => $body['errors']['message'] ?? '',
+                'body' => $body,
+                'booking_id' => $booking_id
+            ));
+        } else {
+            um_error_log('Zarinpal Request: Failed', array('message' => $message, 'body' => $body));
+        }
+        
         return new WP_Error('zarinpal_request_failed', $message);
     }
 
