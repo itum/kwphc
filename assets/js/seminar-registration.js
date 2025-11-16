@@ -159,6 +159,11 @@ jQuery(document).ready(function($) {
         var formData = new FormData(this);
         formData.append('action', 'um_seminar_register');
         
+        // اضافه کردن nonce برای امنیت
+        if (typeof um_ajax !== 'undefined' && um_ajax.nonce) {
+            formData.append('nonce', um_ajax.nonce);
+        }
+        
         $.ajax({
             url: um_ajax.ajax_url,
             type: 'POST',

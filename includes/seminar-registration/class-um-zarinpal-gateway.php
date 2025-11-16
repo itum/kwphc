@@ -70,7 +70,7 @@ class UM_Zarinpal_Gateway {
             )
         );
         
-        $url = $this->sandbox_mode ? 'https://sandbox.zarinpal.com/pg/rest/WebGate/PaymentRequest.json' : 'https://api.zarinpal.com/pg/v4/payment/request.json';
+        $url = $this->sandbox_mode ? 'https://sandbox.zarinpal.com/pg/v4/payment/request.json' : 'https://api.zarinpal.com/pg/v4/payment/request.json';
         
         $response = wp_remote_post($url, array(
             'headers' => array(
@@ -88,7 +88,19 @@ class UM_Zarinpal_Gateway {
         $body = wp_remote_retrieve_body($response);
         $result = json_decode($body, true);
         
-        if ($result['data']['code'] == 100) {
+        // بررسی معتبر بودن نتیجه
+        if (!is_array($result)) {
+            um_error_log('Zarinpal API: Invalid JSON response', array('body' => $body));
+            return array('success' => false, 'message' => 'خطا در ارتباط با درگاه پرداخت: پاسخ نامعتبر');
+        }
+        
+        // بررسی وجود data و code
+        if (isset($result['data']) && isset($result['data']['code']) && $result['data']['code'] == 100) {
+            if (!isset($result['data']['authority'])) {
+                um_error_log('Zarinpal API: Authority missing in response', array('result' => $result));
+                return array('success' => false, 'message' => 'خطا در ایجاد درخواست پرداخت: اطلاعات ناقص');
+            }
+            
             $payment_url = $this->sandbox_mode ? 
                 'https://sandbox.zarinpal.com/pg/StartPay/' . $result['data']['authority'] :
                 'https://www.zarinpal.com/pg/StartPay/' . $result['data']['authority'];
@@ -99,7 +111,25 @@ class UM_Zarinpal_Gateway {
                 'payment_url' => $payment_url
             );
         } else {
-            return array('success' => false, 'message' => 'خطا در ایجاد درخواست پرداخت: ' . $result['errors']['code']);
+            // مدیریت خطاها
+            $error_message = 'خطا در ایجاد درخواست پرداخت';
+            
+            if (isset($result['errors']) && is_array($result['errors'])) {
+                if (isset($result['errors']['code'])) {
+                    $error_message .= ': ' . $result['errors']['code'];
+                } elseif (isset($result['errors']['message'])) {
+                    $error_message .= ': ' . $result['errors']['message'];
+                }
+            } elseif (isset($result['data']['code'])) {
+                $error_message .= ': کد خطا ' . $result['data']['code'];
+            }
+            
+            um_error_log('Zarinpal API: Payment request failed', array(
+                'result' => $result,
+                'error_message' => $error_message
+            ));
+            
+            return array('success' => false, 'message' => $error_message);
         }
     }
     
@@ -117,7 +147,7 @@ class UM_Zarinpal_Gateway {
             'authority' => $authority
         );
         
-        $url = $this->sandbox_mode ? 'https://sandbox.zarinpal.com/pg/rest/WebGate/PaymentVerification.json' : 'https://api.zarinpal.com/pg/v4/payment/verify.json';
+        $url = $this->sandbox_mode ? 'https://sandbox.zarinpal.com/pg/v4/payment/verify.json' : 'https://api.zarinpal.com/pg/v4/payment/verify.json';
         
         $response = wp_remote_post($url, array(
             'headers' => array(

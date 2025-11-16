@@ -21,7 +21,17 @@
             $('#um-api-settings-form').on('submit', this.handleApiSettings.bind(this));
             
             // تنظیمات درگاه پرداخت
-            $('#um-payment-settings-form').on('submit', this.handlePaymentSettings.bind(this));
+            var $paymentForm = $('#um-payment-settings-form');
+            if ($paymentForm.length) {
+                $paymentForm.on('submit', this.handlePaymentSettings.bind(this));
+                console.log('Payment form event handler attached');
+            }
+            
+            var $testBtn = $('#um-test-zarinpal-connection');
+            if ($testBtn.length) {
+                $testBtn.on('click', this.handleTestZarinpalConnection.bind(this));
+                console.log('Test connection button event handler attached');
+            }
             
             // مدیریت سمینارها
             $('#um-load-seminars-btn').on('click', this.loadSeminars.bind(this));
@@ -153,9 +163,11 @@
         },
 
         handlePaymentSettings: function(e) {
+            console.log('Payment settings form submitted');
             e.preventDefault();
+            e.stopPropagation();
             
-            var $form = $(e.target);
+            var $form = $(e.target).is('form') ? $(e.target) : $(e.target).closest('form');
             var $button = $form.find('button[type="submit"]');
             var $loading = $('#um-payment-loading');
             var merchantId = $('#um-zarinpal-merchant-id').val();
@@ -169,14 +181,26 @@
             
             this.setLoading($button, $loading, true);
             
+            var ajaxUrl = (typeof umGeneralSettings !== 'undefined' && umGeneralSettings.ajaxUrl) 
+                ? umGeneralSettings.ajaxUrl 
+                : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+            var paymentNonce = (typeof umGeneralSettings !== 'undefined' && umGeneralSettings.paymentSettingsNonce) 
+                ? umGeneralSettings.paymentSettingsNonce 
+                : '';
+            
+            if (!paymentNonce) {
+                this.showMessage('خطا: اطلاعات امنیتی پیدا نشد. لطفاً صفحه را نوسازی کنید.', 'error');
+                return;
+            }
+            
             $.ajax({
-                url: ajaxurl,
+                url: ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'um_save_payment_settings',
                     merchant_id: merchantId,
                     sandbox: sandbox,
-                    nonce: umGeneralSettings.paymentSettingsNonce
+                    nonce: paymentNonce
                 },
                 success: function(response) {
                     if (response.success) {
@@ -190,6 +214,68 @@
                 }.bind(this),
                 complete: function() {
                     this.setLoading($button, $loading, false);
+                }.bind(this)
+            });
+        },
+
+        handleTestZarinpalConnection: function(e) {
+            e.preventDefault();
+            
+            var $button = $('#um-test-zarinpal-connection');
+            var $loading = $('#um-payment-loading');
+            var $result = $('#um-payment-test-result');
+            var merchantId = $('#um-zarinpal-merchant-id').val();
+            var sandbox = $('#um-zarinpal-sandbox').is(':checked') ? '1' : '0';
+            
+            // اعتبارسنجی
+            if (!merchantId.trim()) {
+                $result.html('<span style="color: red;">لطفاً ابتدا کلید درگاه را وارد کنید</span>');
+                return;
+            }
+            
+            $result.html('<span style="color: blue;">در حال تست اتصال...</span>');
+            $button.prop('disabled', true);
+            $loading.show();
+            
+            var ajaxUrl = (typeof umGeneralSettings !== 'undefined' && umGeneralSettings.ajaxUrl) 
+                ? umGeneralSettings.ajaxUrl 
+                : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+            var paymentNonce = (typeof umGeneralSettings !== 'undefined' && umGeneralSettings.paymentSettingsNonce) 
+                ? umGeneralSettings.paymentSettingsNonce 
+                : '';
+            
+            if (!paymentNonce) {
+                $result.html('<span style="color: red;">✗ خطا: اطلاعات امنیتی پیدا نشد. لطفاً صفحه را نوسازی کنید.</span>');
+                $button.prop('disabled', false);
+                $loading.hide();
+                return;
+            }
+            
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'um_test_zarinpal_connection',
+                    merchant_id: merchantId,
+                    sandbox: sandbox,
+                    nonce: paymentNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $result.html('<span style="color: green;">✓ ' + response.data.message + '</span>');
+                        if (response.data.authority) {
+                            $result.append('<br><small>Authority: ' + response.data.authority + '</small>');
+                        }
+                    } else {
+                        $result.html('<span style="color: red;">✗ ' + response.data + '</span>');
+                    }
+                }.bind(this),
+                error: function(xhr, status, error) {
+                    $result.html('<span style="color: red;">✗ خطا در اتصال به سرور: ' + error + '</span>');
+                }.bind(this),
+                complete: function() {
+                    $button.prop('disabled', false);
+                    $loading.hide();
                 }.bind(this)
             });
         },

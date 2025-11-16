@@ -125,7 +125,7 @@ if (isset($_POST['um_cdp_nonce']) && wp_verify_nonce($_POST['um_cdp_nonce'], 'um
             <div class="card">
                 <h2><?php _e('تنظیمات درگاه پرداخت زرین‌پال', 'university-management'); ?></h2>
                 
-                <form id="um-payment-settings-form">
+                <form id="um-payment-settings-form" method="post" action="" onsubmit="return false;">
                     <table class="form-table">
                         <tr>
                             <th scope="row">
@@ -158,7 +158,11 @@ if (isset($_POST['um_cdp_nonce']) && wp_verify_nonce($_POST['um_cdp_nonce'], 'um
                         <button type="submit" class="button button-primary">
                             <?php _e('ذخیره تنظیمات درگاه', 'university-management'); ?>
                         </button>
+                        <button type="button" id="um-test-zarinpal-connection" class="button button-secondary">
+                            <?php _e('تست اتصال به درگاه', 'university-management'); ?>
+                        </button>
                         <span id="um-payment-loading" class="spinner" style="display: none;"></span>
+                        <span id="um-payment-test-result" style="margin-right: 10px; font-weight: bold;"></span>
                     </p>
                 </form>
             </div>
@@ -170,6 +174,127 @@ if (isset($_POST['um_cdp_nonce']) && wp_verify_nonce($_POST['um_cdp_nonce'], 'um
 // JavaScript برای تنظیمات عمومی
 jQuery(document).ready(function($) {
     console.log('University Management General Settings loaded');
+    
+    // جلوگیری از submit معمولی فرم پرداخت
+    $('#um-payment-settings-form').on('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    });
+    
+    // مدیریت فرم تنظیمات درگاه پرداخت - مستقل از فایل external
+    var paymentForm = $('#um-payment-settings-form');
+    if (paymentForm.length) {
+        console.log('Payment form found, attaching handlers...');
+        
+        // Handler برای ذخیره تنظیمات
+        paymentForm.on('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $form = $(this);
+            var $button = $form.find('button[type="submit"]');
+            var $loading = $('#um-payment-loading');
+            var merchantId = $('#um-zarinpal-merchant-id').val();
+            var sandbox = $('#um-zarinpal-sandbox').is(':checked') ? '1' : '0';
+            
+            if (!merchantId.trim()) {
+                alert('کلید درگاه الزامی است');
+                return false;
+            }
+            
+            $button.prop('disabled', true);
+            $loading.show();
+            
+            var ajaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '<?php echo admin_url('admin-ajax.php'); ?>';
+            var paymentNonce = '<?php echo wp_create_nonce('um_general_settings'); ?>';
+            
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'um_save_payment_settings',
+                    merchant_id: merchantId,
+                    sandbox: sandbox,
+                    nonce: paymentNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('تنظیمات درگاه پرداخت با موفقیت ذخیره شد');
+                        // صفحه را reload نکنیم
+                    } else {
+                        alert('خطا: ' + response.data);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    alert('خطا در اتصال به سرور: ' + error);
+                },
+                complete: function() {
+                    $button.prop('disabled', false);
+                    $loading.hide();
+                }
+            });
+            
+            return false;
+        });
+        
+        // Handler برای تست اتصال
+        $('#um-test-zarinpal-connection').on('click', function(e) {
+            e.preventDefault();
+            
+            var $button = $(this);
+            var $loading = $('#um-payment-loading');
+            var $result = $('#um-payment-test-result');
+            var merchantId = $('#um-zarinpal-merchant-id').val();
+            var sandbox = $('#um-zarinpal-sandbox').is(':checked') ? '1' : '0';
+            
+            if (!merchantId.trim()) {
+                $result.html('<span style="color: red;">لطفاً ابتدا کلید درگاه را وارد کنید</span>');
+                return false;
+            }
+            
+            $result.html('<span style="color: blue;">در حال تست اتصال...</span>');
+            $button.prop('disabled', true);
+            $loading.show();
+            
+            var ajaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '<?php echo admin_url('admin-ajax.php'); ?>';
+            var paymentNonce = '<?php echo wp_create_nonce('um_general_settings'); ?>';
+            
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'um_test_zarinpal_connection',
+                    merchant_id: merchantId,
+                    sandbox: sandbox,
+                    nonce: paymentNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $result.html('<span style="color: green;">✓ ' + response.data.message + '</span>');
+                        if (response.data.authority) {
+                            $result.append('<br><small>Authority: ' + response.data.authority + '</small>');
+                        }
+                    } else {
+                        $result.html('<span style="color: red;">✗ ' + response.data + '</span>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    $result.html('<span style="color: red;">✗ خطا در اتصال به سرور: ' + error + '</span>');
+                },
+                complete: function() {
+                    $button.prop('disabled', false);
+                    $loading.hide();
+                }
+            });
+            
+            return false;
+        });
+        
+        console.log('Payment form handlers attached successfully');
+    }
     
     // ذخیره تنظیمات دیباگ
     $('#um-debug-settings-form').on('submit', function(e) {

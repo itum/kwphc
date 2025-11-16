@@ -297,7 +297,7 @@ class UM_Seminar_Registration {
             <?php endif; ?>
             
             <form id="um-seminar-registration-form">
-                <?php wp_nonce_field('um_seminar_registration', 'um_seminar_nonce'); ?>
+                <?php wp_nonce_field('um_seminar_registration', 'nonce'); ?>
                 <input type="hidden" name="seminar_id" value="<?php echo $seminar_id; ?>">
                 
                 <div class="um-form-row">
@@ -449,7 +449,7 @@ class UM_Seminar_Registration {
                         $('#um-registration-message').html('<div class="um-error">خطا در ارتباط با سرور</div>').show();
                     },
                     complete: function() {
-                        $('.um-register-button').prop('disabled', false).text('<?php echo $seminar_price > 0 ? 'ثبت نام و پرداخت' : 'ثبت نام'; ?>');
+                        $('.um-register-button').prop('disabled', false).text('<?php echo esc_js($seminar_price > 0 ? 'ثبت نام و پرداخت' : 'ثبت نام'); ?>');
                     }
                 });
             });

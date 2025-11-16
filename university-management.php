@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.5.4
+ * Version: 1.5.5
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -220,6 +220,7 @@ class University_Management {
         
         // اکشن‌های AJAX برای تنظیمات درگاه پرداخت
         add_action('wp_ajax_um_save_payment_settings', array($this, 'ajax_save_payment_settings'));
+        add_action('wp_ajax_um_test_zarinpal_connection', array($this, 'ajax_test_zarinpal_connection'));
         add_action('wp_ajax_um_get_import_logs', array($this, 'ajax_get_import_logs'));
         add_action('wp_ajax_um_clear_import_logs', array($this, 'ajax_clear_import_logs'));
         
@@ -4733,6 +4734,83 @@ class University_Management {
         update_option('um_zarinpal_sandbox', $sandbox);
         
         wp_send_json_success('تنظیمات درگاه پرداخت با موفقیت ذخیره شد.');
+    }
+    
+    /**
+     * AJAX: تست اتصال به درگاه زرین‌پال
+     */
+    public function ajax_test_zarinpal_connection() {
+        check_ajax_referer('um_general_settings', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('شما دسترسی به این عملیات را ندارید.');
+        }
+        
+        $merchant_id = sanitize_text_field($_POST['merchant_id'] ?? '');
+        $sandbox = sanitize_text_field($_POST['sandbox'] ?? '0');
+        
+        if (empty($merchant_id)) {
+            wp_send_json_error('کلید درگاه الزامی است.');
+        }
+        
+        // تست با یک درخواست پرداخت تستی (1000 تومان)
+        $data = array(
+            'merchant_id' => $merchant_id,
+            'amount' => 1000,
+            'callback_url' => home_url('/um-payment-callback/'),
+            'description' => 'تست اتصال به درگاه زرین‌پال'
+        );
+        
+        $url = ($sandbox == '1') 
+            ? 'https://sandbox.zarinpal.com/pg/v4/payment/request.json' 
+            : 'https://api.zarinpal.com/pg/v4/payment/request.json';
+        
+        $response = wp_remote_post($url, array(
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ),
+            'body' => json_encode($data),
+            'timeout' => 30
+        ));
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error('خطا در ارتباط با درگاه پرداخت: ' . $response->get_error_message());
+        }
+        
+        $body = wp_remote_retrieve_body($response);
+        $result = json_decode($body, true);
+        
+        if (!is_array($result)) {
+            wp_send_json_error('خطا: پاسخ نامعتبر از درگاه پرداخت. پاسخ دریافتی: ' . substr($body, 0, 200));
+        }
+        
+        // بررسی نتیجه
+        if (isset($result['data']) && isset($result['data']['code'])) {
+            $code = $result['data']['code'];
+            
+            if ($code == 100) {
+                wp_send_json_success(array(
+                    'message' => 'اتصال با موفقیت برقرار شد! Merchant ID معتبر است.',
+                    'authority' => $result['data']['authority'] ?? '',
+                    'details' => 'درخواست پرداخت با موفقیت ایجاد شد.'
+                ));
+            } elseif ($code == -9) {
+                wp_send_json_error('خطا: Merchant ID نامعتبر است. لطفاً کلید درگاه خود را بررسی کنید.');
+            } else {
+                $error_message = isset($result['errors']) && isset($result['errors']['message']) 
+                    ? $result['errors']['message'] 
+                    : 'کد خطا: ' . $code;
+                wp_send_json_error('خطا: ' . $error_message);
+            }
+        } elseif (isset($result['errors'])) {
+            $error_message = isset($result['errors']['message']) 
+                ? $result['errors']['message'] 
+                : (isset($result['errors']['code']) ? 'کد خطا: ' . $result['errors']['code'] : 'خطای نامشخص');
+            wp_send_json_error('خطا: ' . $error_message);
+        } else {
+            wp_send_json_error('خطا: پاسخ نامعتبر از درگاه پرداخت. ' . json_encode($result));
+        }
     }
 
     /**
