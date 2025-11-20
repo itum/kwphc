@@ -114,3 +114,40 @@ function um_admin_export_suggestions_csv() {
 }
 
 
+/**
+ * AJAX: حذف دسته‌ای ثبت نام‌های سمینار
+ */
+add_action('wp_ajax_um_bulk_delete_seminar_registrations', 'um_ajax_bulk_delete_seminar_registrations');
+function um_ajax_bulk_delete_seminar_registrations() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(array('message' => __('دسترسی موردنیاز وجود ندارد.', 'university-management')));
+    }
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'um_seminar_bulk_action')) {
+        wp_send_json_error(array('message' => __('Nonce نامعتبر است.', 'university-management')));
+    }
+    $ids = isset($_POST['ids']) && is_array($_POST['ids']) ? array_map('intval', $_POST['ids']) : array();
+    if (empty($ids)) {
+        wp_send_json_error(array('message' => __('هیچ آیتمی انتخاب نشده است.', 'university-management')));
+    }
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'um_seminar_registrations';
+    $payments_table = $wpdb->prefix . 'um_seminar_payments';
+
+    $deleted_count = 0;
+    foreach ($ids as $id) {
+        $deleted = $wpdb->delete($table_name, array('id' => $id), array('%d'));
+        if ($deleted) {
+            $deleted_count++;
+            // حذف پرداخت‌های مرتبط
+            $wpdb->delete($payments_table, array('registration_id' => $id), array('%d'));
+        }
+    }
+
+    if ($deleted_count > 0) {
+        wp_send_json_success(array('message' => sprintf(_n('%d ثبت‌نام حذف شد.', '%d ثبت‌نام حذف شد.', $deleted_count, 'university-management'), $deleted_count), 'deleted' => $deleted_count));
+    } else {
+        wp_send_json_error(array('message' => __('خطا در حذف موارد انتخاب‌شده.', 'university-management')));
+    }
+}
+

@@ -3,7 +3,7 @@
  * Plugin Name: مدیریت دانشگاه آب و برق خوزستان
  * Plugin URI: https://farazec.com
  * Description: افزونه مدیریت دانشگاه شامل سه ویجت اختصاصی المنتور: تقویم، زمان‌بندی کلاس‌ها و مدیریت ویدیوها + پشتیبانی کامل از تصاویر شاخص
- * Version: 1.5.5
+ * Version: 1.5.6
  * Author: منصور شوکت
  * Author URI: https://farazec.com
  * Text Domain: university-management
@@ -2053,15 +2053,30 @@ class University_Management {
             );
         }
         
+        // ثبت و بارگذاری SweetAlert2 (ثبت قبل از اسکریپت admin تا به عنوان dependency قابل استفاده باشد)
+        wp_register_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11', array(), '11', true);
+
         // جاوااسکریپت‌های مدیریت (فقط اگر فایل وجود داشته باشد)
         $admin_js = UM_PLUGIN_DIR . 'assets/js/admin.js';
         if (file_exists($admin_js)) {
             wp_enqueue_script(
                 'university-management-admin-script',
                 UM_PLUGIN_URL . 'assets/js/admin.js',
-                array('jquery'),
+                array('jquery', 'sweetalert2'),
                 UM_VERSION,
                 true
+            );
+        }
+        
+        // محلی‌سازی مقادیر موردنیاز برای اسکریپت مدیریت
+        if (file_exists($admin_js)) {
+            wp_localize_script(
+                'university-management-admin-script',
+                'um_admin_vars',
+                array(
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'bulk_nonce' => wp_create_nonce('um_seminar_bulk_action')
+                )
             );
         }
         
@@ -4096,14 +4111,41 @@ class University_Management {
         $completed_payments = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE payment_status = 'completed'");
         $total_revenue = $wpdb->get_var("SELECT SUM(amount) FROM $payments_table WHERE payment_status = 'completed'");
         
-        // دریافت لیست ثبت نام‌ها
-        $registrations = $wpdb->get_results("
-            SELECT r.*, p.post_title as seminar_title 
-            FROM $table_name r 
-            LEFT JOIN {$wpdb->posts} p ON r.seminar_id = p.ID 
-            ORDER BY r.registration_date DESC 
-            LIMIT 50
-        ");
+        // پارامترهای فیلتر/جستجو/صفحه‌بندی
+        $seminar_id = isset($_GET['seminar_id']) ? intval($_GET['seminar_id']) : 0;
+        $payment_status_filter = isset($_GET['payment_status']) ? sanitize_text_field(wp_unslash($_GET['payment_status'])) : '';
+        $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+        $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $per_page = 20;
+        $offset = ($paged - 1) * $per_page;
+
+        // ساخت WHERE داینامیک
+        $where = "1=1";
+        if ($seminar_id) {
+            $where .= $wpdb->prepare(" AND r.seminar_id = %d", $seminar_id);
+        }
+        if (!empty($payment_status_filter)) {
+            $where .= $wpdb->prepare(" AND r.payment_status = %s", $payment_status_filter);
+        }
+        if (!empty($search)) {
+            $like = '%' . $wpdb->esc_like($search) . '%';
+            $where .= $wpdb->prepare(" AND (r.first_name LIKE %s OR r.last_name LIKE %s OR r.email LIKE %s OR r.phone LIKE %s)", $like, $like, $like, $like);
+        }
+
+        // تعداد کل برای صفحه‌بندی
+        $total_items = $wpdb->get_var("SELECT COUNT(*) FROM $table_name r WHERE $where");
+
+        // دریافت صفحه فعلی از دیتابیس
+        $sql_regs = "SELECT r.*, p.post_title as seminar_title
+            FROM $table_name r
+            LEFT JOIN {$wpdb->posts} p ON r.seminar_id = p.ID
+            WHERE $where
+            ORDER BY r.registration_date DESC
+            LIMIT %d OFFSET %d";
+        $registrations = $wpdb->get_results($wpdb->prepare($sql_regs, $per_page, $offset));
+
+        // لیست سمینارها برای فیلتر
+        $seminars_for_filter = $wpdb->get_results("SELECT DISTINCT r.seminar_id, p.post_title FROM $table_name r LEFT JOIN {$wpdb->posts} p ON r.seminar_id = p.ID ORDER BY p.post_title ASC");
         
         ?>
         <div class="wrap">
@@ -4161,10 +4203,39 @@ class University_Management {
             </div>
             
             <h2><?php _e('لیست ثبت نام‌ها', 'university-management'); ?></h2>
+
+            <form method="get" style="margin:12px 0; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <input type="hidden" name="page" value="university-seminar-reports" />
+                <label><?php _e('سمینار:', 'university-management'); ?>
+                    <select name="seminar_id">
+                        <option value=""><?php _e('همه', 'university-management'); ?></option>
+                        <?php foreach ($seminars_for_filter as $sfi): ?>
+                            <option value="<?php echo esc_attr($sfi->seminar_id); ?>" <?php selected($seminar_id, $sfi->seminar_id); ?>>
+                                <?php echo esc_html($sfi->post_title ?: ('ID ' . $sfi->seminar_id)); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label><?php _e('وضعیت پرداخت:', 'university-management'); ?>
+                    <select name="payment_status">
+                        <option value=""><?php _e('همه', 'university-management'); ?></option>
+                        <option value="completed" <?php selected($payment_status_filter, 'completed'); ?>><?php _e('تکمیل شده', 'university-management'); ?></option>
+                        <option value="pending" <?php selected($payment_status_filter, 'pending'); ?>><?php _e('در انتظار', 'university-management'); ?></option>
+                        <option value="failed" <?php selected($payment_status_filter, 'failed'); ?>><?php _e('ناموفق', 'university-management'); ?></option>
+                    </select>
+                </label>
+                <label><?php _e('جستجو:', 'university-management'); ?>
+                    <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php _e('نام، ایمیل یا موبایل', 'university-management'); ?>" />
+                </label>
+                <button class="button" type="submit"><?php _e('اعمال فیلتر', 'university-management'); ?></button>
+                <a class="button" href="<?php echo esc_url(remove_query_arg(array('seminar_id','payment_status','s','paged'))); ?>"><?php _e('بازنشانی', 'university-management'); ?></a>
+                <button id="um-bulk-delete-btn" class="button button-danger" type="button" style="margin-left:8px;"><?php _e('حذف انتخاب‌شده', 'university-management'); ?></button>
+            </form>
             
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
+                        <th style="width:36px;"><input type="checkbox" id="um-select-all" /></th>
                         <th><?php _e('نام و نام خانوادگی', 'university-management'); ?></th>
                         <th><?php _e('سمینار', 'university-management'); ?></th>
                         <th><?php _e('ایمیل', 'university-management'); ?></th>
@@ -4185,6 +4256,7 @@ class University_Management {
                             ));
                         ?>
                             <tr class="um-reg-row" data-id="<?php echo esc_attr($registration->id); ?>">
+                                <td><input type="checkbox" class="um-select-reg" value="<?php echo esc_attr($registration->id); ?>" /></td>
                                 <td><?php echo esc_html($registration->first_name . ' ' . $registration->last_name); ?></td>
                                 <td><?php echo esc_html($registration->seminar_title ?: '-'); ?></td>
                                 <td><?php echo esc_html($registration->email); ?></td>
@@ -4224,7 +4296,7 @@ class University_Management {
                                 </td>
                             </tr>
                             <tr class="um-reg-details" data-id="<?php echo esc_attr($registration->id); ?>" style="display:none;">
-                                <td colspan="8" style="background:#f9f9f9; padding:20px;">
+                                <td colspan="9" style="background:#f9f9f9; padding:20px;">
                                     <div style="background:white; padding:15px; border:1px solid #ddd; border-radius:4px;">
                                         <h3 style="margin-top:0; color:#2271b1; border-bottom:2px solid #2271b1; padding-bottom:8px;"><?php _e('جزئیات ثبت نام', 'university-management'); ?></h3>
                                         <table style="width:100%; border-collapse:collapse;">
@@ -4352,11 +4424,29 @@ class University_Management {
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="8" style="text-align: center;"><?php _e('هیچ ثبت نامی یافت نشد.', 'university-management'); ?></td>
+                            <td colspan="9" style="text-align: center;"><?php _e('هیچ ثبت نامی یافت نشد.', 'university-management'); ?></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+            
+            <?php
+            // نمایش صفحه‌بندی
+            $total_pages = $total_items ? ceil($total_items / $per_page) : 1;
+            if ($total_pages > 1) {
+                $base = add_query_arg(array('paged' => '%#%'));
+                echo '<div class="tablenav"><div class="tablenav-pages">';
+                echo paginate_links(array(
+                    'base' => $base,
+                    'format' => '&paged=%#%',
+                    'current' => $paged,
+                    'total' => $total_pages,
+                    'prev_text' => '&laquo;',
+                    'next_text' => '&raquo;'
+                ));
+                echo '</div></div>';
+            }
+            ?>
         </div>
         
         <style>
