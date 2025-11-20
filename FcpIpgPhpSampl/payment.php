@@ -36,7 +36,9 @@ if (isset($_POST['MobileNo']) && isset($_POST['Amount']) && isset($_POST['Email'
         "TransType" => "EN_GOODS",  
         "ReserveNum" => $ReserveNum,  
         "MerchantId" => $MerchantId,  
-        "Amount" => $Amount,  
+        // در این نمونه مقدار Amount برحسب تومان وارد می‌شود؛ برای ارسال به فناوا به ریال تبدیل می‌کنیم
+        // هر تومان = 10 ریال
+        "Amount" => intval($Amount) * 10,
         "RedirectUrl" => "آدرس برگشتی",  
         "MobileNo" => $MobileNo,  
         "Email" => $Email // اضافه کردن ایمیل به بدنه  

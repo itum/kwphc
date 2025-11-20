@@ -118,7 +118,9 @@ class UM_FCP_Gateway {
             'TransType' => 'EN_GOODS',
             'ReserveNum' => (string) $reserve_num,
             'MerchantId' => $this->merchant_id,
-            'Amount' => intval($amount),
+            // در پنل مقدار به تومان وارد می‌شود؛ در درگاه فناوا باید ریال ارسال شود
+            // هر تومان = 10 ریال
+            'Amount' => intval($amount) * 10,
             'RedirectUrl' => $callback,
             'MobileNo' => $mobile,
             'Email' => $email
