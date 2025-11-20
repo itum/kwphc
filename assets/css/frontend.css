@@ -181,6 +181,42 @@ body {
     text-align: right;
 }
 
+/* اطمینان از اینکه مودال و صفحهٔ وضعیت پرداخت از فونت قالب ارث می‌برند.
+   قبلاً @font-face محلی تعریف شده بود که ممکن است فونت را بارگذاری نکند؛
+   حالا اجازه می‌دهیم فونت از قالب (theme) گرفته شود. */
+.um-seminar-registration-form,
+.um-suggestion-modal .um-suggestion-modal__content,
+.um-payment-status-page,
+.um-message,
+.um-seminar-registration-form * {
+    font-family: inherit !important;
+}
+
+/* Force use of peyda for modal/register elements (override theme if needed) */
+.um-seminar-registration-form,
+.um-registration-modal,
+.um-registration-modal .um-modal-content,
+.um-modal-content,
+#um-registration-form-container,
+.um-modal-body,
+.um-registration-modal .um-modal-body {
+    font-family: "peyda", inherit !important;
+}
+
+/* نمایش ستارهٔ الزامی بودن کنار لیبل‌های فایل آپلود */
+.um-seminar-registration-form label[for="last_certificate"]::after,
+.um-seminar-registration-form label[for="national_card"]::after,
+.um-seminar-registration-form label[for="id_card_first_page"]::after,
+.um-seminar-registration-form label[for="personal_photo"]::after,
+#um-seminar-registration-form label[for="last_certificate"]::after,
+#um-seminar-registration-form label[for="national_card"]::after,
+#um-seminar-registration-form label[for="id_card_first_page"]::after,
+#um-seminar-registration-form label[for="personal_photo"]::after {
+    content: " *";
+    color: #c0392b;
+    margin-left: 4px;
+}
+
 /* استایل‌های عمومی برای لینک‌ها */
 .um-link {
     color: #0073aa;
