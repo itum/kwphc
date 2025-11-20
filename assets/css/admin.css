@@ -2,14 +2,10 @@
  * استایل‌های مدیریت عمومی افزونه مدیریت دانشگاه
  */
 
-/* ارث‌بری فونت‌های پیشخوان وردپرس در تمام صفحات افزونه */
-.wrap, .wrap *,
-.wp-list-table, .wp-list-table *,
-.widefat, .widefat *,
-.um-stats-grid, .um-stats-grid *,
-.um-stat-card, .um-stat-card *,
-.university-management-admin, .university-management-admin * {
-    font-family: inherit !important;
+/* ارث‌بری فونت‌های پیشخوان وردپرس فقط داخل فضای نام افزونه */
+.university-management-admin,
+.university-management-admin * {
+    font-family: inherit;
     font-size: inherit;
     line-height: inherit;
 }
