@@ -240,7 +240,8 @@ class UM_FCP_Gateway {
 
         if (empty($ref_num) || empty($token)) {
             error_log('UM_FCP_Gateway Callback: missing ref_num or token. RefNum=' . $ref_num . ' token=' . $token);
-            wp_redirect(home_url('/?payment_error=1'));
+            // نمایش صفحه نتیجه تراکنش به‌صورت کاربرپسند
+            $this->render_payment_status(false, array('message' => __('پارامترهای پرداخت ناقص یا تراکنش نامعتبر است. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.', 'university-management')));
             exit;
         }
 
@@ -273,7 +274,7 @@ class UM_FCP_Gateway {
 
         if (!$registration_id) {
             error_log('UM_FCP_Gateway Callback: registration not found for token/ref. token=' . $token . ' ref=' . $ref_num);
-            wp_redirect(home_url('/?payment_error=2'));
+            $this->render_payment_status(false, array('message' => __('ثبت‌نام مرتبط با این تراکنش پیدا نشد. اگر مبلغ از حساب شما کسر شده است، با پشتیبانی تماس بگیرید.', 'university-management')));
             exit;
         }
 
@@ -299,7 +300,7 @@ class UM_FCP_Gateway {
                 array('payment_status' => 'failed'),
                 array('id' => $registration_id)
             );
-            wp_redirect(home_url('/?payment_error=3'));
+            $this->render_payment_status(false, array('message' => __('شناسه تراکنش معتبر نیست یا تراکنش لغو شده است. در صورت کسر وجه، تا زمان بازگشت وجه صبر کنید یا با پشتیبانی تماس بگیرید.', 'university-management')));
             exit;
         }
 
