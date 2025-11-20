@@ -316,39 +316,83 @@ class UM_FCP_Gateway {
         error_log('UM_FCP_Gateway verify_result: ' . print_r($verify_result, true));
 
         if ($verify_result['success']) {
-            // به‌روزرسانی وضعیت ثبت نام
-            $wpdb->update(
-                $table_name,
-                array(
-                    'payment_status' => 'completed',
-                    'payment_reference' => $ref_num
-                ),
-                array('id' => $registration_id)
-            );
+            // قبل از تأیید نهایی، ظرفیت را بررسی کن (فقط ثبت‌نام‌های confirmed/free ظرفیت را اشغال می‌کنند)
+            $seminar_id = intval($registration->seminar_id);
+            $capacity = intval(get_post_meta($seminar_id, '_seminar_capacity', true));
+            if ($capacity > 0) {
+                $registered_count = intval($wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_name WHERE seminar_id = %d AND payment_status IN ('completed','free') AND id != %d",
+                    $seminar_id,
+                    $registration_id
+                )));
+            } else {
+                // ظرفیت نامحدود
+                $registered_count = 0;
+            }
 
-            // ثبت اطلاعات پرداخت
-            $payments_table = $wpdb->prefix . 'um_seminar_payments';
-            $wpdb->insert(
-                $payments_table,
-                array(
-                    'registration_id' => $registration_id,
-                    'seminar_id' => $registration->seminar_id,
-                    'amount' => $registration->price,
-                    'payment_method' => 'fcp',
-                    'payment_reference' => $ref_num,
-                    'payment_status' => 'completed',
-                    'gateway_response' => json_encode($verify_result)
-                )
-            );
+            if ($capacity > 0 && $registered_count >= $capacity) {
+                // ظرفیت پر است — ثبت‌نام را علامت‌گذاری کن و پیام مناسب نمایش بده
+                error_log("UM_FCP_Gateway: payment verified but seminar {$seminar_id} is full. registration_id={$registration_id} ref={$ref_num}");
+                $wpdb->update(
+                    $table_name,
+                    array('payment_status' => 'failed_overbook', 'payment_reference' => $ref_num),
+                    array('id' => $registration_id)
+                );
 
-            // نمایش صفحه وضعیت تراکنش
-            $this->render_payment_status(true, array(
-                'ref_id' => $ref_num,
-                'mid' => $mid,
-                'shaparak_terminal_id' => $shaparak_terminal_id,
-                'mobile_no' => $mobile_no,
-                'state' => $state
-            ));
+                // ثبت لاگ پرداخت ناموفق به خاطر تکمیل ظرفیت
+                $payments_table = $wpdb->prefix . 'um_seminar_payments';
+                $verify_result['confirmed_at'] = current_time('mysql');
+                $wpdb->insert(
+                    $payments_table,
+                    array(
+                        'registration_id' => $registration_id,
+                        'seminar_id' => $seminar_id,
+                        'amount' => $registration->price,
+                        'payment_method' => 'fcp',
+                        'payment_reference' => $ref_num,
+                        'payment_status' => 'failed_overbook',
+                        'gateway_response' => json_encode($verify_result)
+                    )
+                );
+
+                // نمایش پیام خطا و پیشنهاد بازگشت وجه به کاربر/ادمین
+                $this->render_payment_status(false, array('message' => __('پرداخت انجام شد اما ظرفیت دوره تکمیل شده است. لطفاً با پشتیبانی تماس بگیرید تا در مورد بازگشت وجه راهنمایی شوید.', 'university-management')));
+            } else {
+                // ظرفیت موجود است — تأیید ثبت‌نام و ثبت پرداخت
+                $wpdb->update(
+                    $table_name,
+                    array(
+                        'payment_status' => 'completed',
+                        'payment_reference' => $ref_num
+                    ),
+                    array('id' => $registration_id)
+                );
+
+                // ثبت اطلاعات پرداخت
+                $payments_table = $wpdb->prefix . 'um_seminar_payments';
+                $verify_result['confirmed_at'] = current_time('mysql');
+                $wpdb->insert(
+                    $payments_table,
+                    array(
+                        'registration_id' => $registration_id,
+                        'seminar_id' => $registration->seminar_id,
+                        'amount' => $registration->price,
+                        'payment_method' => 'fcp',
+                        'payment_reference' => $ref_num,
+                        'payment_status' => 'completed',
+                        'gateway_response' => json_encode($verify_result)
+                    )
+                );
+
+                // نمایش صفحه وضعیت تراکنش موفق
+                $this->render_payment_status(true, array(
+                    'ref_id' => $ref_num,
+                    'mid' => $mid,
+                    'shaparak_terminal_id' => $shaparak_terminal_id,
+                    'mobile_no' => $mobile_no,
+                    'state' => $state
+                ));
+            }
         } else {
             // به‌روزرسانی وضعیت به ناموفق
             $wpdb->update(
@@ -370,6 +414,21 @@ class UM_FCP_Gateway {
                 'state' => $state,
                 'token' => $token
             ));
+            
+            // ثبت لاگ پرداخت ناموفق در جدول پرداخت‌ها تا ادمین بتواند جزئیات را ببیند
+            $payments_table = $wpdb->prefix . 'um_seminar_payments';
+            $wpdb->insert(
+                $payments_table,
+                array(
+                    'registration_id' => $registration_id,
+                    'seminar_id' => $registration->seminar_id,
+                    'amount' => $registration->price,
+                    'payment_method' => 'fcp',
+                    'payment_reference' => $ref_num,
+                    'payment_status' => 'failed',
+                    'gateway_response' => json_encode($verify_result)
+                )
+            );
         }
 
         exit;
@@ -502,7 +561,8 @@ class UM_FCP_Gateway {
         nocache_headers();
         echo '<!DOCTYPE html><html lang="fa"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
         echo '<title>' . esc_html(get_bloginfo('name')) . ' - وضعیت پرداخت</title>';
-        echo '<style>body{font-family:tahoma,iransans,system-ui;padding:32px;background:' . ($success ? '#c4faf8' : '#fff5f5') . ';direction:rtl} .card{max-width:680px;margin:auto;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:24px;text-align:center;border:1px solid gray} .ok{color:#0a7;font-weight:bold} .fail{color:#c00;font-weight:bold} .info{margin-top:15px;text-align:right} .info-item{margin:8px 0}</style></head><body>';
+        // استفاده از فونت peyda و اعمال !important برای اطمینان از override شدن
+        echo '<style>body{font-family:\'peyda\', tahoma,iransans,system-ui !important;padding:32px;background:' . ($success ? '#c4faf8' : '#fff5f5') . ';direction:rtl} .card{max-width:680px;margin:auto;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:24px;text-align:center;border:1px solid gray} .ok{color:#0a7;font-weight:bold} .fail{color:#c00;font-weight:bold} .info{margin-top:15px;text-align:right} .info-item{margin:8px 0}</style></head><body>';
         echo '<div class="card">';
         
         if ($success) {
@@ -546,6 +606,52 @@ class UM_FCP_Gateway {
         }
         echo '</div>';
         echo '</div></body></html>';
+    }
+
+    /**
+     * پردازش بازگشت وجه/کنسلی پرداخت و بازیابی ظرفیت (قابل فراخوانی توسط ادمین یا وب‌هوک)
+     */
+    public function process_refund($registration_id, $reason = '') {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'um_seminar_registrations';
+        $payments_table = $wpdb->prefix . 'um_seminar_payments';
+
+        $registration = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $registration_id));
+        if (!$registration) {
+            error_log("UM_FCP_Gateway::process_refund - registration not found: {$registration_id}");
+            return false;
+        }
+
+        // فقط اگر قبلاً تکمیل شده باشد، آن را به refunded تغییر بده تا ظرفیت آزاد شود
+        if ($registration->payment_status === 'completed') {
+            $wpdb->update($table_name, array('payment_status' => 'refunded'), array('id' => $registration_id));
+
+            $gateway_response = array(
+                'action' => 'refund_processed',
+                'reason' => $reason,
+                'processed_at' => current_time('mysql')
+            );
+
+            $wpdb->insert(
+                $payments_table,
+                array(
+                    'registration_id' => $registration_id,
+                    'seminar_id' => $registration->seminar_id,
+                    'amount' => $registration->price,
+                    'payment_method' => 'fcp',
+                    'payment_reference' => $registration->payment_reference ?? '',
+                    'payment_status' => 'refunded',
+                    'gateway_response' => json_encode($gateway_response)
+                )
+            );
+
+            error_log("UM_FCP_Gateway::process_refund - refund processed for registration {$registration_id}");
+            return true;
+        }
+
+        // اگر وضعیت چیزی به جز completed بود، فقط لاگ کن
+        error_log("UM_FCP_Gateway::process_refund - registration {$registration_id} not completed, current_status={$registration->payment_status}");
+        return false;
     }
 }
 

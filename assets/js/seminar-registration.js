@@ -317,3 +317,54 @@ jQuery(document).ready(function($) {
         `);
     }
 });
+
+// اطمینان از نمایش ستاره کنار لیبل‌های فایل آپلود (اجرای سریع در زمان بارگذاری اسکریپت)
+jQuery(document).ready(function($) {
+    try {
+        var fileIds = ['last_certificate','national_card','id_card_first_page','personal_photo'];
+        fileIds.forEach(function(id){
+            var $label = $('label[for=\"' + id + '\"]');
+            if ($label.length && $label.text().indexOf('*') === -1) {
+                $label.append(' <span class=\"um-required\">*</span>');
+            }
+            var $input = $('#' + id);
+            if ($input.length) {
+                $input.prop('required', true);
+            }
+        });
+    } catch (e) {
+        // ignore
+    }
+});
+
+// نظارت بر تغییرات DOM در ظرف فرم ثبت‌نام تا پس از بارگذاری AJAX نیز ستاره اضافه شود
+(function(){
+    function addFileStars() {
+        try {
+            var ids = ['last_certificate','national_card','id_card_first_page','personal_photo'];
+            ids.forEach(function(id){
+                var el = document.querySelector('label[for=\"' + id + '\"]');
+                if (el && el.textContent.indexOf('*') === -1) {
+                    var span = document.createElement('span');
+                    span.className = 'um-required';
+                    span.textContent = '*';
+                    span.style.color = '#c0392b';
+                    span.style.marginLeft = '6px';
+                    el.appendChild(span);
+                }
+                var input = document.getElementById(id);
+                if (input) input.required = true;
+            });
+        } catch (e) {}
+    }
+
+    var container = document.getElementById('um-registration-form-container');
+    if (container) {
+        var mo = new MutationObserver(function(mutations) {
+            addFileStars();
+        });
+        mo.observe(container, { childList: true, subtree: true });
+        // اجرا یکبار به صورت اولیه
+        addFileStars();
+    }
+})();

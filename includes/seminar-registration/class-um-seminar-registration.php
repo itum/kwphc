@@ -81,8 +81,9 @@ class UM_Seminar_Registration {
         if ($capacity > 0) {
             global $wpdb;
             $table_name = $wpdb->prefix . 'um_seminar_registrations';
+            // فقط ثبت‌نام‌های تأیید شده یا رایگان ظرفیت را اشغال می‌کنند.
             $registered_count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name WHERE seminar_id = %d AND payment_status IN ('completed', 'pending')",
+                "SELECT COUNT(*) FROM $table_name WHERE seminar_id = %d AND payment_status IN ('completed', 'free')",
                 $seminar_id
             ));
             
@@ -121,40 +122,85 @@ class UM_Seminar_Registration {
         // دریافت اطلاعات سمینار
         $seminar_price = intval(get_post_meta($seminar_id, '_seminar_price', true));
         
-        // ذخیره ثبت نام
         global $wpdb;
         $table_name = $wpdb->prefix . 'um_seminar_registrations';
-        
-        $registration_data = array(
-            'seminar_id' => $seminar_id,
-            'user_id' => get_current_user_id(),
-            'first_name' => sanitize_text_field($_POST['first_name']),
-            'last_name' => sanitize_text_field($_POST['last_name']),
-            'father_name' => sanitize_text_field($_POST['father_name']),
-            'occupation' => sanitize_text_field($_POST['occupation']),
-            'id_number' => sanitize_text_field($_POST['id_number']),
-            'national_id' => sanitize_text_field($_POST['national_id']),
-            'birth_place' => sanitize_text_field($_POST['birth_place']),
-            'issue_place' => sanitize_text_field($_POST['issue_place']),
-            'email' => sanitize_email($_POST['email']),
-            'phone' => sanitize_text_field($_POST['phone']),
-            'education_level' => sanitize_text_field($_POST['education_level']),
-            'field_of_study' => sanitize_text_field($_POST['field_of_study']),
-            'price' => $seminar_price,
-            'payment_status' => $seminar_price > 0 ? 'pending' : 'completed',
-            'documents' => json_encode($this->handle_file_uploads())
-        );
-        
-        $result = $wpdb->insert($table_name, $registration_data);
+
+        // اگر دوره رایگان است، قبل از ایجاد ثبت‌نام ظرفیت را بررسی و سپس ثبت را با وضعیت 'free' انجام بده.
+        if ($seminar_price == 0) {
+            $can_register = $this->can_register($seminar_id);
+            if (!$can_register['can_register']) {
+                wp_send_json_error($can_register['message']);
+            }
+
+            $registration_data = array(
+                'seminar_id' => $seminar_id,
+                'user_id' => get_current_user_id(),
+                'first_name' => sanitize_text_field($_POST['first_name']),
+                'last_name' => sanitize_text_field($_POST['last_name']),
+                'father_name' => sanitize_text_field($_POST['father_name']),
+                'occupation' => sanitize_text_field($_POST['occupation']),
+                'id_number' => sanitize_text_field($_POST['id_number']),
+                'national_id' => sanitize_text_field($_POST['national_id']),
+                'birth_place' => sanitize_text_field($_POST['birth_place']),
+                'issue_place' => sanitize_text_field($_POST['issue_place']),
+                'email' => sanitize_email($_POST['email']),
+                'phone' => sanitize_text_field($_POST['phone']),
+                'education_level' => sanitize_text_field($_POST['education_level']),
+                'field_of_study' => sanitize_text_field($_POST['field_of_study']),
+                'price' => $seminar_price,
+                'payment_status' => 'free',
+                'documents' => json_encode($this->handle_file_uploads())
+            );
+
+            $result = $wpdb->insert($table_name, $registration_data);
+        } else {
+            // برای دوره‌های پولی، ثبت‌نام را با وضعیت pending ثبت کن و سپس کاربر به درگاه فرستاده می‌شود.
+            $registration_data = array(
+                'seminar_id' => $seminar_id,
+                'user_id' => get_current_user_id(),
+                'first_name' => sanitize_text_field($_POST['first_name']),
+                'last_name' => sanitize_text_field($_POST['last_name']),
+                'father_name' => sanitize_text_field($_POST['father_name']),
+                'occupation' => sanitize_text_field($_POST['occupation']),
+                'id_number' => sanitize_text_field($_POST['id_number']),
+                'national_id' => sanitize_text_field($_POST['national_id']),
+                'birth_place' => sanitize_text_field($_POST['birth_place']),
+                'issue_place' => sanitize_text_field($_POST['issue_place']),
+                'email' => sanitize_email($_POST['email']),
+                'phone' => sanitize_text_field($_POST['phone']),
+                'education_level' => sanitize_text_field($_POST['education_level']),
+                'field_of_study' => sanitize_text_field($_POST['field_of_study']),
+                'price' => $seminar_price,
+                'payment_status' => 'pending',
+                'documents' => json_encode($this->handle_file_uploads())
+            );
+
+            $result = $wpdb->insert($table_name, $registration_data);
+        }
         
         if ($result === false) {
             wp_send_json_error('خطا در ذخیره اطلاعات ثبت نام.');
         }
         
         $registration_id = $wpdb->insert_id;
-        
-        // اگر رایگان است، ثبت نام تکمیل شده
+
+        // اگر رایگان است، ثبت نام تایید شده و ظرفیت با منطق can_register از قبل بررسی شده است.
         if ($seminar_price == 0) {
+            // ثبت ردیف پرداخت به‌عنوان رایگان برای گزارشات
+            $payments_table = $wpdb->prefix . 'um_seminar_payments';
+            $wpdb->insert(
+                $payments_table,
+                array(
+                    'registration_id' => $registration_id,
+                    'seminar_id' => $seminar_id,
+                    'amount' => 0,
+                    'payment_method' => 'free',
+                    'payment_reference' => '',
+                    'payment_status' => 'free',
+                    'gateway_response' => json_encode(array('payment_status' => 'free', 'confirmed_at' => current_time('mysql')))
+                )
+            );
+
             wp_send_json_success(array(
                 'message' => 'ثبت نام شما با موفقیت انجام شد.',
                 'registration_id' => $registration_id,
@@ -200,7 +246,7 @@ class UM_Seminar_Registration {
             'birth_place' => 'محل تولد',
             'issue_place' => 'محل صدور',
             'email' => 'ایمیل',
-            'phone' => 'شماره تماس',
+            'phone' => 'شماره موبایل',
             'education_level' => 'مقطع تحصیلی',
             'field_of_study' => 'رشته تحصیلی'
         );
@@ -219,6 +265,14 @@ class UM_Seminar_Registration {
         // اعتبارسنجی کد ملی
         if (!$this->validate_national_id($data['national_id'])) {
             return array('valid' => false, 'message' => 'کد ملی وارد شده معتبر نیست.');
+        }
+        
+        // اعتبارسنجی فایل‌های آپلودی (الزامی بودن)
+        $required_file_fields = array('last_certificate', 'national_card', 'id_card_first_page', 'personal_photo');
+        foreach ($required_file_fields as $file_field) {
+            if (!isset($_FILES[$file_field]) || $_FILES[$file_field]['error'] != 0) {
+                return array('valid' => false, 'message' => 'فایل ' . $file_field . ' الزامی است. لطفاً همه مدارک را آپلود کنید.');
+            }
         }
         
         return array('valid' => true);
@@ -248,7 +302,7 @@ class UM_Seminar_Registration {
      */
     private function handle_file_uploads() {
         $uploaded_files = array();
-        $allowed_types = array('jpg', 'jpeg', 'png');
+        $allowed_types = array('jpg', 'jpeg', 'png', 'pdf');
         $max_size = 200 * 1024; // 200KB
         
         $file_fields = array(
@@ -321,52 +375,52 @@ class UM_Seminar_Registration {
                 
                 <div class="um-form-row">
                     <label for="first_name">نام *</label>
-                    <input type="text" id="first_name" name="first_name" required>
+                    <input type="text" id="first_name" name="first_name" required placeholder="مثال: علی">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="last_name">نام خانوادگی *</label>
-                    <input type="text" id="last_name" name="last_name" required>
+                    <input type="text" id="last_name" name="last_name" required placeholder="مثال: رضایی">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="father_name">نام پدر *</label>
-                    <input type="text" id="father_name" name="father_name" required>
+                    <input type="text" id="father_name" name="father_name" required placeholder="مثال: محمد">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="occupation">شغل *</label>
-                    <input type="text" id="occupation" name="occupation" required>
+                    <input type="text" id="occupation" name="occupation" required placeholder="مثال: مهندس برق">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="id_number">شماره شناسنامه *</label>
-                    <input type="text" id="id_number" name="id_number" required>
+                    <input type="text" id="id_number" name="id_number" required placeholder="مثال: 123456">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="national_id">کد ملی *</label>
-                    <input type="text" id="national_id" name="national_id" required maxlength="10">
+                    <input type="text" id="national_id" name="national_id" required maxlength="10" placeholder="مثال: 0071234567">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="birth_place">محل تولد *</label>
-                    <input type="text" id="birth_place" name="birth_place" required>
+                    <input type="text" id="birth_place" name="birth_place" required placeholder="مثال: اهواز">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="issue_place">محل صدور *</label>
-                    <input type="text" id="issue_place" name="issue_place" required>
+                    <input type="text" id="issue_place" name="issue_place" required placeholder="مثال: اهواز">
                 </div>
                 
                 <div class="um-form-row">
                     <label for="email">آدرس ایمیل *</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required placeholder="مثال: you@example.com">
                 </div>
                 
                 <div class="um-form-row">
-                    <label for="phone">شماره تماس *</label>
-                    <input type="tel" id="phone" name="phone" required>
+                    <label for="phone">شماره موبایل *</label>
+                    <input type="tel" id="phone" name="phone" required placeholder="مثال: 09161234567">
                 </div>
                 
                 <div class="um-form-row">
@@ -405,23 +459,23 @@ class UM_Seminar_Registration {
                 </div>
                 
                 <div class="um-form-row">
-                    <label for="last_certificate">آخرین مدرک تحصیلی</label>
-                    <input type="file" id="last_certificate" name="last_certificate" accept=".jpg,.jpeg,.png">
+                    <label for="last_certificate">آخرین مدرک تحصیلی *</label>
+                    <input type="file" id="last_certificate" name="last_certificate" accept=".jpg,.jpeg,.png,.pdf" required>
                 </div>
                 
                 <div class="um-form-row">
-                    <label for="national_card">کارت ملی</label>
-                    <input type="file" id="national_card" name="national_card" accept=".jpg,.jpeg,.png">
+                    <label for="national_card">کارت ملی *</label>
+                    <input type="file" id="national_card" name="national_card" accept=".jpg,.jpeg,.png,.pdf" required>
                 </div>
                 
                 <div class="um-form-row">
-                    <label for="id_card_first_page">صفحه اول شناسنامه</label>
-                    <input type="file" id="id_card_first_page" name="id_card_first_page" accept=".jpg,.jpeg,.png">
+                    <label for="id_card_first_page">صفحه اول شناسنامه *</label>
+                    <input type="file" id="id_card_first_page" name="id_card_first_page" accept=".jpg,.jpeg,.png,.pdf" required>
                 </div>
                 
                 <div class="um-form-row">
-                    <label for="personal_photo">عکس پرسنلی</label>
-                    <input type="file" id="personal_photo" name="personal_photo" accept=".jpg,.jpeg,.png">
+                    <label for="personal_photo">عکس پرسنلی *</label>
+                    <input type="file" id="personal_photo" name="personal_photo" accept=".jpg,.jpeg,.png" required>
                 </div>
                 
                 <div class="um-form-row">
@@ -439,6 +493,12 @@ class UM_Seminar_Registration {
             $('#um-seminar-registration-form').on('submit', function(e) {
                 e.preventDefault();
                 
+                // HTML5 validation: اگر فرم معتبر نیست، کاربر را به اولین فیلد نامعتبر هدایت کن
+                if (this.checkValidity && !this.checkValidity()) {
+                    $(this).find(':invalid').first().focus();
+                    return;
+                }
+
                 var formData = new FormData(this);
                 formData.append('action', 'um_seminar_register');
                 formData.append('nonce', '<?php echo wp_create_nonce('um_seminar_registration'); ?>');

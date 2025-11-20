@@ -4168,7 +4168,7 @@ class University_Management {
                         <th><?php _e('نام و نام خانوادگی', 'university-management'); ?></th>
                         <th><?php _e('سمینار', 'university-management'); ?></th>
                         <th><?php _e('ایمیل', 'university-management'); ?></th>
-                        <th><?php _e('تلفن', 'university-management'); ?></th>
+                        <th><?php _e('موبایل', 'university-management'); ?></th>
                         <th><?php _e('مبلغ', 'university-management'); ?></th>
                         <th><?php _e('وضعیت پرداخت', 'university-management'); ?></th>
                         <th><?php _e('تاریخ ثبت نام', 'university-management'); ?></th>
@@ -4241,7 +4241,7 @@ class University_Management {
                                                 <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->email); ?></td>
                                             </tr>
                                             <tr>
-                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شماره تماس:', 'university-management'); ?></td>
+                                                <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('شماره موبایل:', 'university-management'); ?></td>
                                                 <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($registration->phone); ?></td>
                                             </tr>
                                             <tr>
@@ -4283,6 +4283,55 @@ class University_Management {
                                                 <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('کد مرجع:', 'university-management'); ?></td>
                                                 <td style="padding:8px; border-bottom:1px solid #eee;"><?php echo esc_html($payment->ref_id ?: '-'); ?></td>
                                             </tr>
+                                            <?php
+                                                // نمایش جزئیات پاسخ درگاه (اگر موجود است)
+                                                $gateway_response_raw = $payment->gateway_response ?? $registration->gateway_response ?? '';
+                                                $gateway_response = !empty($gateway_response_raw) ? json_decode($gateway_response_raw, true) : array();
+                                                if (!empty($gateway_response)) {
+                                                    echo '<tr><td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;">' . __('اطلاعات درگاه:', 'university-management') . '</td><td style="padding:8px; border-bottom:1px solid #eee;">';
+                                                    // چند کلید پرکاربرد را نمایش بده
+                                                    $keys = array('reference','RefNum','ref_id','reserve_num','MID','mid','shaparakTerminalId','shaparak_terminal_id','CustomerRefNum','mobileNo','mobile_no','State','state','Result');
+                                                    foreach ($keys as $k) {
+                                                        if (isset($gateway_response[$k])) {
+                                                            $value = $gateway_response[$k];
+                                                            // نگاشت وضعیت‌های شناخته‌شده به متن فارسی
+                                                            if (in_array($k, array('State','state'))) {
+                                                                if (strcasecmp($value, 'OK') === 0 || strcasecmp($value, 'Success') === 0) {
+                                                                    $value = 'پرداخت موفق';
+                                                                } elseif (stripos($value, 'cancel') !== false || stripos($value, 'CANCELLED') !== false) {
+                                                                    $value = 'کاربر لغو کرده';
+                                                                } else {
+                                                                    $value = $value;
+                                                                }
+                                                            }
+                                                            echo '<div><strong>' . esc_html($k) . ':</strong> ' . esc_html($value) . '</div>';
+                                                        }
+                                                    }
+                                                    // اگر خالی ماند، کل پاسخ را نمایش بده (فقط برای ادمین)
+                                                    if (empty(array_intersect($keys, array_keys($gateway_response)))) {
+                                                        echo '<div><pre style="white-space:pre-wrap;">' . esc_html(print_r($gateway_response, true)) . '</pre></div>';
+                                                    }
+                                                    echo '</td></tr>';
+                                                }
+                                            ?>
+                                            <?php
+                                                // نمایش فایل‌های آپلودی
+                                                $docs = !empty($registration->documents) ? json_decode($registration->documents, true) : array();
+                                                if (!empty($docs) && is_array($docs)) {
+                                                    echo '<tr><td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;">' . __('فایل‌های آپلودی:', 'university-management') . '</td><td style="padding:8px; border-bottom:1px solid #eee;">';
+                                                    foreach ($docs as $field => $url) {
+                                                        $label_map = array(
+                                                            'last_certificate' => 'آخرین مدرک تحصیلی',
+                                                            'national_card' => 'کارت ملی',
+                                                            'id_card_first_page' => 'صفحه اول شناسنامه',
+                                                            'personal_photo' => 'عکس پرسنلی'
+                                                        );
+                                                        $label = isset($label_map[$field]) ? $label_map[$field] : $field;
+                                                        echo '<div><strong>' . esc_html($label) . ':</strong> <a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">دانلود</a></div>';
+                                                    }
+                                                    echo '</td></tr>';
+                                                }
+                                            ?>
                                             <?php endif; ?>
                                             <tr>
                                                 <td style="padding:8px; font-weight:bold; border-bottom:1px solid #eee;"><?php _e('تاریخ ثبت نام:', 'university-management'); ?></td>
