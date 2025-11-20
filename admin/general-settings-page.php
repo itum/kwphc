@@ -167,6 +167,103 @@ if (isset($_POST['um_cdp_nonce']) && wp_verify_nonce($_POST['um_cdp_nonce'], 'um
                 </form>
             </div>
         </div>
+        
+        <!-- بخش انتخاب درگاه پرداخت برای دوره‌ها و سمینارها -->
+        <div class="um-course-seminar-gateway-section">
+            <div class="card">
+                <h2><?php _e('تنظیمات درگاه پرداخت دوره‌ها و سمینارها', 'university-management'); ?></h2>
+                <p class="description">
+                    <?php _e('درگاه پرداخت مورد استفاده برای خرید دوره‌ها و ثبت‌نام سمینارها را انتخاب کنید.', 'university-management'); ?>
+                </p>
+                
+                <form id="um-course-seminar-gateway-form" method="post" action="" onsubmit="return false;">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="um-course-seminar-gateway"><?php _e('درگاه پرداخت', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <select id="um-course-seminar-gateway" name="gateway" class="regular-text">
+                                    <?php $current_gateway = get_option('um_seminar_gateway', 'fcp'); ?>
+                                    <option value="fcp" <?php selected($current_gateway, 'fcp'); ?>><?php _e('فناوا', 'university-management'); ?></option>
+                                    <option value="zarinpal" <?php selected($current_gateway, 'zarinpal'); ?>><?php _e('زرین‌پال', 'university-management'); ?></option>
+                                </select>
+                                <p class="description">
+                                    <?php _e('درگاه پرداخت مورد استفاده برای دوره‌ها و سمینارها', 'university-management'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p class="submit">
+                        <button type="submit" class="button button-primary">
+                            <?php _e('ذخیره تنظیمات', 'university-management'); ?>
+                        </button>
+                        <span id="um-course-seminar-gateway-loading" class="spinner" style="display: none;"></span>
+                        <span id="um-course-seminar-gateway-result" style="margin-right: 10px; font-weight: bold;"></span>
+                    </p>
+                </form>
+            </div>
+        </div>
+        
+        <!-- بخش تنظیمات درگاه پرداخت فناوا -->
+        <div class="um-fcp-settings-section">
+            <div class="card">
+                <h2><?php _e('تنظیمات درگاه پرداخت فناوا', 'university-management'); ?></h2>
+                <p class="description">
+                    <?php _e('اطلاعات درگاه پرداخت فناوا را وارد کنید. این درگاه به عنوان پیش‌فرض برای رزرو سالن و ثبت‌نام سمینارها استفاده می‌شود.', 'university-management'); ?>
+                </p>
+                
+                <form id="um-fcp-settings-form" method="post" action="" onsubmit="return false;">
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="um-fcp-user-id"><?php _e('نام کاربری (UserId)', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" id="um-fcp-user-id" name="user_id" class="regular-text" 
+                                       value="<?php echo esc_attr(get_option('um_fcp_user_id', '')); ?>" />
+                                <p class="description">
+                                    <?php _e('نام کاربری درگاه فناوا', 'university-management'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="um-fcp-password"><?php _e('رمز عبور (Password)', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <input type="password" id="um-fcp-password" name="password" class="regular-text" 
+                                       value="<?php echo esc_attr(get_option('um_fcp_password', '')); ?>" />
+                                <p class="description">
+                                    <?php _e('رمز عبور درگاه فناوا', 'university-management'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="um-fcp-merchant-id"><?php _e('شماره پذیرنده (MerchantId)', 'university-management'); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" id="um-fcp-merchant-id" name="merchant_id" class="regular-text" 
+                                       value="<?php echo esc_attr(get_option('um_fcp_merchant_id', '')); ?>" />
+                                <p class="description">
+                                    <?php _e('شماره پذیرنده درگاه فناوا', 'university-management'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p class="submit">
+                        <button type="submit" class="button button-primary">
+                            <?php _e('ذخیره تنظیمات فناوا', 'university-management'); ?>
+                        </button>
+                        <span id="um-fcp-loading" class="spinner" style="display: none;"></span>
+                        <span id="um-fcp-save-result" style="margin-right: 10px; font-weight: bold;"></span>
+                    </p>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -294,6 +391,118 @@ jQuery(document).ready(function($) {
         });
         
         console.log('Payment form handlers attached successfully');
+    }
+    
+    // مدیریت فرم تنظیمات فناوا
+    var fcpForm = $('#um-fcp-settings-form');
+    if (fcpForm.length) {
+        fcpForm.on('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $form = $(this);
+            var $button = $form.find('button[type="submit"]');
+            var $loading = $('#um-fcp-loading');
+            var $result = $('#um-fcp-save-result');
+            var userId = $('#um-fcp-user-id').val();
+            var password = $('#um-fcp-password').val();
+            var merchantId = $('#um-fcp-merchant-id').val();
+            
+            if (!userId.trim() || !password.trim() || !merchantId.trim()) {
+                $result.html('<span style="color: red;">لطفاً تمام فیلدها را تکمیل کنید</span>');
+                return false;
+            }
+            
+            $button.prop('disabled', true);
+            $loading.show();
+            $result.html('');
+            
+            var ajaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '<?php echo admin_url('admin-ajax.php'); ?>';
+            var fcpNonce = '<?php echo wp_create_nonce('um_general_settings'); ?>';
+            
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'um_save_fcp_settings',
+                    user_id: userId,
+                    password: password,
+                    merchant_id: merchantId,
+                    nonce: fcpNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $result.html('<span style="color: green;">✓ تنظیمات فناوا با موفقیت ذخیره شد</span>');
+                    } else {
+                        $result.html('<span style="color: red;">✗ خطا: ' + response.data + '</span>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    $result.html('<span style="color: red;">✗ خطا در اتصال به سرور: ' + error + '</span>');
+                },
+                complete: function() {
+                    $button.prop('disabled', false);
+                    $loading.hide();
+                }
+            });
+            
+            return false;
+        });
+    }
+    
+    // مدیریت فرم انتخاب درگاه دوره‌ها و سمینارها
+    var courseSeminarGatewayForm = $('#um-course-seminar-gateway-form');
+    if (courseSeminarGatewayForm.length) {
+        courseSeminarGatewayForm.on('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var $form = $(this);
+            var $button = $form.find('button[type="submit"]');
+            var $loading = $('#um-course-seminar-gateway-loading');
+            var $result = $('#um-course-seminar-gateway-result');
+            var gateway = $('#um-course-seminar-gateway').val();
+            
+            if (!gateway) {
+                $result.html('<span style="color: red;">لطفاً درگاه پرداخت را انتخاب کنید</span>');
+                return false;
+            }
+            
+            $button.prop('disabled', true);
+            $loading.show();
+            $result.html('');
+            
+            var ajaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '<?php echo admin_url('admin-ajax.php'); ?>';
+            var gatewayNonce = '<?php echo wp_create_nonce('um_general_settings'); ?>';
+            
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'um_save_course_seminar_gateway',
+                    gateway: gateway,
+                    nonce: gatewayNonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $result.html('<span style="color: green;">✓ تنظیمات با موفقیت ذخیره شد</span>');
+                    } else {
+                        $result.html('<span style="color: red;">✗ خطا: ' + response.data + '</span>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    $result.html('<span style="color: red;">✗ خطا در اتصال به سرور: ' + error + '</span>');
+                },
+                complete: function() {
+                    $button.prop('disabled', false);
+                    $loading.hide();
+                }
+            });
+            
+            return false;
+        });
     }
     
     // ذخیره تنظیمات دیباگ

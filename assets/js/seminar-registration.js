@@ -164,8 +164,16 @@ jQuery(document).ready(function($) {
             formData.append('nonce', um_ajax.nonce);
         }
         
+        // بررسی وجود um_ajax
+        if (typeof um_ajax === 'undefined') {
+            $('#um-registration-message').html('<div class="um-error">خطا: متغیرهای JavaScript لود نشده‌اند. لطفاً صفحه را نوسازی کنید.</div>').show();
+            return;
+        }
+        
+        var ajaxUrl = um_ajax.ajax_url || (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+        
         $.ajax({
-            url: um_ajax.ajax_url,
+            url: ajaxUrl,
             type: 'POST',
             data: formData,
             processData: false,
@@ -174,22 +182,36 @@ jQuery(document).ready(function($) {
                 $('.um-register-button').prop('disabled', true).text('در حال پردازش...');
             },
             success: function(response) {
-                if (response.success) {
-                    if (response.data.free) {
+                if (response && response.success) {
+                    if (response.data && response.data.free) {
                         $('#um-registration-message').html('<div class="um-success">' + response.data.message + '</div>').show();
                         setTimeout(function() {
                             $('.um-registration-modal').remove();
                         }, 3000);
-                    } else {
+                    } else if (response.data && response.data.payment_url) {
                         // هدایت به درگاه پرداخت
                         window.location.href = response.data.payment_url;
+                    } else {
+                        $('#um-registration-message').html('<div class="um-error">پاسخ نامعتبر از سرور</div>').show();
                     }
                 } else {
-                    $('#um-registration-message').html('<div class="um-error">' + response.data + '</div>').show();
+                    var errorMsg = (response && response.data) ? response.data : 'خطای نامشخص';
+                    $('#um-registration-message').html('<div class="um-error">' + errorMsg + '</div>').show();
                 }
             },
-            error: function() {
-                $('#um-registration-message').html('<div class="um-error">خطا در ارتباط با سرور</div>').show();
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', xhr, status, error);
+                var errorMsg = 'خطا در ارتباط با سرور';
+                if (xhr.responseJSON && xhr.responseJSON.data) {
+                    errorMsg = xhr.responseJSON.data;
+                } else if (xhr.status === 400) {
+                    errorMsg = 'درخواست نامعتبر است. لطفاً تمام فیلدها را تکمیل کنید.';
+                } else if (xhr.status === 403) {
+                    errorMsg = 'خطای امنیتی. لطفاً صفحه را نوسازی کنید.';
+                } else if (xhr.status === 500) {
+                    errorMsg = 'خطای سرور. لطفاً بعداً تلاش کنید.';
+                }
+                $('#um-registration-message').html('<div class="um-error">' + errorMsg + '</div>').show();
             },
             complete: function() {
                 $('.um-register-button').prop('disabled', false).text('ثبت نام و پرداخت');

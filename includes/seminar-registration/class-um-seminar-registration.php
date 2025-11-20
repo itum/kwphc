@@ -15,20 +15,34 @@ if (!defined('ABSPATH')) {
  */
 class UM_Seminar_Registration {
     
-    private $zarinpal_gateway;
+    private $payment_gateway;
     
     public function __construct() {
-        // بررسی وجود کلاس درگاه پرداخت
-        if (!class_exists('UM_Zarinpal_Gateway')) {
-            um_warning_log('UM_Zarinpal_Gateway class not found');
-            return;
-        }
-        
-        $this->zarinpal_gateway = new UM_Zarinpal_Gateway();
-        
-        // اضافه کردن اکشن‌های AJAX
+        // اضافه کردن اکشن‌های AJAX (قبل از بررسی درگاه تا همیشه ثبت شوند)
         add_action('wp_ajax_um_seminar_register', array($this, 'handle_registration'));
         add_action('wp_ajax_nopriv_um_seminar_register', array($this, 'handle_registration'));
+        
+        // تعیین درگاه پرداخت (پیش‌فرض: فناوا)
+        $gateway = get_option('um_seminar_gateway', 'fcp');
+        
+        if ($gateway === 'fcp') {
+            if (!class_exists('UM_FCP_Gateway')) {
+                require_once UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-fcp-gateway.php';
+            }
+            if (class_exists('UM_FCP_Gateway')) {
+                $this->payment_gateway = new UM_FCP_Gateway();
+            } else {
+                um_warning_log('UM_FCP_Gateway class not found after require');
+            }
+        } elseif ($gateway === 'zarinpal') {
+            if (!class_exists('UM_Zarinpal_Gateway')) {
+                um_warning_log('UM_Zarinpal_Gateway class not found');
+            } else {
+                $this->payment_gateway = new UM_Zarinpal_Gateway();
+            }
+        } else {
+            um_warning_log('Unknown payment gateway: ' . $gateway);
+        }
         
         // اضافه کردن shortcode
         add_shortcode('um_seminar_registration', array($this, 'registration_shortcode'));
@@ -148,14 +162,19 @@ class UM_Seminar_Registration {
             ));
         }
         
+        // بررسی وجود درگاه پرداخت
+        if (!$this->payment_gateway) {
+            wp_send_json_error('درگاه پرداخت تنظیم نشده است. لطفاً با مدیر سایت تماس بگیرید.');
+        }
+        
         // ایجاد درخواست پرداخت
-        $payment_result = $this->zarinpal_gateway->create_payment(
+        $payment_result = $this->payment_gateway->create_payment(
             $registration_id,
             $seminar_price,
             'پرداخت ثبت نام سمینار: ' . get_the_title($seminar_id)
         );
         
-        if ($payment_result['success']) {
+        if (isset($payment_result['success']) && $payment_result['success']) {
             wp_send_json_success(array(
                 'message' => 'درخواست پرداخت ایجاد شد.',
                 'registration_id' => $registration_id,

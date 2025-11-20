@@ -221,6 +221,8 @@ class University_Management {
         // اکشن‌های AJAX برای تنظیمات درگاه پرداخت
         add_action('wp_ajax_um_save_payment_settings', array($this, 'ajax_save_payment_settings'));
         add_action('wp_ajax_um_test_zarinpal_connection', array($this, 'ajax_test_zarinpal_connection'));
+        add_action('wp_ajax_um_save_fcp_settings', array($this, 'ajax_save_fcp_settings'));
+        add_action('wp_ajax_um_save_course_seminar_gateway', array($this, 'ajax_save_course_seminar_gateway'));
         add_action('wp_ajax_um_get_import_logs', array($this, 'ajax_get_import_logs'));
         add_action('wp_ajax_um_clear_import_logs', array($this, 'ajax_clear_import_logs'));
         
@@ -276,6 +278,7 @@ class University_Management {
      */
     public function register_query_vars($vars) {
         $vars[] = 'um_course_detail';
+        $vars[] = 'um_payment_callback';
         return $vars;
     }
 
@@ -1098,6 +1101,11 @@ class University_Management {
         register_setting('um_hall_settings_group', 'um_hall_zarinpal_merchant_id');
         register_setting('um_hall_settings_group', 'um_hall_admin_email');
         register_setting('um_hall_settings_group', 'um_hall_zarinpal_sandbox');
+        // تنظیمات درگاه فناوا
+        register_setting('um_general_settings_group', 'um_fcp_user_id');
+        register_setting('um_general_settings_group', 'um_fcp_password');
+        register_setting('um_general_settings_group', 'um_fcp_merchant_id');
+        register_setting('um_general_settings_group', 'um_seminar_gateway');
     }
 
     /**
@@ -4737,6 +4745,52 @@ class University_Management {
     }
     
     /**
+     * AJAX: ذخیره تنظیمات درگاه فناوا
+     */
+    public function ajax_save_fcp_settings() {
+        check_ajax_referer('um_general_settings', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('شما دسترسی به این عملیات را ندارید.');
+        }
+        
+        $user_id = sanitize_text_field($_POST['user_id'] ?? '');
+        $password = sanitize_text_field($_POST['password'] ?? '');
+        $merchant_id = sanitize_text_field($_POST['merchant_id'] ?? '');
+        
+        if (empty($user_id) || empty($password) || empty($merchant_id)) {
+            wp_send_json_error('تمام فیلدها الزامی هستند.');
+        }
+        
+        update_option('um_fcp_user_id', $user_id);
+        update_option('um_fcp_password', $password);
+        update_option('um_fcp_merchant_id', $merchant_id);
+        
+        wp_send_json_success('تنظیمات درگاه فناوا با موفقیت ذخیره شد.');
+    }
+    
+    /**
+     * AJAX: ذخیره تنظیمات درگاه دوره‌ها و سمینارها
+     */
+    public function ajax_save_course_seminar_gateway() {
+        check_ajax_referer('um_general_settings', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('شما دسترسی به این عملیات را ندارید.');
+        }
+        
+        $gateway = sanitize_text_field($_POST['gateway'] ?? '');
+        
+        if (empty($gateway) || !in_array($gateway, array('fcp', 'zarinpal'))) {
+            wp_send_json_error('درگاه پرداخت نامعتبر است.');
+        }
+        
+        update_option('um_seminar_gateway', $gateway);
+        
+        wp_send_json_success('تنظیمات درگاه پرداخت با موفقیت ذخیره شد.');
+    }
+    
+    /**
      * AJAX: تست اتصال به درگاه زرین‌پال
      */
     public function ajax_test_zarinpal_connection() {
@@ -4817,12 +4871,16 @@ class University_Management {
      * بارگذاری ماژول ثبت نام سمینارها
      */
     public function load_seminar_registration() {
-        $gw  = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-zarinpal-gateway.php';
+        $zarinpal_gw = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-zarinpal-gateway.php';
+        $fcp_gw = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-fcp-gateway.php';
         $reg = UM_PLUGIN_DIR . 'includes/seminar-registration/class-um-seminar-registration.php';
         
-        // ابتدا درگاه پرداخت را بارگذاری کن
-        if (file_exists($gw)) { 
-            require_once $gw; 
+        // ابتدا درگاه‌های پرداخت را بارگذاری کن
+        if (file_exists($zarinpal_gw)) { 
+            require_once $zarinpal_gw; 
+        }
+        if (file_exists($fcp_gw)) { 
+            require_once $fcp_gw; 
         }
         
         // سپس کلاس ثبت نام را بارگذاری کن
@@ -8108,6 +8166,8 @@ register_deactivation_hook(__FILE__, 'university_management_deactivate');
  * فعال‌سازی افزونه
  */
 function university_management_activate() {
+    // Flush rewrite rules برای ثبت endpointهای جدید
+    flush_rewrite_rules();
     // فراخوانی متد activation کلاس اصلی
     $plugin = University_Management::get_instance();
     $plugin->on_activation();

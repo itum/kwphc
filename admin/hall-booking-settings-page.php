@@ -105,7 +105,8 @@ if (!function_exists('settings_fields')) {
         <th scope="row">درگاه پرداخت</th>
         <td>
           <select name="um_hall_gateway">
-            <?php $gw = get_option('um_hall_gateway', 'zarinpal'); ?>
+            <?php $gw = get_option('um_hall_gateway', 'fcp'); ?>
+            <option value="fcp" <?php selected($gw, 'fcp'); ?>>فناوا</option>
             <option value="zarinpal" <?php selected($gw, 'zarinpal'); ?>>زرین‌پال</option>
           </select>
         </td>

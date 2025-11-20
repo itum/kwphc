@@ -136,9 +136,20 @@ class UM_Hall_Gateway {
         update_post_meta($post_id, '_um_hall_created_at', current_time('mysql'));
 
         // شروع فرآیند پرداخت یا ثبت پیش‌فاکتور بر اساس روش پرداخت
-        $gateway = get_option('um_hall_gateway', 'zarinpal');
+        $gateway = get_option('um_hall_gateway', 'fcp');
         if (!$payment_method || $payment_method === 'online') {
-            if ($gateway === 'zarinpal') {
+            if ($gateway === 'fcp') {
+                um_log('Hall Booking AJAX: Initiating FCP payment', array(
+                    'post_id' => $post_id,
+                    'amount' => $amount,
+                    'credentials_set' => !empty(get_option('um_fcp_user_id', '')) && !empty(get_option('um_fcp_password', '')) && !empty(get_option('um_fcp_merchant_id', ''))
+                ));
+                if (!class_exists('UM_FCP_Gateway_Hall')) {
+                    require_once UM_PLUGIN_DIR . 'includes/hall-booking/class-um-fcp-gateway.php';
+                }
+                $fcp_gateway = new UM_FCP_Gateway_Hall();
+                $result = $fcp_gateway->create_payment($post_id, $amount, $email, $phone, $event_title);
+            } elseif ($gateway === 'zarinpal') {
                 um_log('Hall Booking AJAX: Initiating Zarinpal payment', array(
                     'post_id' => $post_id,
                     'amount' => $amount,
@@ -345,19 +356,119 @@ class UM_Hall_Gateway {
         if (!isset($_GET['um_hall_callback'])) {
             return;
         }
+        // لاگ کامل ورودی برای دیباگ
+        $raw_input = file_get_contents('php://input');
+        um_log('Hall Gateway Callback $_POST', array('post' => $_POST));
+        error_log('UM_Hall_Gateway Callback raw body: ' . $raw_input);
         $booking_id = isset($_GET['booking_id']) ? absint($_GET['booking_id']) : 0;
+        
+        if (!$booking_id) {
+            $this->render_message(__('درخواست نامعتبر است.', 'university-management'), false);
+            return;
+        }
+
+        $gateway = get_option('um_hall_gateway', 'fcp');
+        $amount = floatval(get_post_meta($booking_id, '_um_hall_total_amount', true));
+
+        // پردازش callback فناوا
+        if ($gateway === 'fcp') {
+            // دریافت پارامترها از POST (فناوا از POST استفاده می‌کند)
+            // همچنین ممکن است از GET هم بیاید (برای سازگاری)
+            $mid = isset($_POST['MID']) ? sanitize_text_field($_POST['MID']) : (isset($_GET['MID']) ? sanitize_text_field($_GET['MID']) : '');
+            $shaparak_terminal_id = isset($_POST['shaparakTerminalId']) ? sanitize_text_field($_POST['shaparakTerminalId']) : (isset($_GET['shaparakTerminalId']) ? sanitize_text_field($_GET['shaparakTerminalId']) : '');
+            $customer_ref_num = isset($_POST['CustomerRefNum']) ? sanitize_text_field($_POST['CustomerRefNum']) : (isset($_GET['CustomerRefNum']) ? sanitize_text_field($_GET['CustomerRefNum']) : '');
+            $mobile_no = isset($_POST['mobileNo']) ? sanitize_text_field($_POST['mobileNo']) : (isset($_GET['mobileNo']) ? sanitize_text_field($_GET['mobileNo']) : '');
+            $state = isset($_POST['State']) ? sanitize_text_field($_POST['State']) : (isset($_GET['State']) ? sanitize_text_field($_GET['State']) : '');
+            // دریافت RefNum و token با پشتیبانی از نام‌های مختلف
+            $ref_num = '';
+            $token = '';
+            if (isset($_POST['RefNum'])) { $ref_num = sanitize_text_field($_POST['RefNum']); }
+            elseif (isset($_POST['refNum'])) { $ref_num = sanitize_text_field($_POST['refNum']); }
+            elseif (isset($_GET['RefNum'])) { $ref_num = sanitize_text_field($_GET['RefNum']); }
+            elseif (isset($_GET['refNum'])) { $ref_num = sanitize_text_field($_GET['refNum']); }
+
+            if (isset($_POST['token'])) { $token = sanitize_text_field($_POST['token']); }
+            elseif (isset($_POST['Token'])) { $token = sanitize_text_field($_POST['Token']); }
+            elseif (isset($_GET['token'])) { $token = sanitize_text_field($_GET['token']); }
+            elseif (isset($_GET['Token'])) { $token = sanitize_text_field($_GET['Token']); }
+
+            if (empty($ref_num) || empty($token)) {
+                update_post_meta($booking_id, '_um_hall_payment_status', 'failed');
+                wp_update_post(array('ID' => $booking_id, 'post_status' => 'draft'));
+                $this->notify($booking_id, false, '');
+                $this->render_payment_status(__('تراکنش ناموفق یا پارامترهای ورودی نادرست است.', 'university-management'), false, array(
+                    'mid' => $mid,
+                    'shaparak_terminal_id' => $shaparak_terminal_id,
+                    'ref_num' => $ref_num,
+                    'mobile_no' => $mobile_no,
+                    'state' => $state
+                ));
+                return;
+            }
+
+            // بررسی Token ذخیره شده
+            $stored_token = get_post_meta($booking_id, '_um_hall_fcp_token', true);
+            if (empty($stored_token) || $stored_token !== $token) {
+                update_post_meta($booking_id, '_um_hall_payment_status', 'failed');
+                wp_update_post(array('ID' => $booking_id, 'post_status' => 'draft'));
+                $this->notify($booking_id, false, '');
+                um_error_log('Hall Gateway Callback: token mismatch', array('booking_id'=>$booking_id,'stored_token'=>$stored_token,'incoming_token'=>$token));
+                $this->render_message(__('شناسه تراکنش معتبر نیست.', 'university-management'), false);
+                return;
+            }
+
+            // تایید پرداخت
+            if (!class_exists('UM_FCP_Gateway_Hall')) {
+                require_once UM_PLUGIN_DIR . 'includes/hall-booking/class-um-fcp-gateway.php';
+            }
+            $fcp_gateway = new UM_FCP_Gateway_Hall();
+            $verify = $fcp_gateway->verify_payment($ref_num, $token);
+            um_log('Hall Gateway Callback: verify result', array('result' => $verify));
+            error_log('UM_Hall_Gateway verify result: ' . (is_wp_error($verify) ? $verify->get_error_message() : print_r($verify, true)));
+
+            if (is_wp_error($verify)) {
+                update_post_meta($booking_id, '_um_hall_payment_status', 'failed');
+                wp_update_post(array('ID' => $booking_id, 'post_status' => 'draft'));
+                $this->notify($booking_id, false, '');
+                $this->render_payment_status($verify->get_error_message(), false, array(
+                    'mid' => $mid,
+                    'shaparak_terminal_id' => $shaparak_terminal_id,
+                    'ref_num' => $ref_num,
+                    'mobile_no' => $mobile_no,
+                    'state' => $state
+                ));
+                return;
+            }
+
+            // پرداخت موفق
+            update_post_meta($booking_id, '_um_hall_payment_status', 'success');
+            update_post_meta($booking_id, '_um_hall_ref_id', $ref_num);
+            wp_update_post(array('ID' => $booking_id, 'post_status' => 'publish'));
+            $this->notify($booking_id, true, $ref_num);
+            $this->render_payment_status(__('پرداخت شما با موفقیت انجام شد', 'university-management'), true, array(
+                'mid' => $mid,
+                'shaparak_terminal_id' => $shaparak_terminal_id,
+                'ref_num' => $ref_num,
+                'mobile_no' => $mobile_no,
+                'state' => $state
+            ));
+            return;
+        }
+
+        // پردازش callback زرین‌پال (کد قبلی)
         $status     = isset($_GET['Status']) ? sanitize_text_field(wp_unslash($_GET['Status'])) : '';
         $authority  = isset($_GET['Authority']) ? sanitize_text_field(wp_unslash($_GET['Authority'])) : '';
 
-        if (!$booking_id || !$authority) {
+        if (!$authority) {
             $this->render_message(__('درخواست نامعتبر است.', 'university-management'), false);
+            return;
         }
 
         $stored_authority = get_post_meta($booking_id, '_um_hall_authority', true);
-        $amount = floatval(get_post_meta($booking_id, '_um_hall_total_amount', true));
 
         if (!$stored_authority || $stored_authority !== $authority) {
             $this->render_message(__('شناسه تراکنش معتبر نیست.', 'university-management'), false);
+            return;
         }
 
         if ($status !== 'OK') {
@@ -365,6 +476,7 @@ class UM_Hall_Gateway {
             wp_update_post(array('ID' => $booking_id, 'post_status' => 'draft'));
             $this->notify($booking_id, false, '');
             $this->render_message(__('پرداخت لغو شد یا ناموفق بود.', 'university-management'), false);
+            return;
         }
 
         $verify = $this->zarinpal_verify($authority, $amount);
@@ -373,6 +485,7 @@ class UM_Hall_Gateway {
             wp_update_post(array('ID' => $booking_id, 'post_status' => 'draft'));
             $this->notify($booking_id, false, '');
             $this->render_message($verify->get_error_message(), false);
+            return;
         }
 
         update_post_meta($booking_id, '_um_hall_payment_status', 'success');
@@ -391,6 +504,45 @@ class UM_Hall_Gateway {
         echo '<div class="card"><h2 class="' . ($success ? 'ok' : 'fail') . '">' . ($success ? __('موفق', 'university-management') : __('ناموفق', 'university-management')) . '</h2>';
         echo '<p>' . esc_html($message) . '</p>';
         echo '<p><a href="' . esc_url(home_url('/')) . '">' . esc_html__('بازگشت به سایت', 'university-management') . '</a></p>';
+        echo '</div></body></html>';
+        exit;
+    }
+
+    /**
+     * نمایش صفحه وضعیت تراکنش (برای فناوا)
+     */
+    private function render_payment_status($message, $success, $payment_data = array()) {
+        status_header(200);
+        nocache_headers();
+        echo '<!DOCTYPE html><html lang="fa"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+        echo '<title>' . esc_html(get_bloginfo('name')) . ' - وضعیت پرداخت</title>';
+        echo '<style>body{font-family:tahoma,iransans,system-ui;padding:32px;background:' . ($success ? '#c4faf8' : '#fff5f5') . ';direction:rtl} .card{max-width:680px;margin:auto;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:24px;text-align:center;border:1px solid gray} .ok{color:#0a7;font-weight:bold} .fail{color:#c00;font-weight:bold} .info{margin-top:15px;text-align:right} .info-item{margin:8px 0}</style></head><body>';
+        echo '<div class="card">';
+        echo '<h2 class="' . ($success ? 'ok' : 'fail') . '">' . esc_html($message) . '</h2>';
+        
+        if (!empty($payment_data)) {
+            echo '<div class="info">';
+            if (!empty($payment_data['mid'])) {
+                echo '<div class="info-item"><strong>' . __('شماره پذیرنده', 'university-management') . ':</strong> ' . esc_html($payment_data['mid']) . '</div>';
+            }
+            if (!empty($payment_data['shaparak_terminal_id'])) {
+                echo '<div class="info-item"><strong>' . __('کد درگاه پرداخت', 'university-management') . ':</strong> ' . esc_html($payment_data['shaparak_terminal_id']) . '</div>';
+            }
+            if (!empty($payment_data['ref_num'])) {
+                echo '<div class="info-item"><strong>' . __('شماره مرجع تراکنش', 'university-management') . ':</strong> ' . esc_html($payment_data['ref_num']) . '</div>';
+            }
+            if (!empty($payment_data['mobile_no'])) {
+                echo '<div class="info-item"><strong>' . __('شماره همراه', 'university-management') . ':</strong> ' . esc_html($payment_data['mobile_no']) . '</div>';
+            }
+            if (!empty($payment_data['state'])) {
+                echo '<div class="info-item"><strong>' . __('وضعیت انجام تراکنش', 'university-management') . ':</strong> ' . esc_html($payment_data['state']) . '</div>';
+            }
+            echo '</div>';
+        }
+        
+        echo '<div style="text-align:center;padding-top:15px;margin-top:20px;">';
+        echo '<a href="' . esc_url(home_url('/')) . '" style="display:inline-block;padding:10px 30px;background-color:#7fff00;color:black;text-decoration:none;border-radius:7px;font-weight:bold;">' . esc_html__('بازگشت به سایت', 'university-management') . '</a>';
+        echo '</div>';
         echo '</div></body></html>';
         exit;
     }
