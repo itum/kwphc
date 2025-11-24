@@ -459,6 +459,8 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
         
         // ایجاد کلاس‌های استایل
         $this->add_render_attribute('wrapper', 'class', 'timeline-cal');
+        $this->add_render_attribute('wrapper', 'role', 'region');
+        $this->add_render_attribute('wrapper', 'aria-label', um_translate('تقویم رویدادهای دانشگاه', __('تقویم رویدادهای دانشگاه', 'university-management')));
         
         // رندر HTML
         ?>
@@ -467,47 +469,86 @@ class UM_Calendar_Widget extends \Elementor\Widget_Base {
             // همه رویدادها را در یک wrapper نمایش می‌دهیم
             if (!empty($converted_events)) {
                 ?>
-                <div class="wrapper-cal">
-                    <?php foreach ($converted_events as $event) { ?>
-                            <div class="event-cal<?php echo (isset($event['important']) && $event['important'] === 'yes') ? ' blue' : ''; ?>" data-title="<?php echo esc_attr($event['title']); ?>" data-time="<?php echo esc_attr($event['day'] . ' ' . $event['month'] . ' - ' . $event['year']); ?>" data-description="<?php echo esc_attr($event['description']); ?>">
-                                <div class="day-cal"><?php echo esc_html($event['day']); ?></div>
-                                <div class="month-year"><?php echo esc_html($event['month'] . ' - ' . $event['year']); ?></div>
-                                <div class="icon-cal">
-                                    <svg class="svg1" width="61" height="27" viewBox="0 0 61 27" fill="white" xmlns="http://www.w3.org/2000/svg">
-                                        <g clip-path="url(#clip0_464_337)">
+                <div class="wrapper-cal" role="list" aria-label="<?php echo esc_attr(um_translate('لیست رویدادها', __('لیست رویدادها', 'university-management'))); ?>">
+                    <?php 
+                    $event_index = 0;
+                    foreach ($converted_events as $event) { 
+                        $event_index++;
+                        $is_important = isset($event['important']) && $event['important'] === 'yes';
+                        $event_date = $event['day'] . ' ' . $event['month'] . ' - ' . $event['year'];
+                        $event_id = 'event-' . $event_index;
+                    ?>
+                            <div 
+                                class="event-cal<?php echo $is_important ? ' blue' : ''; ?>" 
+                                role="listitem"
+                                data-title="<?php echo esc_attr($event['title']); ?>" 
+                                data-time="<?php echo esc_attr($event_date); ?>" 
+                                data-description="<?php echo esc_attr($event['description']); ?>"
+                                data-important="<?php echo $is_important ? 'yes' : 'no'; ?>"
+                                tabindex="0"
+                                aria-label="<?php echo esc_attr(sprintf(
+                                    um_translate('رویداد: %s در تاریخ %s', __('رویداد: %s در تاریخ %s', 'university-management')),
+                                    $event['title'],
+                                    $event_date
+                                )); ?>"
+                                aria-describedby="<?php echo esc_attr($event_id . '-desc'); ?>"
+                                <?php if ($is_important) { ?>
+                                aria-priority="high"
+                                <?php } ?>
+                            >
+                                <div class="day-cal" aria-hidden="true"><?php echo esc_html($event['day']); ?></div>
+                                <time class="month-year" datetime="<?php echo esc_attr($event['year'] . '-' . str_pad($event['month_number'], 2, '0', STR_PAD_LEFT) . '-' . str_pad($event['day'], 2, '0', STR_PAD_LEFT)); ?>" aria-label="<?php echo esc_attr($event_date); ?>">
+                                    <?php echo esc_html($event['month'] . ' - ' . $event['year']); ?>
+                                </time>
+                                <div class="icon-cal" aria-hidden="true">
+                                    <svg class="svg1" width="61" height="27" viewBox="0 0 61 27" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <g clip-path="url(#clip0_464_337_<?php echo $event_index; ?>)">
                                             <rect width="1440" height="8024" transform="translate(-1070 -2881)" fill="white"/>
                                             <g opacity="0.19"></g>
                                             <path d="M25.4645 4.53554C27.4171 2.58291 30.5829 2.58291 32.5355 4.53553L37.4645 9.46446C39.4171 11.4171 39.4171 14.5829 37.4645 16.5355L32.5355 21.4645C30.5829 23.4171 27.4171 23.4171 25.4645 21.4645L20.5355 16.5355C18.5829 14.5829 18.5829 11.4171 20.5355 9.46447L25.4645 4.53554Z" fill="#212179"/>
                                             <path d="M26.8787 9.12132C28.0503 7.94975 29.9497 7.94975 31.1213 9.12132L32.8787 10.8787C34.0503 12.0503 34.0503 13.9497 32.8787 15.1213L31.1213 16.8787C29.9497 18.0503 28.0503 18.0503 26.8787 16.8787L25.1213 15.1213C23.9497 13.9497 23.9497 12.0503 25.1213 10.8787L26.8787 9.12132Z" fill="white"/>
                                         </g>
                                         <defs>
-                                            <clipPath id="clip0_464_337">
+                                            <clipPath id="clip0_464_337_<?php echo $event_index; ?>">
                                                 <rect width="1440" height="8024" fill="white" transform="translate(-1070 -2881)"/>
                                             </clipPath>
                                         </defs>
                                     </svg>
-                                    <svg class="svg2" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <svg class="svg2" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                         <path d="M8.46446 3.53554C10.4171 1.58291 13.5829 1.58291 15.5355 3.53553L20.4645 8.46446C22.4171 10.4171 22.4171 13.5829 20.4645 15.5355L15.5355 20.4645C13.5829 22.4171 10.4171 22.4171 8.46447 20.4645L3.53554 15.5355C1.58291 13.5829 1.58291 10.4171 3.53553 8.46447L8.46446 3.53554Z" fill="white"/>
                                         <path d="M9.87868 8.12132C11.0503 6.94975 12.9497 6.94975 14.1213 8.12132L15.8787 9.87868C17.0503 11.0503 17.0503 12.9497 15.8787 14.1213L14.1213 15.8787C12.9497 17.0503 11.0503 17.0503 9.87868 15.8787L8.12132 14.1213C6.94975 12.9497 6.94975 11.0503 8.12132 9.87868L9.87868 8.12132Z" fill="#212179"/>
                                     </svg>
                                 </div>
-                                <div class="label-cal"><?php echo esc_html($event['title']); ?></div>
+                                <div class="label-cal" id="<?php echo esc_attr($event_id . '-desc'); ?>"><?php echo esc_html($event['title']); ?></div>
                             </div>
                     <?php } ?>
                 </div>
             <?php } else { ?>
-                <div class="um-no-events">
+                <div class="um-no-events" role="status" aria-live="polite">
                     <?php echo esc_html(um_translate('هیچ رویدادی یافت نشد.', __('هیچ رویدادی یافت نشد.', 'university-management'))); ?>
                 </div>
             <?php } ?>
         </div>
 
         <!-- Modal Structure -->
-        <div id="eventModal" class="modal-overlay" style="display: none;">
+        <div 
+            id="eventModal" 
+            class="modal-overlay" 
+            style="display: none;"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modalTitle"
+            aria-describedby="modalDescription"
+        >
             <div class="modal-content">
-                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <button 
+                    class="close-btn" 
+                    type="button"
+                    aria-label="<?php echo esc_attr(um_translate('بستن مودال', __('بستن مودال', 'university-management'))); ?>"
+                    onclick="closeModal()"
+                >&times;</button>
                 <h2 id="modalTitle"></h2>
-                <p id="modalTime"></p>
+                <p id="modalTime" role="text"></p>
                 <p id="modalDescription"></p>
             </div>
         </div>
