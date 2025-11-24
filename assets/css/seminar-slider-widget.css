@@ -7,7 +7,9 @@
     display: flex;
     flex-direction: row;
     justify-content: center;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
 }
 
 .um-seminar-slider-widget .header h2 {
@@ -41,6 +43,7 @@
     flex-direction: column;
     flex: 1;
     justify-content: space-between;
+    gap: 8px;
 }
 .um-seminar-slider-widget .swiper-slide img {
     width: 100%;
@@ -110,13 +113,16 @@
 }
 .um-seminar-slider-widget .header {
     display: flex;
-    justify-content: space-around;
+    justify-content: flex-start;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     flex-direction: column;
     width: 28%;
-    margin: 0px;
+    min-width: 200px;
+    max-width: 300px;
     gap: 15px;
+    padding-right: 20px;
+    flex-shrink: 0;
 }
 .um-seminar-slider-widget .swiper-button-next,
 .um-seminar-slider-widget .swiper-button-prev {
@@ -126,15 +132,34 @@
 .um-seminar-slider-widget .nav-buttons {
     display: flex;
     gap: 12px;
-    margin-bottom: -20px;
+    margin-bottom: 0;
+    align-items: center;
+    justify-content: center;
 }
 
 .um-seminar-slider-widget .swiper-button-next,
 .um-seminar-slider-widget .swiper-button-prev {
-    width: 100%;
+    width: auto;
+    min-width: 48px;
+    height: 48px;
     position: static !important;
     inset: unset !important;
+    margin: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
+
+.um-seminar-slider-widget .swiper-button-next:hover,
+.um-seminar-slider-widget .swiper-button-prev:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.um-seminar-slider-widget .swiper-button-next:active,
+.um-seminar-slider-widget .swiper-button-prev:active {
+    transform: scale(0.95);
+}
+
 .um-seminar-slider-widget .container svg {
     margin-left: 10px;
 }
@@ -144,9 +169,34 @@
     font-size: 16px;
     color: #1e2a78;
     border: 1px solid #bfbfbf;
-    padding: 15px;
+    padding: 12px 15px;
     border-radius: 5px;
-    transform: scaleX(-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.um-seminar-slider-widget .swiper-button-next.swiper-button-disabled,
+.um-seminar-slider-widget .swiper-button-prev.swiper-button-disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
+.um-seminar-slider-widget .swiper-button-next.swiper-button-disabled:hover,
+.um-seminar-slider-widget .swiper-button-prev.swiper-button-disabled:hover {
+    transform: none;
+    opacity: 0.35;
+}
+
+.um-seminar-slider-widget .swiper-button-next:hover::after,
+.um-seminar-slider-widget .swiper-button-prev:hover::after {
+    border-color: #1e2a78;
+    background-color: rgba(30, 42, 120, 0.05);
 }
 .um-seminar-slider-widget .swiper-pagination-bullet {
     background-color: #1e2a78;
@@ -161,11 +211,19 @@
     position: static;
 }
 
+.um-seminar-slider-widget .swiper {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+}
+
 @media (max-width: 767px) {
     .um-seminar-slider-widget .container {
         flex-direction: column;
         align-items: stretch;
         position: relative;
+        gap: 20px;
+        padding: 0;
     }
     .um-seminar-slider-widget .swiper-slide {
         flex-shrink: 0;
@@ -179,18 +237,26 @@
     }
     .um-seminar-slider-widget .header {
         width: 100%;
+        min-width: auto;
+        max-width: 100%;
         align-items: flex-start;
+        margin-bottom: 0;
+        padding-right: 0;
+        gap: 12px;
     }
     .um-seminar-slider-widget .swiper {
         width: 100%;
+        margin-bottom: 0;
     }
     .um-seminar-slider-widget .header h2 {
         font-size: 24px;
         line-height: 40px;
+        width: 100%;
     }
 
     .um-seminar-slider-widget .swiper-slide h3 {
         font-size: 16px;
+        min-height: 45px;
     }
 
     .um-seminar-slider-widget .info-row {
@@ -199,40 +265,66 @@
 
     .um-seminar-slider-widget .btn-start {
         font-size: 14px;
-        padding: 8px;
+        padding: 8px 12px;
     }
 
     .um-seminar-slider-widget .nav-buttons {
         justify-content: center;
-        margin-top: 35px;
+        margin-top: 0;
+        margin-bottom: 0;
         width: 100%;
+        order: 3;
+        gap: 16px;
     }
 
-    .um-seminar-slider-widget .swiper-button-next {
-        left: -40px !important;
+    .um-seminar-slider-widget .swiper-button-next,
+    .um-seminar-slider-widget .swiper-button-prev {
+        position: static !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        top: auto !important;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
     }
+
+    .um-seminar-slider-widget .swiper-button-next::after,
+    .um-seminar-slider-widget .swiper-button-prev::after {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .um-seminar-slider-widget .content-wrapper {
+        padding: 12px;
+    }
+
     .um-seminar-slider-widget .swiper-pagination {
         display: none;
     }
-    .um-seminar-slider-widget .swiper-button-prev {
-        left: 40px !important;
-    }
-    .um-seminar-slider-widget .swiper-button-next,
-    .um-seminar-slider-widget .swiper-button-prev {
-        position: absolute !important;
-        bottom: -70px !important;
-    }
 }
 @media (min-width: 768px) and (max-width: 1023px) {
+    .um-seminar-slider-widget .container {
+        gap: 15px;
+    }
+
     .um-seminar-slider-widget .header {
-        width: 100%;
+        width: 30%;
+        min-width: 180px;
+        max-width: 250px;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
+        padding-right: 15px;
     }
 
     .um-seminar-slider-widget .header h2 {
         font-size: 28px;
+        line-height: 48px;
+    }
+
+    .um-seminar-slider-widget .swiper-slide {
+        min-height: 380px;
     }
 
     .um-seminar-slider-widget .swiper-slide h3 {
@@ -245,6 +337,10 @@
 
     .um-seminar-slider-widget .btn-start {
         font-size: 15px;
+    }
+
+    .um-seminar-slider-widget .nav-buttons {
+        margin-bottom: 0;
     }
 }
 
