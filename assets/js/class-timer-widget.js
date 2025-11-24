@@ -66,6 +66,11 @@
         let current = moment(today);
         let selectedDate = moment(today);
         
+        // تابع تشخیص موبایل
+        function isMobile() {
+            return window.innerWidth <= 600;
+        }
+        
         // اطمینان از اینکه امروز همیشه انتخاب شده باشد
         function ensureTodayIsSelected() {
             selectedDate = moment(today);
@@ -276,29 +281,50 @@
 
         function renderWeek(centerDate) {
             weekDaysEl.innerHTML = "";
-            // محاسبه دستی: از تاریخ ورودی به عقب می‌رویم تا به شنبه برسیم
-            const startOfWeek = moment(centerDate).clone().startOf('day');
-            while (startOfWeek.day() !== 6) {
-                startOfWeek.subtract(1, 'day');
+            let startDate, endDate, daysToShow = [];
+            
+            if (isMobile()) {
+                // در موبایل: نمایش 3 روز قبل + امروز + 3 روز بعد
+                startDate = moment(today).subtract(3, 'days');
+                endDate = moment(today).add(3, 'days');
+                
+                // تولید لیست روزها از 3 روز قبل تا 3 روز بعد
+                for (let i = -3; i <= 3; i++) {
+                    daysToShow.push(moment(today).add(i, 'days'));
+                }
+            } else {
+                // در دسکتاپ: نمایش هفته کامل از شنبه
+                startDate = moment(centerDate).clone().startOf('day');
+                while (startDate.day() !== 6) {
+                    startDate.subtract(1, 'day');
+                }
+                
+                for (let i = 0; i < 7; i++) {
+                    daysToShow.push(moment(startDate).add(i, 'days'));
+                }
             }
             
-            for (let i = 0; i < 7; i++) {
-                const m = moment(startOfWeek).add(i, 'days');
+            let todayElement = null;
+            
+            daysToShow.forEach((m) => {
                 const isToday = m.isSame(today, 'day');
                 const isSelected = m.isSame(selectedDate, 'day');
 
                 const dayDiv = document.createElement('div');
-                // فقط روز انتخاب شده فعال باشد
-                const shouldBeActive = isSelected;
+                // در موبایل، امروز باید همیشه فعال باشد
+                const shouldBeActive = isMobile() ? isToday : isSelected;
                 dayDiv.className = 'day' + (isToday ? ' today' : '') + (shouldBeActive ? ' active' : '');
+                dayDiv.setAttribute('data-date', m.format('YYYY-MM-DD'));
+                
                 const weekDay = weekDaysByMomentIndex[m.day()];
                 // تغییر فرمت ماه از امرداد به مرداد
                 const monthName = m.format('jMMMM').replace('امرداد', 'مرداد');
                 const jDateStr = `${weekDay}<br>${m.jDate()} ${monthName}`;
                 dayDiv.innerHTML = jDateStr;
                 
-                // دیباگ برای بررسی روزها
+                // ذخیره عنصر امروز برای اسکرول
                 if (isToday) {
+                    todayElement = dayDiv;
                     console.log('Today found:', weekDay, m.jDate(), monthName, 'should be active:', shouldBeActive);
                 }
 
@@ -310,6 +336,13 @@
                 });
 
                 weekDaysEl.appendChild(dayDiv);
+            });
+            
+            // اسکرول به امروز در موبایل
+            if (isMobile() && todayElement) {
+                setTimeout(() => {
+                    todayElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                }, 100);
             }
         }
 
@@ -319,14 +352,26 @@
 
         if (prevWeekBtn) {
             prevWeekBtn.addEventListener('click', () => {
-                current = current.subtract(7, 'days'); // تغییر به subtract
+                if (isMobile()) {
+                    // در موبایل، همیشه به امروز برگرد
+                    current = moment(today);
+                    selectedDate = moment(today);
+                } else {
+                    current = current.subtract(7, 'days');
+                }
                 renderWeek(current);
             });
         }
 
         if (nextWeekBtn) {
             nextWeekBtn.addEventListener('click', () => {
-                current = current.add(7, 'days'); // تغییر به add
+                if (isMobile()) {
+                    // در موبایل، همیشه به امروز برگرد
+                    current = moment(today);
+                    selectedDate = moment(today);
+                } else {
+                    current = current.add(7, 'days');
+                }
                 renderWeek(current);
             });
         }
@@ -348,6 +393,15 @@
                 selectedDate = moment(today);
                 renderWeek(current);
                 renderClassesFor(today);
+                // در موبایل، اسکرول به امروز
+                if (isMobile()) {
+                    setTimeout(() => {
+                        const todayDay = weekDaysEl.querySelector('.day.today');
+                        if (todayDay) {
+                            todayDay.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                        }
+                    }, 100);
+                }
             });
 
             // شروع رندر: امروز را انتخاب و نمایش بده
@@ -355,6 +409,18 @@
             current = moment(today);
             renderWeek(today);
             renderClassesFor(today);
+            
+            // در موبایل، اطمینان از انتخاب خودکار امروز
+            if (isMobile()) {
+                setTimeout(() => {
+                    const todayDay = weekDaysEl.querySelector('.day.today');
+                    if (todayDay) {
+                        todayDay.classList.add('active');
+                        // اسکرول به امروز در صورت نیاز
+                        todayDay.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                    }
+                }, 150);
+            }
         }
 
         // شروع فرآیند بارگذاری

@@ -291,32 +291,45 @@
         flex-direction: row;
         overflow-x: auto;
         justify-content: flex-start;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        padding: 5px 0;
     }
 
     .calendar-header {
         padding: 10px 10% !important;
+        position: relative;
     }
 
     .week-days::-webkit-scrollbar {
         width: 0px !important;
+        height: 0px !important;
     }
 
     .day {
-        width: calc(100% / 2 - 30px);
-        padding: 7px 12px;
-        font-size: 14px;
+        min-width: calc(100% / 2.5 - 20px);
+        width: calc(100% / 2.5 - 20px);
+        padding: 8px 10px;
+        font-size: 13px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
         flex-shrink: 0 !important;
+        scroll-snap-align: center;
     }
 
     .day.active {
         background: #ffffff !important;
         color: #181818 !important;
-        font-weight: normal;
+        font-weight: bold;
         border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        transform: scale(1.05);
+    }
+    
+    .day.today {
+        font-weight: bold;
     }
 
     .calendar-header {
@@ -370,11 +383,20 @@
         top: 50%;
         position: absolute;
         margin: 0px;
-        padding: 6px 8px;
+        padding: 8px 10px;
         z-index: 20;
         display: flex;
         align-items: center;
         justify-content: center;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    #nextWeek:hover, #prevWeek:hover {
+        background-color: rgba(255, 255, 255, 1);
+        transform: scale(1.1);
     }
     
     #nextWeek svg, #prevWeek svg {
@@ -387,5 +409,15 @@
 
     #prevWeek {
         right: 2%;
+    }
+    
+    /* بهبود spacing برای کارت‌های کلاس در موبایل */
+    .class-card {
+        margin-bottom: 12px;
+        padding: 12px;
+    }
+    
+    .calendar-details {
+        margin-bottom: 15px;
     }
 } 
